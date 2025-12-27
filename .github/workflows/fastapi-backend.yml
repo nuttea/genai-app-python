@@ -179,7 +179,7 @@ jobs:
             --set-env-vars DEFAULT_MODEL=gemini-2.5-flash \
             --set-env-vars DD_SITE=datadoghq.com \
             --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
-            --set-env-vars DD_ENV=production \
+            --set-env-vars DD_ENV=dev \
             --set-env-vars DD_VERSION=${{ github.sha }} \
             --set-env-vars DD_LOGS_ENABLED=true \
             --set-env-vars DD_LOGS_INJECTION=true \

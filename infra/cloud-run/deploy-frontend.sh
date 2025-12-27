@@ -22,7 +22,7 @@ fi
 DD_API_KEY="${DD_API_KEY:-}"
 DD_SITE="${DD_SITE:-datadoghq.com}"
 DD_SERVICE="${DD_SERVICE:-genai-streamlit-frontend}"
-DD_ENV="${DD_ENV:-production}"
+DD_ENV="${DD_ENV:-dev}"
 DD_VERSION="${DD_VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo '0.1.0')}"
 
 # Datadog RUM Configuration (optional)
