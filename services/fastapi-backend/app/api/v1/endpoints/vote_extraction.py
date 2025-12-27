@@ -83,7 +83,7 @@ async def extract_votes(
         if re.search(r'[/\\:*?"<>|]', file.filename):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid filename: {file.filename}. Filename cannot contain: / \\ : * ? \" < > |",
+                detail=f'Invalid filename: {file.filename}. Filename cannot contain: / \\ : * ? " < > |',
             )
 
         # Validate file extension
