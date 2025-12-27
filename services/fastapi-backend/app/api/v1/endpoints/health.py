@@ -27,4 +27,3 @@ async def readiness_check() -> JSONResponse:
             "service": "fastapi-backend",
         }
     )
-

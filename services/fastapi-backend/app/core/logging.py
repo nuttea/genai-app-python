@@ -29,7 +29,7 @@ def setup_logging(log_level: str = "info") -> None:
 
     # Create handler
     handler = logging.StreamHandler(sys.stdout)
-    
+
     # Set formatter
     formatter = CustomJsonFormatter(
         "%(asctime)s %(level)s %(logger)s %(message)s",
@@ -47,4 +47,3 @@ def setup_logging(log_level: str = "info") -> None:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-

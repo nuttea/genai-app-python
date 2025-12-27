@@ -23,13 +23,13 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 )
 async def chat_completion(request: ChatCompletionRequest) -> ChatCompletionResponse:
     """Generate a chat completion.
-    
+
     Args:
         request: Chat completion request with messages and parameters
-        
+
     Returns:
         Chat completion response
-        
+
     Raises:
         HTTPException: If completion fails
     """
@@ -39,13 +39,13 @@ async def chat_completion(request: ChatCompletionRequest) -> ChatCompletionRespo
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Streaming not supported yet. Use stream=false.",
             )
-        
+
         if not request.messages:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Messages cannot be empty",
             )
-        
+
         result = await genai_service.chat_completion(
             messages=request.messages,
             model=request.model,
@@ -54,7 +54,7 @@ async def chat_completion(request: ChatCompletionRequest) -> ChatCompletionRespo
             top_p=request.top_p,
             top_k=request.top_k,
         )
-        
+
         return ChatCompletionResponse(**result)
     except HTTPException:
         raise
@@ -64,4 +64,3 @@ async def chat_completion(request: ChatCompletionRequest) -> ChatCompletionRespo
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
-

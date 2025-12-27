@@ -34,15 +34,19 @@ class VoteResult(BaseModel):
     """Individual vote result for a candidate or party."""
 
     number: int = Field(..., description="Candidate/Party Number")
-    candidate_name: Optional[str] = Field(None, description="Candidate Name (for Constituency forms)")
-    party_name: Optional[str] = Field(None, description="Party Name (for both Constituency and PartyList)")
+    candidate_name: Optional[str] = Field(
+        None, description="Candidate Name (for Constituency forms)"
+    )
+    party_name: Optional[str] = Field(
+        None, description="Party Name (for both Constituency and PartyList)"
+    )
     vote_count: int = Field(..., description="Vote count (numeric)")
     vote_count_text: Optional[str] = Field(None, description="Vote count (Thai written text)")
-    
+
     class Config:
         # Removed alias - keep both fields separate
         populate_by_name = True
-    
+
     @property
     def display_name(self) -> str:
         """Get the appropriate name to display (party or candidate)."""
@@ -58,15 +62,20 @@ class ElectionFormData(BaseModel):
 
     form_info: FormInfo
     ballot_statistics: Optional[BallotStatistics] = None
-    vote_results: List[VoteResult] = Field(default_factory=list, description="Vote counts for all candidates/parties")
+    vote_results: List[VoteResult] = Field(
+        default_factory=list, description="Vote counts for all candidates/parties"
+    )
 
 
 class VoteExtractionResponse(BaseModel):
     """Response for vote extraction request."""
 
     success: bool = Field(..., description="Whether extraction was successful")
-    data: List[ElectionFormData] = Field(default_factory=list, description="List of extracted data (one per report)")
+    data: List[ElectionFormData] = Field(
+        default_factory=list, description="List of extracted data (one per report)"
+    )
     error: Optional[str] = Field(None, description="Error message if extraction failed")
     pages_processed: int = Field(..., description="Number of pages processed")
-    reports_extracted: int = Field(default=0, description="Number of reports successfully extracted")
-
+    reports_extracted: int = Field(
+        default=0, description="Number of reports successfully extracted"
+    )

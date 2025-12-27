@@ -17,11 +17,11 @@ def init_datadog_rum():
     DD_ENV = os.getenv("DD_ENV", "development")
     DD_VERSION = os.getenv("DD_VERSION", "0.1.0")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-    
+
     # Only inject if both client token and app ID are set
     if not (DD_RUM_CLIENT_TOKEN and DD_RUM_APPLICATION_ID):
         return False
-    
+
     # Inject Datadog RUM script
     datadog_rum_script = f"""
     <script>
@@ -66,7 +66,6 @@ def init_datadog_rum():
       }})
     </script>
     """
-    
+
     components.html(datadog_rum_script, height=0)
     return True
-

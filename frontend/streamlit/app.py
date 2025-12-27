@@ -47,10 +47,10 @@ st.markdown(
 with st.sidebar:
     st.title("🤖 GenAI Platform")
     st.markdown("---")
-    
+
     # Navigation
     st.markdown("### 📑 Navigation")
-    
+
     # Debug info (development only)
     DD_ENV = os.getenv("DD_ENV", "development")
     if DD_ENV == "development":
@@ -61,7 +61,7 @@ with st.sidebar:
             API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
             DD_SERVICE = os.getenv("DD_SERVICE", "genai-streamlit-frontend")
             DD_VERSION = os.getenv("DD_VERSION", "0.1.0")
-            
+
             st.text(f"Backend: {API_BASE_URL}")
             st.text(f"Service: {DD_SERVICE}")
             st.text(f"Environment: {DD_ENV}")
@@ -71,7 +71,7 @@ with st.sidebar:
                 st.text(f"RUM Token: {DD_RUM_CLIENT_TOKEN[:10]}...")
             if DD_RUM_APPLICATION_ID:
                 st.text(f"RUM App ID: {DD_RUM_APPLICATION_ID[:8]}...")
-    
+
 # Main page content
 st.title("Welcome to GenAI Application Platform")
 st.markdown(
@@ -107,4 +107,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-

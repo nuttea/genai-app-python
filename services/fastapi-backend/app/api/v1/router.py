@@ -12,4 +12,3 @@ api_router.include_router(health.router)
 api_router.include_router(chat.router)
 api_router.include_router(generate.router)
 api_router.include_router(vote_extraction.router)
-

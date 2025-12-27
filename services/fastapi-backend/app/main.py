@@ -29,20 +29,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Environment: {settings.fastapi_env}")
     logger.info(f"GCP Project: {settings.google_cloud_project}")
     logger.info(f"Vertex AI Location: {settings.vertex_ai_location}")
-    
+
     # Log Datadog status
     dd_service = os.getenv("DD_SERVICE")
     dd_env = os.getenv("DD_ENV")
     dd_version = os.getenv("DD_VERSION")
     dd_api_key = os.getenv("DD_API_KEY")
-    
+
     if dd_api_key:
-        logger.info(f"Datadog APM enabled: service={dd_service}, env={dd_env}, version={dd_version}")
+        logger.info(
+            f"Datadog APM enabled: service={dd_service}, env={dd_env}, version={dd_version}"
+        )
     else:
         logger.info("Datadog APM not configured")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down application")
 

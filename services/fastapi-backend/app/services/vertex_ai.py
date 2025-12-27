@@ -34,7 +34,7 @@ class VertexAIService:
                 project=settings.google_cloud_project,
                 location=settings.vertex_ai_location,
             )
-            
+
             logger.info(
                 f"Initialized Vertex AI: project={settings.google_cloud_project}, "
                 f"location={settings.vertex_ai_location}"
@@ -69,7 +69,7 @@ class VertexAIService:
         stop_sequences: Optional[List[str]] = None,
     ) -> dict:
         """Generate content from a prompt.
-        
+
         Args:
             prompt: Text prompt
             model_name: Model to use
@@ -78,12 +78,12 @@ class VertexAIService:
             top_p: Nucleus sampling parameter
             top_k: Top-k sampling parameter
             stop_sequences: Stop sequences
-            
+
         Returns:
             Dictionary with generated content and metadata
         """
         model = self.get_model(model_name)
-        
+
         # Build generation config
         generation_config = {
             "temperature": temperature or settings.default_temperature,
@@ -91,7 +91,7 @@ class VertexAIService:
             "top_p": top_p or settings.default_top_p,
             "top_k": top_k or settings.default_top_k,
         }
-        
+
         if stop_sequences:
             generation_config["stop_sequences"] = stop_sequences
 
@@ -100,7 +100,7 @@ class VertexAIService:
                 prompt,
                 generation_config=generation_config,
             )
-            
+
             return {
                 "id": str(uuid.uuid4()),
                 "model": model_name or settings.default_model,
@@ -127,7 +127,7 @@ class VertexAIService:
     ) -> AsyncGenerator[str, None]:
         """Stream generated content from a prompt."""
         model = self.get_model(model_name)
-        
+
         generation_config = {
             "temperature": temperature or settings.default_temperature,
             "max_output_tokens": max_tokens or settings.default_max_tokens,
@@ -141,7 +141,7 @@ class VertexAIService:
                 generation_config=generation_config,
                 stream=True,
             )
-            
+
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
@@ -163,7 +163,7 @@ class VertexAIService:
     ) -> dict:
         """Generate a chat completion."""
         model = self.get_model(model_name)
-        
+
         generation_config = {
             "temperature": temperature or settings.default_temperature,
             "max_output_tokens": max_tokens or settings.default_max_tokens,
@@ -174,12 +174,12 @@ class VertexAIService:
         try:
             # Start a chat session
             chat = model.start_chat()
-            
+
             # Send messages (skip system messages, handle user/assistant messages)
             for message in messages[:-1]:  # All but last message
                 if message["role"] == "user":
                     chat.send_message(message["content"])
-            
+
             # Send the last message and get response
             last_message = messages[-1]
             if last_message["role"] == "user":
@@ -187,7 +187,7 @@ class VertexAIService:
                     last_message["content"],
                     generation_config=generation_config,
                 )
-                
+
                 return {
                     "id": str(uuid.uuid4()),
                     "model": model_name or settings.default_model,
@@ -215,4 +215,3 @@ class VertexAIService:
 
 # Global service instance
 vertex_ai_service = VertexAIService()
-

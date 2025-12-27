@@ -70,7 +70,7 @@ class GenAIService:
         """Generate a chat completion."""
         # Convert Pydantic models to dicts
         messages_dict = [msg.model_dump() for msg in messages]
-        
+
         return await self.vertex_service.chat_completion(
             messages=messages_dict,
             model_name=model,
@@ -83,4 +83,3 @@ class GenAIService:
 
 # Global service instance
 genai_service = GenAIService()
-

@@ -17,4 +17,3 @@ def mock_vertex_ai(monkeypatch):
     """Mock Vertex AI service for testing."""
     # TODO: Implement mock for Vertex AI
     pass
-

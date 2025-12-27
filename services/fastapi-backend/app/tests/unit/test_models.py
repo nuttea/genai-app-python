@@ -26,12 +26,12 @@ class TestFormInfo:
         )
         assert form_info.province == "Bangkok"
         assert form_info.district == "Bang Phlat"
-    
+
     def test_required_fields(self):
         """Test that required fields are enforced."""
         with pytest.raises(ValidationError):
             FormInfo(province="Bangkok")  # Missing district and polling_station_number
-    
+
     def test_optional_fields(self):
         """Test that optional fields can be None."""
         form_info = FormInfo(
@@ -57,7 +57,7 @@ class TestVoteResult:
         assert vote.candidate_name == "John Doe"
         assert vote.party_name == "Party A"
         assert vote.display_name == "Party A"  # Returns party_name first
-    
+
     def test_partylist_vote(self):
         """Test vote result for PartyList form."""
         vote = VoteResult(
@@ -68,17 +68,17 @@ class TestVoteResult:
         assert vote.party_name == "Party B"
         assert vote.candidate_name is None
         assert vote.display_name == "Party B"
-    
+
     def test_display_name_fallback(self):
         """Test display_name property fallback logic."""
         # Has party_name
         vote1 = VoteResult(number=1, party_name="Party A", vote_count=10)
         assert vote1.display_name == "Party A"
-        
+
         # No party, has candidate
         vote2 = VoteResult(number=2, candidate_name="Jane Doe", vote_count=20)
         assert vote2.display_name == "Jane Doe"
-        
+
         # Neither
         vote3 = VoteResult(number=3, vote_count=0)
         assert vote3.display_name == "N/A"
@@ -112,7 +112,7 @@ class TestElectionFormData:
         )
         assert data.form_info.district == "Bang Phlat"
         assert len(data.vote_results) == 1
-    
+
     def test_optional_ballot_statistics(self):
         """Test that ballot_statistics is optional."""
         data = ElectionFormData(
@@ -143,7 +143,7 @@ class TestVoteExtractionResponse:
         )
         assert response.success is True
         assert len(response.data) == 1
-    
+
     def test_failure_response(self):
         """Test failed extraction response."""
         response = VoteExtractionResponse(
@@ -155,4 +155,3 @@ class TestVoteExtractionResponse:
         )
         assert response.success is False
         assert response.error == "Extraction failed"
-

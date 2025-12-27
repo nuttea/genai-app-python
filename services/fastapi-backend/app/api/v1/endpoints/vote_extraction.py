@@ -35,7 +35,9 @@ router = APIRouter(prefix="/vote-extraction", tags=["vote-extraction"])
 @limiter.limit(RATE_LIMIT_VOTE_EXTRACTION_HOURLY)
 async def extract_votes(
     request: Request,
-    files: List[UploadFile] = File(..., description="Election form images (multiple pages supported)"),
+    files: List[UploadFile] = File(
+        ..., description="Election form images (multiple pages supported)"
+    ),
     api_key: str = Depends(verify_api_key),
 ) -> VoteExtractionResponse:
     """
@@ -49,7 +51,7 @@ async def extract_votes(
         Extracted vote data including form info, ballot statistics, and vote results
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400: No files provided, invalid file types, or empty files
             - 413: File size exceeds limits
             - 422: Validation errors in extracted data
@@ -74,21 +76,21 @@ async def extract_votes(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid filename length. Maximum {MAX_FILENAME_LENGTH} characters.",
             )
-        
+
         # Validate filename characters (prevent path traversal)
-        if not re.match(r'^[\w\-. ]+$', file.filename):
+        if not re.match(r"^[\w\-. ]+$", file.filename):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid filename: {file.filename}. Only alphanumeric, dash, dot, underscore and space allowed.",
             )
-        
+
         # Validate file extension
-        if not file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid file extension for {file.filename}. Only JPG and PNG are supported.",
             )
-        
+
         # Check content type
         if file.content_type not in allowed_types:
             raise HTTPException(
@@ -99,14 +101,14 @@ async def extract_votes(
         # Read file content
         try:
             content = await file.read()
-            
+
             # Check if file is empty
             if not content:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Empty file: {file.filename}",
                 )
-            
+
             # Check individual file size
             file_size_mb = len(content) / (1024 * 1024)
             if len(content) > MAX_FILE_SIZE_BYTES:
@@ -117,10 +119,10 @@ async def extract_votes(
                         f"Maximum file size is {MAX_FILE_SIZE_MB}MB."
                     ),
                 )
-            
+
             # Track total size
             total_size += len(content)
-            
+
             # Check total size (Cloud Run limit is 32MB)
             if total_size > MAX_TOTAL_SIZE_BYTES:
                 total_size_mb = total_size / (1024 * 1024)
@@ -139,7 +141,7 @@ async def extract_votes(
                 extra={
                     "file_size_bytes": len(content),
                     "file_size_mb": f"{file_size_mb:.2f}",
-                }
+                },
             )
 
         except HTTPException:
@@ -172,7 +174,7 @@ async def extract_votes(
         try:
             extracted_reports = []
             validation_warnings = []
-            
+
             # Handle both single dict and list of dicts
             if isinstance(result, dict):
                 # Single report - wrap in list
@@ -189,35 +191,45 @@ async def extract_votes(
                     pages_processed=len(image_files),
                     reports_extracted=0,
                 )
-            
+
             # Process each report
             for idx, report_data in enumerate(results_to_process):
                 if not isinstance(report_data, dict):
                     logger.warning(f"Skipping non-dict element at index {idx}: {type(report_data)}")
                     continue
-                
+
                 try:
                     # Log raw report data for debugging
                     logger.debug(
                         f"Parsing report {idx + 1}",
                         extra={
                             "report_index": idx + 1,
-                            "report_data_keys": list(report_data.keys()) if isinstance(report_data, dict) else "not_dict",
-                            "vote_results_count": len(report_data.get("vote_results", [])) if isinstance(report_data, dict) else 0,
-                        }
+                            "report_data_keys": (
+                                list(report_data.keys())
+                                if isinstance(report_data, dict)
+                                else "not_dict"
+                            ),
+                            "vote_results_count": (
+                                len(report_data.get("vote_results", []))
+                                if isinstance(report_data, dict)
+                                else 0
+                            ),
+                        },
                     )
-                    
+
                     extracted_data = ElectionFormData(**report_data)
-                    
+
                     # Validate consistency
-                    is_valid, error_msg = await vote_extraction_service.validate_extraction(extracted_data)
+                    is_valid, error_msg = await vote_extraction_service.validate_extraction(
+                        extracted_data
+                    )
                     if not is_valid:
                         logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
                         validation_warnings.append(f"Report {idx + 1}: {error_msg}")
-                    
+
                     extracted_reports.append(extracted_data)
                     logger.info(f"Successfully parsed report {idx + 1}/{len(results_to_process)}")
-                    
+
                 except Exception as e:
                     # Log at ERROR level for parsing failures with full details
                     logger.error(
@@ -227,24 +239,24 @@ async def extract_votes(
                             "error_type": type(e).__name__,
                             "report_data_sample": str(report_data)[:500] if report_data else "None",
                         },
-                        exc_info=True
+                        exc_info=True,
                     )
                     validation_warnings.append(f"Report {idx + 1}: Failed to parse - {str(e)}")
-            
+
             # Return results
             if not extracted_reports:
                 error_detail = "No valid reports could be extracted from the data"
                 if validation_warnings:
                     error_detail += ":\n" + "\n".join(validation_warnings)
-                
+
                 logger.error(
                     "All reports failed to parse",
                     extra={
                         "pages_processed": len(image_files),
                         "errors": validation_warnings,
-                    }
+                    },
                 )
-                
+
                 # Return 422 Unprocessable Entity for validation errors
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -252,14 +264,14 @@ async def extract_votes(
                         "message": error_detail,
                         "pages_processed": len(image_files),
                         "errors": validation_warnings,
-                    }
+                    },
                 )
-            
+
             # Build response with warnings if any
             error_msg = None
             if validation_warnings:
                 error_msg = "Data extracted with warnings:\n" + "\n".join(validation_warnings)
-            
+
             return VoteExtractionResponse(
                 success=True,
                 data=extracted_reports,
@@ -271,7 +283,7 @@ async def extract_votes(
         except HTTPException:
             # Re-raise HTTP exceptions (already handled above)
             raise
-        
+
         except Exception as e:
             logger.error(
                 f"Unexpected error parsing extracted data: {e}",
@@ -279,7 +291,7 @@ async def extract_votes(
                     "error_type": type(e).__name__,
                     "pages_processed": len(image_files),
                 },
-                exc_info=True
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -320,4 +332,3 @@ async def vote_extraction_health() -> JSONResponse:
                 "error": str(e),
             },
         )
-

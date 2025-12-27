@@ -48,7 +48,9 @@ class Settings(BaseSettings):
     api_title: str = Field(default="GenAI FastAPI Backend", description="API title")
     api_version: str = Field(default="0.1.0", description="API version")
     api_key: str = Field(default="", description="API key for authentication (required if set)")
-    api_key_required: bool = Field(default=False, description="Whether API key validation is enforced")
+    api_key_required: bool = Field(
+        default=False, description="Whether API key validation is enforced"
+    )
 
     # Vertex AI Model Configuration
     default_model: str = Field(default="gemini-pro", description="Default model")
@@ -82,4 +84,3 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
-

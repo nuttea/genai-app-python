@@ -24,41 +24,41 @@ class TestHealthEndpoints:
         assert "version" in data
         assert "status" in data
         assert data["status"] == "running"
-    
+
     def test_health_check(self, client):
         """Test main health check endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-    
+
     def test_readiness_check(self, client):
         """Test readiness check endpoint."""
         response = client.get("/ready")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ready"
-    
+
     def test_api_health_check(self, client):
         """Test API-level health check."""
         response = client.get("/api/v1/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-    
+
     def test_api_readiness_check(self, client):
         """Test API-level readiness check."""
         response = client.get("/api/v1/ready")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ready"
-    
+
     def test_docs_accessible(self, client):
         """Test API documentation is accessible."""
         response = client.get("/docs")
         assert response.status_code == 200
         assert b"swagger" in response.content.lower()
-    
+
     def test_openapi_schema(self, client):
         """Test OpenAPI schema is accessible."""
         response = client.get("/openapi.json")
@@ -66,4 +66,3 @@ class TestHealthEndpoints:
         data = response.json()
         assert "openapi" in data
         assert "paths" in data
-

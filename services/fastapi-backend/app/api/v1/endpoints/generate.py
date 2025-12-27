@@ -25,13 +25,13 @@ router = APIRouter(prefix="/generate", tags=["generate"])
 )
 async def generate_text(request: GenerateRequest) -> GenerateResponse:
     """Generate text from a prompt.
-    
+
     Args:
         request: Generation request with prompt and parameters
-        
+
     Returns:
         Generated text response
-        
+
     Raises:
         HTTPException: If generation fails
     """
@@ -41,7 +41,7 @@ async def generate_text(request: GenerateRequest) -> GenerateResponse:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Streaming not supported in this endpoint. Use /generate/stream instead.",
             )
-        
+
         result = await genai_service.generate_text(
             prompt=request.prompt,
             model=request.model,
@@ -51,7 +51,7 @@ async def generate_text(request: GenerateRequest) -> GenerateResponse:
             top_k=request.top_k,
             stop_sequences=request.stop_sequences,
         )
-        
+
         return GenerateResponse(**result)
     except Exception as e:
         logger.error(f"Error generating text: {e}")
@@ -64,13 +64,14 @@ async def generate_text(request: GenerateRequest) -> GenerateResponse:
 @router.post("/stream")
 async def generate_text_stream(request: GenerateRequest) -> StreamingResponse:
     """Stream generated text from a prompt.
-    
+
     Args:
         request: Generation request with prompt and parameters
-        
+
     Returns:
         Streaming response with generated text
     """
+
     async def generate() -> AsyncGenerator[str, None]:
         """Generate streaming response."""
         try:
@@ -86,7 +87,7 @@ async def generate_text_stream(request: GenerateRequest) -> StreamingResponse:
         except Exception as e:
             logger.error(f"Error streaming text: {e}")
             yield f"data: [ERROR] {str(e)}\n\n"
-    
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
@@ -95,4 +96,3 @@ async def generate_text_stream(request: GenerateRequest) -> StreamingResponse:
             "Connection": "keep-alive",
         },
     )
-

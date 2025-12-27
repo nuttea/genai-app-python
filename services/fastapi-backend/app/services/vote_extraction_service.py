@@ -17,6 +17,7 @@ from app.core.constants import GEMINI_API_TIMEOUT, SCHEMA_HASH_LENGTH
 # Datadog LLM Observability
 try:
     from ddtrace.llmobs import LLMObs
+
     DDTRACE_AVAILABLE = True
 except ImportError:
     DDTRACE_AVAILABLE = False
@@ -39,36 +40,57 @@ ELECTION_DATA_SCHEMA = {
                     "form_type": {
                         "type": "STRING",
                         "enum": ["Constituency", "PartyList"],
-                        "description": "Identify if this specific report is for Constituency (Candidate) or PartyList (Party only). Check the header text (e.g., 'แบบบัญชีรายชื่อ' = PartyList)."
+                        "description": "Identify if this specific report is for Constituency (Candidate) or PartyList (Party only). Check the header text (e.g., 'แบบบัญชีรายชื่อ' = PartyList).",
                     },
                     "date": {"type": "STRING", "description": "Date of election"},
                     "province": {"type": "STRING", "description": "Province name"},
                     "district": {"type": "STRING", "description": "District name (Amphoe/Khet)"},
-                    "sub_district": {"type": "STRING", "description": "Sub-district name (Tambon/Khwaeng)"},
+                    "sub_district": {
+                        "type": "STRING",
+                        "description": "Sub-district name (Tambon/Khwaeng)",
+                    },
                     "constituency_number": {"type": "STRING", "description": "Constituency number"},
-                    "polling_station_number": {"type": "STRING", "description": "Unit number"}
+                    "polling_station_number": {"type": "STRING", "description": "Unit number"},
                 },
-                "required": ["form_type", "province", "district", "polling_station_number"]
+                "required": ["form_type", "province", "district", "polling_station_number"],
             },
             "voter_statistics": {
                 "type": "OBJECT",
                 "description": "Section 1: Voter statistics for this specific form.",
                 "properties": {
-                    "eligible_voters": {"type": "INTEGER", "description": "Item 1.1: Total eligible voters"},
-                    "voters_present": {"type": "INTEGER", "description": "Item 1.2: Total voters present"}
-                }
+                    "eligible_voters": {
+                        "type": "INTEGER",
+                        "description": "Item 1.1: Total eligible voters",
+                    },
+                    "voters_present": {
+                        "type": "INTEGER",
+                        "description": "Item 1.2: Total voters present",
+                    },
+                },
             },
             "ballot_statistics": {
                 "type": "OBJECT",
                 "description": "Section 2: Ballot accounting for this specific form.",
                 "properties": {
-                    "ballots_allocated": {"type": "INTEGER", "description": "Item 2.1: Total allocated ballots"},
-                    "ballots_used": {"type": "INTEGER", "description": "Item 2.2: Total used ballots"},
+                    "ballots_allocated": {
+                        "type": "INTEGER",
+                        "description": "Item 2.1: Total allocated ballots",
+                    },
+                    "ballots_used": {
+                        "type": "INTEGER",
+                        "description": "Item 2.2: Total used ballots",
+                    },
                     "good_ballots": {"type": "INTEGER", "description": "Item 2.2.1: Good ballots"},
                     "bad_ballots": {"type": "INTEGER", "description": "Item 2.2.2: Bad ballots"},
-                    "no_vote_ballots": {"type": "INTEGER", "description": "Item 2.2.3: No Vote ballots"},
-                    "ballots_remaining": {"type": "INTEGER", "description": "Item 2.3: Remaining ballots"}
-                }
+                    "no_vote_ballots": {
+                        "type": "INTEGER",
+                        "description": "Item 2.2.3: No Vote ballots",
+                    },
+                    "ballots_remaining": {
+                        "type": "INTEGER",
+                        "description": "Item 2.3: Remaining ballots",
+                    },
+                },
             },
             "vote_results": {
                 "type": "ARRAY",
@@ -78,18 +100,18 @@ ELECTION_DATA_SCHEMA = {
                     "properties": {
                         "number": {"type": "INTEGER"},
                         "candidate_name": {
-                            "type": "STRING", 
-                            "description": "Name of Candidate (for Constituency). Leave null for PartyList."
+                            "type": "STRING",
+                            "description": "Name of Candidate (for Constituency). Leave null for PartyList.",
                         },
                         "party_name": {"type": "STRING"},
                         "vote_count": {"type": "INTEGER"},
-                        "vote_count_text": {"type": "STRING"}
-                    }
-                }
-            }
+                        "vote_count_text": {"type": "STRING"},
+                    },
+                },
+            },
         },
-        "required": ["form_info", "ballot_statistics", "vote_results"]
-    }
+        "required": ["form_info", "ballot_statistics", "vote_results"],
+    },
 }
 
 
@@ -158,7 +180,7 @@ class VoteExtractionService:
             Extracted data as dictionary, or None if extraction fails
         """
         client = self._get_client()
-        
+
         # List to hold all content parts (Text labels + Image bytes)
         content_parts = []
 
@@ -209,11 +231,11 @@ class VoteExtractionService:
         # C. Send Request to Gemini with Prompt Tracking
         try:
             logger.info(f"Sending {len(image_files)} pages to Gemini for extraction...")
-            
+
             # Schema version for tracking (increment when schema changes)
             schema_version = "1.0.0"
             schema_hash = str(hash(json.dumps(ELECTION_DATA_SCHEMA, sort_keys=True)))[:8]
-            
+
             # Prompt metadata for Datadog LLMObs tracking
             prompt_metadata = {
                 "id": "thai-election-form-extraction",
@@ -235,7 +257,7 @@ class VoteExtractionService:
                     "language": "thai",
                 },
             }
-            
+
             # Attach prompt metadata to the LLM span if LLMObs is enabled
             if self._llmobs_enabled and DDTRACE_AVAILABLE:
                 with LLMObs.annotation_context(prompt=prompt_metadata):
@@ -261,7 +283,7 @@ class VoteExtractionService:
                 )
 
             result = json.loads(response.text)
-            
+
             # Debug log: Write full LLM response
             logger.debug(
                 "LLM Response received",
@@ -269,9 +291,9 @@ class VoteExtractionService:
                     "response_text": response.text,
                     "response_length": len(response.text),
                     "pages_processed": len(image_files),
-                }
+                },
             )
-            
+
             logger.info(
                 "Successfully extracted vote data from images",
                 extra={
@@ -280,7 +302,7 @@ class VoteExtractionService:
                     "prompt_version": prompt_metadata["version"],
                     "result_type": type(result).__name__,
                     "result_keys": list(result.keys()) if isinstance(result, dict) else "list",
-                }
+                },
             )
             return result
 
@@ -310,10 +332,10 @@ class VoteExtractionService:
         # Validate ballot statistics if present
         if data.ballot_statistics:
             stats = data.ballot_statistics
-            if all([stats.ballots_used, stats.good_ballots, stats.bad_ballots, stats.no_vote_ballots]):
-                expected_total = (
-                    stats.good_ballots + stats.bad_ballots + stats.no_vote_ballots
-                )
+            if all(
+                [stats.ballots_used, stats.good_ballots, stats.bad_ballots, stats.no_vote_ballots]
+            ):
+                expected_total = stats.good_ballots + stats.bad_ballots + stats.no_vote_ballots
                 if stats.ballots_used != expected_total:
                     return False, (
                         f"Ballot mismatch: ballots_used ({stats.ballots_used}) != "
@@ -335,4 +357,3 @@ class VoteExtractionService:
 
 # Global service instance
 vote_extraction_service = VoteExtractionService()
-

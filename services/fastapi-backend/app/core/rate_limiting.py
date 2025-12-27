@@ -8,12 +8,12 @@ from fastapi import Request
 def get_api_key_or_ip(request: Request) -> str:
     """
     Get rate limit key based on API key or IP address.
-    
+
     This allows different rate limits for authenticated vs anonymous users.
-    
+
     Args:
         request: FastAPI request object
-        
+
     Returns:
         Rate limit key (either "apikey:..." or "ip:...")
     """
@@ -22,7 +22,7 @@ def get_api_key_or_ip(request: Request) -> str:
     if api_key:
         # Use first 16 chars of API key as identifier
         return f"apikey:{api_key[:16]}"
-    
+
     # Fall back to IP address
     client_host = request.client.host if request.client else "unknown"
     return f"ip:{client_host}"
@@ -42,4 +42,3 @@ ip_limiter = Limiter(
     default_limits=["1000/hour"],
     storage_uri="memory://",
 )
-
