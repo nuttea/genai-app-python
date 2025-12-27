@@ -3,6 +3,9 @@ services:
     build:
       context: ./services/fastapi-backend
       dockerfile: Dockerfile
+      args:
+        - DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL:-https://github.com/nuttea/genai-app-python.git}
+        - DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA:-unknown}
     container_name: genai-fastapi-backend
     ports:
       - "8000:8000"
@@ -68,6 +71,9 @@ services:
     build:
       context: ./frontend/streamlit
       dockerfile: Dockerfile
+      args:
+        - DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL:-https://github.com/nuttea/genai-app-python.git}
+        - DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA:-unknown}
     container_name: genai-streamlit-frontend
     ports:
       - "8501:8501"
