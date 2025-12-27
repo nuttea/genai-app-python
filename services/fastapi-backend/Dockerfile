@@ -1,0 +1,59 @@
+# Use Python 3.11 slim image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Datadog serverless-init for Cloud Run APM
+COPY --from=datadog/serverless-init:1 /datadog-init /app/datadog-init
+
+# Install Poetry 2.2.1
+RUN pip install --no-cache-dir poetry==2.2.1
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Configure poetry to not create virtual env (we're in a container)
+RUN poetry config virtualenvs.create false
+
+# Install dependencies (without installing the package itself)
+RUN poetry install --only main --no-interaction --no-ansi --no-root
+
+# Install Datadog tracer to specific directory for serverless-init
+RUN pip install --target /dd_tracer/python/ ddtrace
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    FASTAPI_HOST=0.0.0.0 \
+    FASTAPI_PORT=8000 \
+    PATH=/usr/local/bin:$PATH \
+    DD_LOGS_ENABLED=true \
+    DD_LOGS_INJECTION=true \
+    DD_SOURCE=python \
+    DD_TRACE_SAMPLE_RATE=1.0 \
+    DD_PROFILING_ENABLED=true
+
+# IMPORTANT: Use serverless-init as ENTRYPOINT for Cloud Run
+ENTRYPOINT ["/app/datadog-init"]
+
+# Run application with ddtrace-run for automatic instrumentation
+CMD ["/dd_tracer/python/bin/ddtrace-run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+

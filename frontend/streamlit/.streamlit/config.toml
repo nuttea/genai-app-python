@@ -1,0 +1,17 @@
+[theme]
+# Datadog brand-inspired theme
+# Based on Datadog's signature purple (#632CA6) and complementary colors
+primaryColor = "#632CA6"           # Datadog purple - primary actions
+backgroundColor = "#FFFFFF"         # White background
+secondaryBackgroundColor = "#F7F4FB"  # Light purple tint
+textColor = "#262626"              # Dark gray text
+font = "sans serif"
+
+[server]
+port = 8501
+enableCORS = false
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+

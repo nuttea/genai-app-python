@@ -1,0 +1,121 @@
+services:
+  fastapi-backend:
+    build:
+      context: ./services/fastapi-backend
+      dockerfile: Dockerfile
+    container_name: genai-fastapi-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
+      - FASTAPI_ENV=${FASTAPI_ENV:-development}
+      - FASTAPI_HOST=0.0.0.0
+      - FASTAPI_PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000,http://localhost:8501}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-gemini-pro}
+      - DEFAULT_TEMPERATURE=${DEFAULT_TEMPERATURE:-0.7}
+      - DEFAULT_MAX_TOKENS=${DEFAULT_MAX_TOKENS:-1024}
+      - DEBUG=${DEBUG:-false}
+      - RELOAD=${RELOAD:-true}
+      # API Key Configuration
+      - API_KEY=${API_KEY:-}
+      - API_KEY_REQUIRED=${API_KEY_REQUIRED:-false}
+      # Datadog APM and LLM Observability (optional)
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_SERVICE=${DD_SERVICE:-genai-fastapi-backend}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - DD_SOURCE=python
+      - DD_TRACE_SAMPLE_RATE=${DD_TRACE_SAMPLE_RATE:-1.0}
+      - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-}
+      - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-0}
+      - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
+    volumes:
+      # Mount gcloud application default credentials for authentication
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+      # Mount code for development (hot reload)
+      - ./services/fastapi-backend/app:/app/app:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - genai-network
+
+  # MCP Server (Future)
+  # mcp-server:
+  #   build:
+  #     context: ./services/mcp-server
+  #     dockerfile: Dockerfile
+  #   container_name: genai-mcp-server
+  #   ports:
+  #     - "3001:3001"
+  #   environment:
+  #     - NODE_ENV=development
+  #   networks:
+  #     - genai-network
+
+  # Streamlit Frontend
+  streamlit-frontend:
+    build:
+      context: ./frontend/streamlit
+      dockerfile: Dockerfile
+    container_name: genai-streamlit-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://fastapi-backend:8000
+      - FASTAPI_ENV=${FASTAPI_ENV:-development}
+      - API_KEY=${API_KEY:-}
+      # Datadog (optional)
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_SERVICE=${DD_SERVICE:-genai-streamlit-frontend}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      # Datadog RUM (Real User Monitoring)
+      - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
+      - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
+    volumes:
+      # Mount code for development (hot reload)
+      - ./frontend/streamlit:/app:ro
+    depends_on:
+      fastapi-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - genai-network
+
+  # Next.js Frontend (Future)
+  # nextjs-frontend:
+  #   build:
+  #     context: ./frontend/nextjs
+  #     dockerfile: Dockerfile
+  #   container_name: genai-nextjs-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://fastapi-backend:8000
+  #   depends_on:
+  #     - fastapi-backend
+  #   networks:
+  #     - genai-network
+
+networks:
+  genai-network:
+    driver: bridge
+

@@ -1,0 +1,78 @@
+# Cloud Build configuration with Datadog APM integration
+# This version includes DD_API_KEY from Secret Manager
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:latest'
+      - '.'
+    dir: 'services/fastapi-backend'
+
+  # Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:latest'
+
+  # Deploy to Cloud Run with Datadog secrets
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'genai-fastapi-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8000'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--timeout'
+      - '300'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--set-env-vars'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,VERTEX_AI_LOCATION=us-central1,FASTAPI_ENV=production,LOG_LEVEL=info,CORS_ORIGINS=*,DEFAULT_MODEL=gemini-2.5-flash,DEFAULT_TEMPERATURE=0.0,DEFAULT_MAX_TOKENS=65535,DD_SERVICE=genai-fastapi-backend,DD_ENV=production,DD_VERSION=$SHORT_SHA,DD_SITE=datadoghq.com,DD_LOGS_INJECTION=true,DD_TRACE_SAMPLE_RATE=1.0,DD_TRACE_ENABLED=1,DD_PROFILING_ENABLED=true'
+      - '--set-secrets'
+      - 'DD_API_KEY=dd-api-key:latest'
+
+images:
+  - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/genai-fastapi-backend:latest'
+
+# Substitutions for environment-specific values
+substitutions:
+  _DD_SERVICE: 'genai-fastapi-backend'
+  _DD_ENV: 'production'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1200s'
+
+# This build requires the DD_API_KEY secret to be created:
+# echo -n "your-dd-api-key" | gcloud secrets create dd-api-key --data-file=-
+# gcloud secrets add-iam-policy-binding dd-api-key \
+#   --member=serviceAccount:PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
+#   --role=roles/secretmanager.secretAccessor
+

@@ -1,0 +1,16 @@
+# Streamlit
+streamlit==1.31.1
+
+# HTTP Client
+httpx==0.26.0
+requests==2.31.0
+
+# Image Processing
+Pillow==10.2.0
+
+# Data Handling
+pandas==2.1.4
+
+# Environment
+python-dotenv==1.0.0
+

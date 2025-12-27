@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "streamlit-frontend"
+version = "0.1.0"
+description = "Streamlit frontend for GenAI application"
+authors = ["Nuttee <nuttea@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+streamlit = "^1.31.1"
+httpx = "^0.26.0"
+requests = "^2.31.0"
+Pillow = "^10.2.0"
+pandas = "^2.1.4"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.1.1"
+ruff = "^0.1.14"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+
