@@ -17,9 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Google Cloud Configuration
-    google_cloud_project: str = Field(
-        default="test-project", description="GCP Project ID"
-    )
+    google_cloud_project: str = Field(default="test-project", description="GCP Project ID")
     google_application_credentials: str = Field(
         default="",
         description="Optional: Path to service account key. If not set, uses gcloud application-default credentials",
