@@ -1,8 +1,10 @@
 """Main Streamlit application with multi-page support."""
 
+import os
+
 import streamlit as st
 from dotenv import load_dotenv
-import os
+
 from utils.datadog_rum import init_datadog_rum
 
 # Load environment variables

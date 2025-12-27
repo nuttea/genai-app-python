@@ -32,3 +32,10 @@ target-version = ['py311']
 line-length = 100
 target-version = "py311"
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+ignore = [
+    "E402",   # Module level import not at top (Streamlit uses st.set_page_config first)
+    "E501",   # Line too long (handled by Black for code, strings are okay)
+    "N806",   # Variable naming (environment variables are uppercase by convention)
+    "UP006",  # Type annotation style (not critical)
+    "UP035",  # Deprecated typing imports (not critical for Python 3.11)
+]

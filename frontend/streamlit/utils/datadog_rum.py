@@ -1,6 +1,7 @@
 """Datadog RUM initialization for Streamlit."""
 
 import os
+
 import streamlit.components.v1 as components
 
 

@@ -1,8 +1,9 @@
 """Home page (duplicate of main app for multi-page navigation)."""
 
-import streamlit as st
 import os
 import sys
+
+import streamlit as st
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))

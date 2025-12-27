@@ -1,14 +1,13 @@
 """Thai Election Form Vote Extractor page."""
 
-import streamlit as st
-import httpx
 import json
 import os
-from typing import List, Optional, Dict
-from PIL import Image
-import io
-import pandas as pd
 import sys
+
+import httpx
+import pandas as pd
+import streamlit as st
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.datadog_rum import init_datadog_rum
@@ -417,7 +416,7 @@ def process_extraction(uploaded_files):
         files.append(("files", (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)))
 
     # Prepare headers with API key if available
-    headers: Dict[str, str] = {}
+    headers: dict[str, str] = {}
     if API_KEY:
         headers["X-API-Key"] = API_KEY
 
