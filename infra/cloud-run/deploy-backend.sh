@@ -112,7 +112,8 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
         --set-env-vars DD_SOURCE=python \
         --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
         --set-env-vars DD_TRACE_ENABLED=1 \
-        --set-env-vars DD_PROFILING_ENABLED=true"
+        --set-env-vars DD_PROFILING_ENABLED=true \
+        --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true"
 
     # Always use Secret Manager for DD_API_KEY
     if [ "$DD_SECRET_EXISTS" = "true" ]; then

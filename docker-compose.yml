@@ -38,6 +38,7 @@ services:
       - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-}
       - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-0}
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
+      - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
     volumes:
       # Mount gcloud application default credentials for authentication
       - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
@@ -87,6 +88,7 @@ services:
       - DD_SERVICE=${DD_SERVICE:-genai-streamlit-frontend}
       - DD_ENV=${DD_ENV:-development}
       - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
       # Datadog RUM (Real User Monitoring)
       - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
       - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}

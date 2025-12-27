@@ -121,7 +121,8 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ "$DD_RUM_ENABLED" = "true" ]; then
         --set-env-vars DD_SITE=${DD_SITE} \
         --set-env-vars DD_SERVICE=${DD_SERVICE} \
         --set-env-vars DD_ENV=${DD_ENV} \
-        --set-env-vars DD_VERSION=${DD_VERSION}"
+        --set-env-vars DD_VERSION=${DD_VERSION} \
+        --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true"
 
     # Add API key from Secret Manager if exists
     if [ "$DD_SECRET_EXISTS" = "true" ]; then

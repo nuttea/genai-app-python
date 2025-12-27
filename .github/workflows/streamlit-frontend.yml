@@ -121,6 +121,7 @@ jobs:
             --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
             --set-env-vars DD_ENV=production \
             --set-env-vars DD_VERSION=${{ github.sha }} \
+            --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
             --set-env-vars DD_RUM_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }} \
             --set-env-vars DD_RUM_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }} \
             --set-secrets API_KEY=api-key:latest
