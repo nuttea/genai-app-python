@@ -99,12 +99,20 @@ jobs:
       - name: Get Production URL
         id: get-prod-url
         run: |
-          # Get the tagged URL
+          # Get the URL for the 'prod' tagged revision
           PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
-            --format 'value(status.traffic[0].url)')
+            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
+          
+          if [ -z "$PROD_URL" ]; then
+            echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
+            PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+              --region ${{ env.REGION }} \
+              --format 'value(status.url)')
+          fi
+          
           echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
-          echo "🌐 Production URL: $PROD_URL"
+          echo "🌐 Production URL (tag=prod): $PROD_URL"
 
       - name: Run Production Smoke Tests
         run: |
