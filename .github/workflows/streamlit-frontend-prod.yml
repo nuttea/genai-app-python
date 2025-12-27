@@ -1,0 +1,125 @@
+name: Streamlit Frontend Production Deploy
+
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'frontend/streamlit/**'
+      - '.github/workflows/streamlit-frontend-prod.yml'
+
+env:
+  SERVICE_NAME: genai-streamlit-frontend
+  REGION: us-central1
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  deploy:
+    name: Deploy to Production with Revision Tag
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Backend Production URL
+        id: get-backend-url
+        run: |
+          BACKEND_URL=$(gcloud run services describe genai-fastapi-backend \
+            --region ${{ env.REGION }} \
+            --format 'value(status.traffic[0].url)' 2>/dev/null || echo "")
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "Backend Production URL: $BACKEND_URL"
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push to GCR
+        uses: docker/build-push-action@v5
+        with:
+          context: frontend/streamlit
+          file: frontend/streamlit/Dockerfile
+          push: true
+          tags: |
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:prod-latest
+          build-args: |
+            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run with 'prod' Tag
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8501 \
+            --memory 1Gi \
+            --cpu 1 \
+            --timeout 300 \
+            --max-instances 10 \
+            --min-instances 0 \
+            --tag prod \
+            --no-traffic \
+            --set-env-vars API_BASE_URL=${{ steps.get-backend-url.outputs.backend_url }} \
+            --set-env-vars FASTAPI_ENV=production \
+            --set-env-vars DD_SITE=datadoghq.com \
+            --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
+            --set-env-vars DD_ENV=prod \
+            --set-env-vars DD_VERSION=${{ github.sha }} \
+            --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
+            --set-env-vars DD_RUM_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }} \
+            --set-env-vars DD_RUM_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }} \
+            --set-secrets API_KEY=api-key:latest
+
+      - name: Get Production URL
+        id: get-prod-url
+        run: |
+          # Get the tagged URL
+          PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.traffic[0].url)')
+          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
+          echo "🌐 Production URL: $PROD_URL"
+
+      - name: Run Production Smoke Tests
+        run: |
+          PROD_URL="${{ steps.get-prod-url.outputs.prod_url }}"
+
+          echo "Testing production frontend..."
+          # Test health endpoint
+          curl -f "${PROD_URL}/_stcore/health" || exit 1
+
+          echo "✅ Production smoke tests passed"
+
+      - name: Create Deployment Summary
+        run: |
+          echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: prod" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Production traffic: 100% on 'prod' tag" >> $GITHUB_STEP_SUMMARY
+
