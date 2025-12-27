@@ -36,4 +36,3 @@ echo ""
 echo "Or with Docker:"
 echo "  cd ../.. && docker-compose up streamlit-frontend"
 echo ""
-

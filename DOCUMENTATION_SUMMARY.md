@@ -197,12 +197,12 @@ docs/deployment/CLOUD_RUN_DEPLOYMENT.md
 
 ### By Topic
 
-**Setup**: `docs/getting-started/`  
-**Deploy**: `docs/deployment/`  
-**Secure**: `docs/security/`  
-**Monitor**: `docs/monitoring/`  
-**Features**: `docs/features/`  
-**Config**: `docs/reference/`  
+**Setup**: `docs/getting-started/`
+**Deploy**: `docs/deployment/`
+**Secure**: `docs/security/`
+**Monitor**: `docs/monitoring/`
+**Features**: `docs/features/`
+**Config**: `docs/reference/`
 
 ## 💡 Best Practices
 
@@ -320,9 +320,8 @@ docs/deployment/CLOUD_RUN_DEPLOYMENT.md
 
 ---
 
-**Start exploring**: [docs/INDEX.md](docs/INDEX.md)  
-**Quick start**: [QUICKSTART.md](QUICKSTART.md)  
-**Main README**: [README.md](README.md)  
+**Start exploring**: [docs/INDEX.md](docs/INDEX.md)
+**Quick start**: [QUICKSTART.md](QUICKSTART.md)
+**Main README**: [README.md](README.md)
 
 **Last Organized**: December 27, 2024
-

@@ -6,12 +6,12 @@ Complete guide for setting up Datadog RUM to monitor frontend user experience, p
 
 Datadog RUM provides real-time visibility into:
 
-✅ **User Sessions** - Track user journeys and interactions  
-✅ **Page Performance** - Core Web Vitals, loading times  
-✅ **Errors** - JavaScript errors and stack traces  
-✅ **Resources** - API calls, images, scripts  
-✅ **User Interactions** - Clicks, form submissions  
-✅ **Session Replay** - Watch user sessions  
+✅ **User Sessions** - Track user journeys and interactions
+✅ **Page Performance** - Core Web Vitals, loading times
+✅ **Errors** - JavaScript errors and stack traces
+✅ **Resources** - API calls, images, scripts
+✅ **User Interactions** - Clicks, form submissions
+✅ **Session Replay** - Watch user sessions
 
 ## Prerequisites
 
@@ -371,4 +371,3 @@ window.DD_RUM.addError(
 ---
 
 **Quick Start**: Set `DD_RUM_CLIENT_TOKEN` and `DD_RUM_APPLICATION_ID`, restart frontend, and view sessions at https://app.datadoghq.com/rum/sessions 🎉
-

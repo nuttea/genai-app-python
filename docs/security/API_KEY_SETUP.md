@@ -8,11 +8,11 @@ API key authentication protects your backend API from unauthorized access. This 
 
 ## Features
 
-✅ **Configurable Validation** - Enable/disable API key requirement  
-✅ **Secure Storage** - API keys stored in Google Secret Manager  
-✅ **Automatic Integration** - Frontend automatically uses API keys  
-✅ **Header-based** - Uses `X-API-Key` HTTP header  
-✅ **Detailed Logging** - Track authentication attempts  
+✅ **Configurable Validation** - Enable/disable API key requirement
+✅ **Secure Storage** - API keys stored in Google Secret Manager
+✅ **Automatic Integration** - Frontend automatically uses API keys
+✅ **Header-based** - Uses `X-API-Key` HTTP header
+✅ **Detailed Logging** - Track authentication attempts
 
 ## Quick Setup
 
@@ -232,7 +232,7 @@ curl -H "X-API-Key: wrong-key" https://your-backend.run.app/api/v1/vote-extracti
    ```bash
    # Development
    API_KEY=dev-key-123...
-   
+
    # Production
    API_KEY=prod-key-456...
    ```
@@ -473,4 +473,3 @@ async def extract_votes(...):
 ---
 
 **Quick Start**: Run `./setup-api-key.sh` to generate and store a secure API key! 🔐
-

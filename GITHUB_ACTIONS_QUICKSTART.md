@@ -4,12 +4,12 @@ Get automated deployments working in 15 minutes!
 
 ## What You Get
 
-✅ **Automated Testing** - Every PR and push  
-✅ **Automated Deployment** - Push to main → deploys to Cloud Run  
-✅ **Path-based Triggers** - Only affected services rebuild  
-✅ **No Service Account Keys** - Workload Identity Federation  
-✅ **Security Scanning** - Trivy + Datadog Static Analysis  
-✅ **Notifications** - Slack alerts on deploy success/failure  
+✅ **Automated Testing** - Every PR and push
+✅ **Automated Deployment** - Push to main → deploys to Cloud Run
+✅ **Path-based Triggers** - Only affected services rebuild
+✅ **No Service Account Keys** - Workload Identity Federation
+✅ **Security Scanning** - Trivy + Datadog Static Analysis
+✅ **Notifications** - Slack alerts on deploy success/failure
 
 ## 15-Minute Setup
 
@@ -319,4 +319,3 @@ strategy:
 ---
 
 **Quick Setup**: `./setup-workload-identity.sh` → Add secrets → Push code → Done! 🎉
-

@@ -1,6 +1,7 @@
 """Configuration management using Pydantic Settings."""
 
-from typing import List, Union
+from typing import Union
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -30,7 +31,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="info", description="Logging level")
 
     # CORS Configuration
-    cors_origins: Union[List[str], str] = Field(
+    cors_origins: Union[list[str], str] = Field(
         default="http://localhost:3000,http://localhost:8000,http://localhost:8501",
         description="Allowed CORS origins (comma-separated or list)",
     )

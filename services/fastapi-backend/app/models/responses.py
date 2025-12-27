@@ -1,6 +1,7 @@
 """Response models."""
 
-from typing import Optional, Dict, Any
+from typing import Any, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -21,7 +22,7 @@ class ChatCompletionResponse(BaseModel):
     role: str = Field(default="assistant", description="Response role")
     finish_reason: Optional[str] = Field(None, description="Reason for finishing")
     usage: Optional[Usage] = Field(None, description="Token usage")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    metadata: Optional[dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class GenerateResponse(BaseModel):
@@ -32,7 +33,7 @@ class GenerateResponse(BaseModel):
     text: str = Field(..., description="Generated text")
     finish_reason: Optional[str] = Field(None, description="Reason for finishing")
     usage: Optional[Usage] = Field(None, description="Token usage")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    metadata: Optional[dict[str, Any]] = Field(None, description="Additional metadata")
 
 
 class ErrorResponse(BaseModel):

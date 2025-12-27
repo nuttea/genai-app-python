@@ -83,4 +83,3 @@ echo ""
 echo "To view logs:"
 echo "  docker-compose logs -f fastapi-backend"
 echo "  docker-compose logs -f streamlit-frontend"
-

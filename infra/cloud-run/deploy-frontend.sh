@@ -115,20 +115,20 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ "$DD_RUM_ENABLED" = "true" ]; then
     echo "   Service: ${DD_SERVICE}"
     echo "   Environment: ${DD_ENV}"
     echo "   Version: ${DD_VERSION}"
-    
+
     # Always set Datadog env vars
     DEPLOY_CMD="${DEPLOY_CMD} \
         --set-env-vars DD_SITE=${DD_SITE} \
         --set-env-vars DD_SERVICE=${DD_SERVICE} \
         --set-env-vars DD_ENV=${DD_ENV} \
         --set-env-vars DD_VERSION=${DD_VERSION}"
-    
+
     # Add API key from Secret Manager if exists
     if [ "$DD_SECRET_EXISTS" = "true" ]; then
         echo "   🔐 Using DD_API_KEY from Secret Manager"
         DEPLOY_CMD="${DEPLOY_CMD} --set-secrets=DD_API_KEY=dd-api-key:latest"
     fi
-    
+
     # Add RUM configuration if provided
     if [ "$DD_RUM_ENABLED" = "true" ]; then
         echo "   🌐 Datadog RUM enabled"
@@ -175,4 +175,3 @@ echo ""
 echo "To update backend URL later:"
 echo "  gcloud run services update ${SERVICE_NAME} --region ${REGION} --set-env-vars API_BASE_URL=NEW_URL"
 echo ""
-

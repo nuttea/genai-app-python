@@ -1,8 +1,9 @@
 """Utility functions."""
 
 import asyncio
-from typing import TypeVar, Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from functools import wraps
+from typing import TypeVar
 
 T = TypeVar("T")
 

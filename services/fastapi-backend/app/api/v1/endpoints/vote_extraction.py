@@ -2,23 +2,23 @@
 
 import logging
 import re
-from typing import List
-from fastapi import APIRouter, File, UploadFile, HTTPException, status, Depends, Request
+
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 
-from app.models.vote_extraction import VoteExtractionResponse, ElectionFormData
-from app.services.vote_extraction_service import vote_extraction_service
-from app.core.security import verify_api_key
-from app.core.rate_limiting import limiter
 from app.core.constants import (
-    MAX_FILE_SIZE_MB,
-    MAX_TOTAL_SIZE_MB,
     MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_FILENAME_LENGTH,
     MAX_TOTAL_SIZE_BYTES,
+    MAX_TOTAL_SIZE_MB,
     RATE_LIMIT_VOTE_EXTRACTION,
     RATE_LIMIT_VOTE_EXTRACTION_HOURLY,
-    MAX_FILENAME_LENGTH,
 )
+from app.core.rate_limiting import limiter
+from app.core.security import verify_api_key
+from app.models.vote_extraction import ElectionFormData, VoteExtractionResponse
+from app.services.vote_extraction_service import vote_extraction_service
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ router = APIRouter(prefix="/vote-extraction", tags=["vote-extraction"])
 @limiter.limit(RATE_LIMIT_VOTE_EXTRACTION_HOURLY)
 async def extract_votes(
     request: Request,
-    files: List[UploadFile] = File(
+    files: list[UploadFile] = File(
         ..., description="Election form images (multiple pages supported)"
     ),
     api_key: str = Depends(verify_api_key),
@@ -314,7 +314,7 @@ async def vote_extraction_health() -> JSONResponse:
     """Check if vote extraction service is available."""
     try:
         # Try to get the client to verify Google GenAI is accessible
-        client = vote_extraction_service._get_client()
+        _ = vote_extraction_service._get_client()  # noqa: F841
         return JSONResponse(
             content={
                 "status": "healthy",

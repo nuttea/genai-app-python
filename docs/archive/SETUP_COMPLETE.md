@@ -133,13 +133,13 @@ open http://localhost:8000/docs
    ```bash
    # Install gcloud CLI (if not already installed)
    brew install google-cloud-sdk  # macOS
-   
+
    # Authenticate with Application Default Credentials
    gcloud auth application-default login
-   
+
    # Set your project
    gcloud config set project YOUR_PROJECT_ID
-   
+
    # Enable Vertex AI API
    gcloud services enable aiplatform.googleapis.com
    ```
@@ -152,14 +152,14 @@ open http://localhost:8000/docs
    VERTEX_AI_LOCATION=us-central1
    EOF
    ```
-   
+
    **Note**: No need for `GOOGLE_APPLICATION_CREDENTIALS` - ADC handles authentication automatically!
 
 3. **Test the API**
    ```bash
    # Health check
    curl http://localhost:8000/health
-   
+
    # Generate text
    curl -X POST http://localhost:8000/api/v1/generate \
      -H "Content-Type: application/json" \
@@ -373,7 +373,6 @@ Your GenAI Application Platform is ready for development. Start by:
 
 ---
 
-**Project Status**: Phase 1 Complete ✅  
-**Next Phase**: MCP Server (TypeScript)  
+**Project Status**: Phase 1 Complete ✅
+**Next Phase**: MCP Server (TypeScript)
 **Last Updated**: December 26, 2025
-

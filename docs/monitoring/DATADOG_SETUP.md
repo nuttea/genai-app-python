@@ -319,7 +319,7 @@ spec:
           volumeMounts:
             - mountPath: /var/log/app
               name: logs
-        
+
         # Datadog serverless-init sidecar
         - name: datadog-sidecar
           image: gcr.io/datadoghq/serverless-init:latest
@@ -341,7 +341,7 @@ spec:
           volumeMounts:
             - mountPath: /var/log/app
               name: logs
-      
+
       volumes:
         - name: logs
           emptyDir:
@@ -600,13 +600,13 @@ async def extract_votes(files):
     with tracer.trace("vote.extraction", service="vote-extractor") as span:
         span.set_tag("file.count", len(files))
         span.set_tag("extraction.type", "multi-page")
-        
+
         # Your extraction logic
         result = await process_files(files)
-        
+
         span.set_tag("extraction.success", True)
         span.set_tag("pages.processed", result.pages)
-        
+
         return result
 ```
 
@@ -715,4 +715,3 @@ gcloud run services update genai-fastapi-backend \
 ---
 
 **Quick Start**: Set `DD_API_KEY` and restart services to enable full Datadog monitoring! 🚀
-

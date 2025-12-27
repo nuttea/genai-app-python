@@ -35,7 +35,7 @@ pip install poetry
    ```bash
    # With Poetry
    poetry install
-   
+
    # Or activate Poetry shell
    poetry shell
    poetry install
@@ -52,7 +52,7 @@ pip install poetry
    ```bash
    # With Poetry
    poetry run streamlit run app.py
-   
+
    # Or in Poetry shell
    poetry shell
    streamlit run app.py
@@ -173,7 +173,7 @@ deactivate
    ```python
    # pages/2_📊_New_Page.py
    import streamlit as st
-   
+
    st.set_page_config(page_title="New Page", page_icon="📊")
    st.title("New Page")
    # Your page content

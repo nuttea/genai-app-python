@@ -100,7 +100,7 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
     echo "   Service: ${DD_SERVICE}"
     echo "   Environment: ${DD_ENV}"
     echo "   Version: ${DD_VERSION}"
-    
+
     # Always set Datadog configuration env vars
     DEPLOY_CMD="${DEPLOY_CMD} \
         --set-env-vars DD_SITE=${DD_SITE} \
@@ -113,7 +113,7 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
         --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
         --set-env-vars DD_TRACE_ENABLED=1 \
         --set-env-vars DD_PROFILING_ENABLED=true"
-    
+
     # Always use Secret Manager for DD_API_KEY
     if [ "$DD_SECRET_EXISTS" = "true" ]; then
         echo "   🔐 Using DD_API_KEY from Secret Manager"
@@ -126,7 +126,7 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
                 --data-file=- \
                 --replication-policy="automatic" \
                 --project="${PROJECT_ID}"
-            
+
             # Grant access
             PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')
             COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
@@ -134,7 +134,7 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
                 --member="serviceAccount:${COMPUTE_SA}" \
                 --role="roles/secretmanager.secretAccessor" \
                 --project="${PROJECT_ID}"
-            
+
             echo "   ✅ Created and using DD_API_KEY from Secret Manager"
             DEPLOY_CMD="${DEPLOY_CMD} --set-secrets=DD_API_KEY=dd-api-key:latest"
         else
@@ -143,7 +143,7 @@ if [ "$DD_SECRET_EXISTS" = "true" ] || [ -n "$DD_API_KEY" ]; then
             exit 1
         fi
     fi
-    
+
     # Add LLMObs if configured
     if [ -n "$DD_LLMOBS_ML_APP" ]; then
         echo "   LLMObs ML App: ${DD_LLMOBS_ML_APP}"
@@ -201,4 +201,3 @@ echo ""
 # Save the URL to a file for the frontend deployment
 echo "${SERVICE_URL}" > /tmp/backend-url.txt
 echo "Backend URL saved for frontend deployment"
-

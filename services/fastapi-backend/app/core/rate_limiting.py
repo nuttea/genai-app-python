@@ -1,8 +1,8 @@
 """Rate limiting utilities."""
 
+from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from fastapi import Request
 
 
 def get_api_key_or_ip(request: Request) -> str:

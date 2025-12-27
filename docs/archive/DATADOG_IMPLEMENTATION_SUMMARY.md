@@ -268,7 +268,6 @@ After deployment, create dashboards for:
 
 ---
 
-**Status**: ✅ Fully Implemented  
-**Effort**: 2 minutes to enable  
+**Status**: ✅ Fully Implemented
+**Effort**: 2 minutes to enable
 **Value**: Complete observability for your GenAI application! 🎉
-

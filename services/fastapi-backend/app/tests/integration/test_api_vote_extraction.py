@@ -1,9 +1,10 @@
 """Integration tests for vote extraction API."""
 
+import io
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-import io
 
 from app.main import app
 

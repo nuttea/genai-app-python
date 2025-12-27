@@ -41,4 +41,3 @@ repos:
       - id: isort
         files: ^services/fastapi-backend/
         args: ['--profile=black', '--line-length=100']
-

@@ -181,4 +181,3 @@ quickstart: ## Quick start guide
 	@echo ""
 	@echo "5. Access the API documentation at:"
 	@echo "   http://localhost:8000/docs"
-

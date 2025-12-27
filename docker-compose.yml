@@ -118,4 +118,3 @@ services:
 networks:
   genai-network:
     driver: bridge
-

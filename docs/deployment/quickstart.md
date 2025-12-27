@@ -4,9 +4,9 @@ Deploy your GenAI Application to Google Cloud Run in 5 minutes!
 
 ## Prerequisites
 
-✅ GCP account with billing enabled  
-✅ gcloud CLI installed  
-✅ Project with Vertex AI API enabled  
+✅ GCP account with billing enabled
+✅ gcloud CLI installed
+✅ Project with Vertex AI API enabled
 
 ## 1-Minute Setup
 
@@ -109,4 +109,3 @@ gcloud run services logs read genai-fastapi-backend --region us-central1 --limit
 ---
 
 **Need help?** See the [complete deployment guide](docs/CLOUD_RUN_DEPLOYMENT.md)
-

@@ -323,4 +323,3 @@ gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
 ---
 
 **Quick Setup Script**: See `infra/cloud-run/setup-workload-identity.sh`
-

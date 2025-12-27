@@ -46,6 +46,13 @@ include = '\.pyi?$'
 line-length = 100
 target-version = "py311"
 select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+ignore = [
+    "E501",   # Line too long (handled by Black for code, strings are okay)
+    "UP007",  # Use X | Y for type annotations (not critical for Python 3.11)
+    "B008",   # Function call in argument defaults (FastAPI pattern)
+    "B904",   # Exception chaining (can be added later)
+    "N818",   # Exception naming (existing convention)
+]
 
 [tool.mypy]
 python_version = "3.11"
@@ -67,4 +74,3 @@ addopts = "-v --cov=app --cov-report=html --cov-report=term-missing"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-

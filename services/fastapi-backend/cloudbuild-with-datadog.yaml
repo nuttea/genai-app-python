@@ -75,4 +75,3 @@ timeout: '1200s'
 # gcloud secrets add-iam-policy-binding dd-api-key \
 #   --member=serviceAccount:PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
 #   --role=roles/secretmanager.secretAccessor
-

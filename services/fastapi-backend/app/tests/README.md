@@ -185,7 +185,6 @@ poetry run pytest --pdb
 
 ---
 
-**Current Coverage**: ~30%  
-**Target Coverage**: 80%+  
+**Current Coverage**: ~30%
+**Target Coverage**: 80%+
 **Priority**: High
-

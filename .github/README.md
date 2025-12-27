@@ -29,4 +29,3 @@ For now, use Cloud Build for CI/CD:
 - [frontend/streamlit/cloudbuild.yaml](../frontend/streamlit/cloudbuild.yaml)
 
 See [docs/deployment/CLOUD_RUN_DEPLOYMENT.md](../docs/deployment/CLOUD_RUN_DEPLOYMENT.md#cicd-with-cloud-build) for setup instructions.
-

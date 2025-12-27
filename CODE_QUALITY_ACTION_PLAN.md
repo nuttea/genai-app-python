@@ -25,19 +25,19 @@ async def ready() -> JSONResponse:
         "vertex_ai": False,
         "genai_client": False,
     }
-    
+
     try:
         # Test Vertex AI connection
         vertex_ai_service.initialize()
         checks["vertex_ai"] = True
-        
+
         # Test GenAI client
         vote_extraction_service._get_client()
         checks["genai_client"] = True
-        
+
         all_ready = all(checks.values())
         status_code = 200 if all_ready else 503
-        
+
         return JSONResponse(
             content={"status": "ready" if all_ready else "not_ready", "checks": checks},
             status_code=status_code
@@ -49,7 +49,7 @@ async def ready() -> JSONResponse:
         )
 ```
 
-**Priority**: 🔴 Critical  
+**Priority**: 🔴 Critical
 **Time**: 1 hour
 
 ---
@@ -68,14 +68,14 @@ MAX_TOTAL_SIZE = 50 * 1024 * 1024  # 50MB total
 # In extract_votes function
 for file in files:
     content = await file.read()
-    
+
     # Check individual file size
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File {file.filename} exceeds 10MB limit"
         )
-    
+
     total_size += len(content)
 
 # Check total size
@@ -86,7 +86,7 @@ if total_size > MAX_TOTAL_SIZE:
     )
 ```
 
-**Priority**: 🔴 Critical  
+**Priority**: 🔴 Critical
 **Time**: 30 minutes
 
 ---
@@ -119,7 +119,7 @@ except Exception as e:
 - All endpoint files (5 files)
 - All service files (3 files)
 
-**Priority**: 🟡 High  
+**Priority**: 🟡 High
 **Time**: 3-4 hours
 
 ---
@@ -145,7 +145,7 @@ async def extract_from_images(...):
         return None
 ```
 
-**Priority**: 🟡 High  
+**Priority**: 🟡 High
 **Time**: 1 hour
 
 ---
@@ -175,7 +175,7 @@ async def extract_votes(...):
     ...
 ```
 
-**Priority**: 🟡 High  
+**Priority**: 🟡 High
 **Time**: 2 hours
 
 ---
@@ -193,7 +193,7 @@ async def extract_votes(...):
 - `test_config.py` - Configuration tests
 - `test_security.py` - More security tests
 
-**Priority**: 🟢 Medium  
+**Priority**: 🟢 Medium
 **Time**: 1-2 weeks
 
 ---
@@ -227,7 +227,7 @@ def log_error(logger, error, context=None):
     )
 ```
 
-**Priority**: 🟢 Medium  
+**Priority**: 🟢 Medium
 **Time**: 2-3 hours
 
 ---
@@ -252,7 +252,7 @@ RATE_LIMIT_PER_MINUTE = 10
 RATE_LIMIT_PER_HOUR = 100
 ```
 
-**Priority**: 🟢 Medium  
+**Priority**: 🟢 Medium
 **Time**: 1 hour
 
 ---
@@ -338,4 +338,3 @@ extraction_duration = Histogram('vote_extraction_duration_seconds', 'Extraction 
 ---
 
 **Next Action**: Implement critical fixes (estimated 2-3 hours)
-

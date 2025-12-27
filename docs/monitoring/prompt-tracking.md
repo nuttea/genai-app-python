@@ -6,11 +6,11 @@ Complete guide for using Datadog Prompt Tracking to monitor and optimize your LL
 
 Datadog's [Prompt Tracking](https://docs.datadoghq.com/llm_observability/monitoring/prompt_tracking) enables you to:
 
-✅ **Track all prompts** used by your application  
-✅ **Compare versions** by performance, cost, and quality  
-✅ **Monitor changes** with automatic versioning  
-✅ **Reproduce issues** using Playground  
-✅ **Optimize costs** by tracking token usage per prompt  
+✅ **Track all prompts** used by your application
+✅ **Compare versions** by performance, cost, and quality
+✅ **Monitor changes** with automatic versioning
+✅ **Reproduce issues** using Playground
+✅ **Optimize costs** by tracking token usage per prompt
 
 ## Implementation
 
@@ -470,4 +470,3 @@ status:error
 
 **Quick Start**: Prompt tracking is already implemented! Just enable LLMObs and view prompts at:
 https://app.datadoghq.com/llm/prompts
-

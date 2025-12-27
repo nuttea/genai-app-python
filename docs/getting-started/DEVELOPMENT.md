@@ -118,11 +118,11 @@ logger = logging.getLogger(__name__)
 
 class YourService:
     """Service description."""
-    
+
     def __init__(self):
         """Initialize service."""
         pass
-    
+
     async def your_method(self) -> dict:
         """Method description."""
         # Implementation
@@ -329,7 +329,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     google_cloud_project: str
-    
+
     class Config:
         env_file = ".env"
 
@@ -406,13 +406,13 @@ async def your_endpoint(
 ) -> YourResponse:
     """
     Detailed docstring for the endpoint.
-    
+
     Args:
         request: Request object with field descriptions
-        
+
     Returns:
         Response object with results
-        
+
     Raises:
         HTTPException: When something goes wrong
     """
@@ -555,4 +555,3 @@ Then connect with VS Code or PyCharm.
 ---
 
 Happy coding! 🚀
-

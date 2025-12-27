@@ -4,10 +4,10 @@ Enable API key authentication in 2 minutes!
 
 ## Why API Keys?
 
-✅ **Security** - Protect your backend from unauthorized access  
-✅ **Cost Control** - Prevent abuse and unexpected charges  
-✅ **Usage Tracking** - Know who's using your API  
-✅ **Production Ready** - Essential for public deployments  
+✅ **Security** - Protect your backend from unauthorized access
+✅ **Cost Control** - Prevent abuse and unexpected charges
+✅ **Usage Tracking** - Know who's using your API
+✅ **Production Ready** - Essential for public deployments
 
 ## 2-Minute Setup
 
@@ -125,15 +125,15 @@ export API_KEY=$(openssl rand -hex 32)
 
 ## Security Tips
 
-✅ **Generate strong keys**: Use `openssl rand -hex 32`  
-✅ **Store securely**: Use Secret Manager, not .env in production  
-✅ **Rotate regularly**: Every 90 days minimum  
-✅ **Monitor usage**: Check logs for failed attempts  
-✅ **Use HTTPS**: Always use HTTPS in production  
+✅ **Generate strong keys**: Use `openssl rand -hex 32`
+✅ **Store securely**: Use Secret Manager, not .env in production
+✅ **Rotate regularly**: Every 90 days minimum
+✅ **Monitor usage**: Check logs for failed attempts
+✅ **Use HTTPS**: Always use HTTPS in production
 
-❌ **Never commit** API keys to git  
-❌ **Don't share** between environments  
-❌ **Don't log** full API keys  
+❌ **Never commit** API keys to git
+❌ **Don't share** between environments
+❌ **Don't log** full API keys
 
 ## Troubleshooting
 
@@ -147,7 +147,7 @@ export API_KEY=$(openssl rand -hex 32)
 
 ### Frontend can't connect
 
-**Solution**: 
+**Solution**:
 ```bash
 # Verify secrets are configured
 gcloud secrets list
@@ -177,4 +177,3 @@ curl -H "X-API-Key: $API_KEY" https://your-backend.run.app/health
 ```
 
 **Status**: ✅ API Key authentication is now fully implemented and ready to use!
-

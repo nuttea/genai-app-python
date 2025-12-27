@@ -12,7 +12,7 @@ For **local development**, we recommend using `gcloud` Application Default Crede
    ```bash
    # macOS
    brew install google-cloud-sdk
-   
+
    # Or download from: https://cloud.google.com/sdk/docs/install
    ```
 
@@ -137,11 +137,11 @@ The application follows this credential discovery order:
 
 1. **GOOGLE_APPLICATION_CREDENTIALS** environment variable (if set)
    - Points to a service account key file
-   
+
 2. **Application Default Credentials** (automatic)
    - Checks `~/.config/gcloud/application_default_credentials.json`
    - Created by `gcloud auth application-default login`
-   
+
 3. **Cloud environment metadata** (when running in GCP)
    - Automatically available in Cloud Run, GKE, Compute Engine, etc.
 
@@ -345,4 +345,3 @@ gcloud iam service-accounts add-iam-policy-binding \
 ---
 
 **Recommended for this project**: Use **Application Default Credentials** for local development, and **service accounts** for production deployments.
-

@@ -1,15 +1,15 @@
 """Vertex AI service integration."""
 
 import logging
-from typing import Optional, List, AsyncGenerator
 import uuid
+from collections.abc import AsyncGenerator
+from typing import Optional
 
 import vertexai
-from vertexai.generative_models import GenerativeModel, ChatSession
-from google.cloud import aiplatform
+from vertexai.generative_models import ChatSession, GenerativeModel
 
 from app.config import settings
-from app.core.exceptions import VertexAIException, ConfigurationException
+from app.core.exceptions import ConfigurationException, VertexAIException
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class VertexAIService:
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         top_k: Optional[int] = None,
-        stop_sequences: Optional[List[str]] = None,
+        stop_sequences: Optional[list[str]] = None,
     ) -> dict:
         """Generate content from a prompt.
 
@@ -154,7 +154,7 @@ class VertexAIService:
 
     async def chat_completion(
         self,
-        messages: List[dict],
+        messages: list[dict],
         model_name: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,

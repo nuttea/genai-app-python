@@ -201,4 +201,3 @@ docker-compose up
 ---
 
 **Quick Start**: Create `.env` with your `GOOGLE_CLOUD_PROJECT`, run `gcloud auth application-default login`, and you're ready to go!
-

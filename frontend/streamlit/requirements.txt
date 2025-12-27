@@ -13,4 +13,3 @@ pandas==2.1.4
 
 # Environment
 python-dotenv==1.0.0
-

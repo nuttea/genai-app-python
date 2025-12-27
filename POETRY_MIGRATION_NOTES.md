@@ -162,4 +162,3 @@ source $(poetry env info --path)/bin/activate
 ---
 
 **Summary**: Use `eval $(poetry env activate)` instead of `poetry shell` in Poetry 2.0+ 🎉
-

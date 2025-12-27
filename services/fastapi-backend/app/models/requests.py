@@ -1,6 +1,7 @@
 """Request models."""
 
-from typing import List, Optional, Dict, Any
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +15,7 @@ class Message(BaseModel):
 class ChatCompletionRequest(BaseModel):
     """Chat completion request."""
 
-    messages: List[Message] = Field(..., description="List of messages")
+    messages: list[Message] = Field(..., description="List of messages")
     model: Optional[str] = Field(None, description="Model to use")
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: Optional[int] = Field(
@@ -47,7 +48,7 @@ class GenerateRequest(BaseModel):
     top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     top_k: Optional[int] = Field(None, ge=1, le=100, description="Top-k sampling parameter")
     stream: bool = Field(False, description="Whether to stream the response")
-    stop_sequences: Optional[List[str]] = Field(None, description="Stop sequences")
+    stop_sequences: Optional[list[str]] = Field(None, description="Stop sequences")
 
     class Config:
         json_schema_extra = {

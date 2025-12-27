@@ -148,7 +148,7 @@ genai-app-python/
 - **GenAI SDK**: Google Vertex AI Python SDK
 - **Container**: Docker
 - **Python Version**: 3.11+
-- **Dependencies**: 
+- **Dependencies**:
   - `fastapi`
   - `uvicorn[standard]`
   - `google-cloud-aiplatform`
@@ -351,4 +351,3 @@ genai-app-python/
 
 **Last Updated**: December 26, 2025
 **Status**: Planning Phase
-

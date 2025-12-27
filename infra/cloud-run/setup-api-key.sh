@@ -110,4 +110,3 @@ echo ""
 echo "  3. Test with API key:"
 echo "     curl -H 'X-API-Key: ${API_KEY}' https://your-backend-url.run.app/health"
 echo ""
-

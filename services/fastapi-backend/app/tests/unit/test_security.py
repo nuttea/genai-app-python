@@ -3,8 +3,8 @@
 import pytest
 from fastapi import HTTPException
 
-from app.core.security import verify_api_key
 from app.config import settings
+from app.core.security import verify_api_key
 
 
 class TestAPIKeyValidation:

@@ -8,12 +8,12 @@ The Vote Extractor is a tool that automatically extracts structured data from Th
 
 ## Features
 
-✅ **Multi-page Document Support** - Process complete election reports with multiple pages  
-✅ **Structured Data Extraction** - Get JSON-formatted data ready for analysis  
-✅ **Automatic Consolidation** - Merge data from all pages into a single report  
-✅ **Data Validation** - Automatic validation of ballot counts  
-✅ **Multiple Export Formats** - Download as CSV or JSON  
-✅ **Real-time Processing** - See results as they're extracted  
+✅ **Multi-page Document Support** - Process complete election reports with multiple pages
+✅ **Structured Data Extraction** - Get JSON-formatted data ready for analysis
+✅ **Automatic Consolidation** - Merge data from all pages into a single report
+✅ **Data Validation** - Automatic validation of ballot counts
+✅ **Multiple Export Formats** - Download as CSV or JSON
+✅ **Real-time Processing** - See results as they're extracted
 
 ## What Gets Extracted
 
@@ -292,7 +292,7 @@ with httpx.Client(timeout=120.0) as client:
         files=files
     )
     result = response.json()
-    
+
     if result["success"]:
         print("Extraction successful!")
         print(f"Province: {result['data']['form_info']['province']}")
@@ -405,29 +405,28 @@ for img_file in image_dir.glob("*.jpg"):
 with httpx.Client(timeout=120.0) as client:
     for report_id, pages in reports.items():
         print(f"Processing {report_id} ({len(pages)} pages)...")
-        
+
         # Prepare files
         files = [
             ("files", (p.name, open(p, "rb"), "image/jpeg"))
             for p in sorted(pages)
         ]
-        
+
         # Extract
         response = client.post(
             "http://localhost:8000/api/v1/vote-extraction/extract",
             files=files
         )
-        
+
         # Save result
         result = response.json()
         output_file = output_dir / f"{report_id}.json"
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        
+
         print(f"  ✓ Saved to {output_file}")
 ```
 
 ---
 
 **Questions or feedback?** Check the main [README.md](README.md) or [PROJECT_PLAN.md](PROJECT_PLAN.md)
-

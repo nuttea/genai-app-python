@@ -4,11 +4,11 @@ Complete guide for using Poetry in the GenAI Application Platform.
 
 ## Why Poetry?
 
-✅ **Dependency Resolution** - Automatically resolves conflicts  
-✅ **Lock File** - Reproducible builds with `poetry.lock`  
-✅ **Virtual Environments** - Automatic venv management  
-✅ **Easy Publishing** - Simple package building  
-✅ **Modern Tools** - PEP 517/518 compliant  
+✅ **Dependency Resolution** - Automatically resolves conflicts
+✅ **Lock File** - Reproducible builds with `poetry.lock`
+✅ **Virtual Environments** - Automatic venv management
+✅ **Easy Publishing** - Simple package building
+✅ **Modern Tools** - PEP 517/518 compliant
 
 ## Installation
 
@@ -431,4 +431,3 @@ git add requirements.txt
 ---
 
 **Quick Start**: `poetry install && eval $(poetry env activate) && uvicorn app.main:app --reload` 🚀
-

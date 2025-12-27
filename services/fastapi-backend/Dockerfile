@@ -56,4 +56,3 @@ ENTRYPOINT ["/app/datadog-init"]
 
 # Run application with ddtrace-run for automatic instrumentation
 CMD ["/dd_tracer/python/bin/ddtrace-run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-

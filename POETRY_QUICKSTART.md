@@ -4,10 +4,10 @@ Get started with Poetry dependency management in 5 minutes!
 
 ## Why Poetry?
 
-✅ Better dependency resolution  
-✅ Automatic virtual environment management  
-✅ Lock file for reproducible builds  
-✅ Simpler than pip + venv  
+✅ Better dependency resolution
+✅ Automatic virtual environment management
+✅ Lock file for reproducible builds
+✅ Simpler than pip + venv
 
 ## 1-Minute Install
 
@@ -113,4 +113,3 @@ See [docs/getting-started/POETRY_SETUP.md](docs/getting-started/POETRY_SETUP.md)
 ---
 
 **Quick**: `poetry install && eval $(poetry env activate) && uvicorn app.main:app --reload` 🚀
-

@@ -168,7 +168,6 @@ Quick lookups:
 
 **📍 You are in the documentation folder**
 
-**🚀 [Start with the QUICKSTART](../QUICKSTART.md)**  
-**📚 [Browse complete index](INDEX.md)**  
+**🚀 [Start with the QUICKSTART](../QUICKSTART.md)**
+**📚 [Browse complete index](INDEX.md)**
 **🏠 [Back to main README](../README.md)**
-

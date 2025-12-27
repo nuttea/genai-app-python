@@ -284,16 +284,15 @@ make datadog-logs          # View APM traces
 
 ## 🆘 Support
 
-**Documentation**: [docs/INDEX.md](docs/INDEX.md)  
-**Commands**: `make help`  
-**Diagnostics**: `./check-services.sh`  
-**Logs**: `docker-compose logs`  
+**Documentation**: [docs/INDEX.md](docs/INDEX.md)
+**Commands**: `make help`
+**Diagnostics**: `./check-services.sh`
+**Logs**: `docker-compose logs`
 
 ---
 
-**Status**: ✅ Production Ready  
-**Version**: 0.1.0  
-**Last Updated**: December 27, 2024  
+**Status**: ✅ Production Ready
+**Version**: 0.1.0
+**Last Updated**: December 27, 2024
 
 **🎉 Everything is ready - start building!** 🚀
-

@@ -30,13 +30,13 @@ def init_datadog_rum():
         d=o.createElement(u);d.async=1;d.src=n
         n=o.getElementsByTagName(u)[0];n.parentNode.insertBefore(d,n)
       }})(window,document,'script','https://www.datadoghq-browser-agent.com/us1/v6/datadog-rum.js','DD_RUM')
-      
+
       window.DD_RUM.onReady(function() {{
         // Check if already initialized
         if (window.DD_RUM_INITIALIZED) {{
           return;
         }}
-        
+
         window.DD_RUM.init({{
           clientToken: '{DD_RUM_CLIENT_TOKEN}',
           applicationId: '{DD_RUM_APPLICATION_ID}',
@@ -60,7 +60,7 @@ def init_datadog_rum():
           trackUserInteractions: true,
           defaultPrivacyLevel: 'allow',
         }});
-        
+
         window.DD_RUM_INITIALIZED = true;
         console.log('[Datadog RUM] Initialized for service:', '{DD_SERVICE}');
       }})

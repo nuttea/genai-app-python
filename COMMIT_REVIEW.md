@@ -156,4 +156,3 @@ Production Ready:
 - Cloud Run compliant
 - Full observability
 ```
-

@@ -153,4 +153,3 @@ echo "  1. Add secrets to GitHub"
 echo "  2. Push a change to services/fastapi-backend/"
 echo "  3. Check GitHub Actions tab"
 echo ""
-

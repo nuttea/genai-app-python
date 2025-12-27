@@ -77,20 +77,20 @@ st.title("Welcome to GenAI Application Platform")
 st.markdown(
     """
     ### 👋 Getting Started
-    
+
     Use the sidebar menu to navigate between different tools:
-    
+
     - **🗳️ Vote Extractor** - Extract data from Thai election forms (Form S.S. 5/18)
     - More tools coming soon...
-    
+
     ### 🚀 Features
-    
+
     - **Multi-page Document Processing** - Upload multiple pages and get consolidated results
     - **Structured Data Extraction** - Get JSON-formatted data ready for analysis
     - **Real-time Processing** - See results as they're extracted
-    
+
     ### 📝 About
-    
+
     This platform is powered by:
     - FastAPI backend with Google Vertex AI
     - Streamlit for interactive UI

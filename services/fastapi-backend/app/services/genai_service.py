@@ -1,10 +1,11 @@
 """GenAI service layer combining Vertex AI functionality."""
 
 import logging
-from typing import List, Optional, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Optional
 
-from app.services.vertex_ai import vertex_ai_service
 from app.models.requests import Message
+from app.services.vertex_ai import vertex_ai_service
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class GenAIService:
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         top_k: Optional[int] = None,
-        stop_sequences: Optional[List[str]] = None,
+        stop_sequences: Optional[list[str]] = None,
     ) -> dict:
         """Generate text from a prompt."""
         return await self.vertex_service.generate_content(
@@ -60,7 +61,7 @@ class GenAIService:
 
     async def chat_completion(
         self,
-        messages: List[Message],
+        messages: list[Message],
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,

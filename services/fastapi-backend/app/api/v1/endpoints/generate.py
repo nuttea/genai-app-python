@@ -1,13 +1,13 @@
 """Text generation endpoints."""
 
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 
 from app.models.requests import GenerateRequest
-from app.models.responses import GenerateResponse, ErrorResponse
+from app.models.responses import ErrorResponse, GenerateResponse
 from app.services.genai_service import genai_service
 
 logger = logging.getLogger(__name__)

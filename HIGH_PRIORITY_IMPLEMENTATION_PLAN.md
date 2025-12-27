@@ -2,9 +2,9 @@
 
 Detailed plan for implementing high-priority code quality improvements.
 
-**Timeline**: 1 Week  
-**Estimated Effort**: 13 hours  
-**Priority**: High - Complete before production deployment  
+**Timeline**: 1 Week
+**Estimated Effort**: 13 hours
+**Priority**: High - Complete before production deployment
 
 ## 📋 Overview
 
@@ -173,7 +173,7 @@ def test_exception_inheritance():
 - [ ] Test all error paths
 - [ ] Update error handling docs
 
-**Estimated Time**: 4 hours  
+**Estimated Time**: 4 hours
 **Impact**: High - Better debugging and error recovery
 
 ---
@@ -269,7 +269,7 @@ async def extract_from_images(...):
 - [ ] Add timeout tests
 - [ ] Document timeout behavior
 
-**Estimated Time**: 1 hour  
+**Estimated Time**: 1 hour
 **Impact**: High - Prevents hanging requests
 
 ---
@@ -345,7 +345,7 @@ def get_api_key_or_ip(request: Request) -> str:
     api_key = request.headers.get("X-API-Key")
     if api_key:
         return f"apikey:{api_key}"
-    
+
     # Fall back to IP address
     return f"ip:{request.client.host}"
 
@@ -370,7 +370,7 @@ limiter = Limiter(key_func=get_api_key_or_ip)
 - [ ] Document rate limits in API docs
 - [ ] Add to .env.example
 
-**Estimated Time**: 2 hours  
+**Estimated Time**: 2 hours
 **Impact**: High - Prevents abuse, controls costs
 
 ---
@@ -403,12 +403,12 @@ from app.services.vertex_ai import VertexAIService
 
 class TestGenAIService:
     """Tests for GenAI service."""
-    
+
     @pytest.fixture
     def service(self):
         """Create service instance."""
         return GenAIService()
-    
+
     @patch('app.services.vertex_ai.VertexAIService.generate_content')
     async def test_generate_text(self, mock_generate, service):
         """Test text generation."""
@@ -417,12 +417,12 @@ class TestGenAIService:
             "text": "Generated text",
             "model": "gemini-pro"
         }
-        
+
         result = await service.generate_text(prompt="Test prompt")
-        
+
         assert result["text"] == "Generated text"
         mock_generate.assert_called_once()
-    
+
     @patch('app.services.vertex_ai.VertexAIService.chat_completion')
     async def test_chat_completion(self, mock_chat, service):
         """Test chat completion."""
@@ -431,12 +431,12 @@ class TestGenAIService:
             "content": "Response",
             "role": "assistant"
         }
-        
+
         from app.models.requests import Message
         messages = [Message(role="user", content="Hello")]
-        
+
         result = await service.chat_completion(messages=messages)
-        
+
         assert result["content"] == "Response"
         mock_chat.assert_called_once()
 ```
@@ -482,7 +482,7 @@ def test_environment_detection():
     )
     assert dev_settings.is_development is True
     assert dev_settings.is_production is False
-    
+
     prod_settings = Settings(
         google_cloud_project="test",
         fastapi_env="production"
@@ -510,7 +510,7 @@ def test_generate_text_success(mock_generate, client):
         "text": "Generated response",
         "model": "gemini-pro"
     }
-    
+
     response = client.post(
         "/api/v1/generate",
         json={
@@ -519,7 +519,7 @@ def test_generate_text_success(mock_generate, client):
             "temperature": 0.7
         }
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["text"] == "Generated response"
@@ -530,7 +530,7 @@ def test_generate_empty_prompt(client):
         "/api/v1/generate",
         json={"prompt": ""}
     )
-    
+
     # Should validate and reject
     assert response.status_code in [400, 422]
 ```
@@ -551,7 +551,7 @@ def test_generate_empty_prompt(client):
 - [ ] Run tests: `poetry run pytest --cov=app`
 - [ ] Verify 50%+ coverage
 
-**Estimated Time**: 4 hours  
+**Estimated Time**: 4 hours
 **Impact**: High - Better error handling, testable code
 
 ---
@@ -622,7 +622,7 @@ for file in files:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid filename: {file.filename}"
         )
-    
+
     # Check file extension
     if not file.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
         raise HTTPException(
@@ -670,7 +670,7 @@ def test_invalid_filename(client):
 - [ ] Add validation tests
 - [ ] Document validation rules
 
-**Estimated Time**: 2 hours  
+**Estimated Time**: 2 hours
 **Impact**: High - Security and data quality
 
 ---
@@ -743,8 +743,7 @@ def test_invalid_filename(client):
 
 ---
 
-**Start Date**: Monday  
-**End Date**: Friday  
-**Total Effort**: 13 hours  
+**Start Date**: Monday
+**End Date**: Friday
+**Total Effort**: 13 hours
 **Outcome**: Production-ready code quality 🎉
-

@@ -108,4 +108,3 @@ echo "     gcloud run services update genai-fastapi-backend \\"
 echo "       --region us-central1 \\"
 echo "       --set-secrets=DD_API_KEY=dd-api-key:latest"
 echo ""
-

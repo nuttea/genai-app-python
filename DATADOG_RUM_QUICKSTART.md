@@ -90,10 +90,10 @@ open https://app.datadoghq.com/rum/sessions?query=service:genai-streamlit-fronte
 
 ## View in Datadog
 
-**Sessions**: https://app.datadoghq.com/rum/sessions  
-**Performance**: https://app.datadoghq.com/rum/performance/overview  
-**Errors**: https://app.datadoghq.com/rum/error-tracking  
-**Session Replay**: https://app.datadoghq.com/rum/replay/sessions  
+**Sessions**: https://app.datadoghq.com/rum/sessions
+**Performance**: https://app.datadoghq.com/rum/performance/overview
+**Errors**: https://app.datadoghq.com/rum/error-tracking
+**Session Replay**: https://app.datadoghq.com/rum/replay/sessions
 
 ## Example Insights
 
@@ -167,4 +167,3 @@ See [docs/monitoring/datadog-rum.md](docs/monitoring/datadog-rum.md) for:
 ---
 
 **Quick**: Set `DD_RUM_CLIENT_TOKEN` and `DD_RUM_APPLICATION_ID`, restart, and track users! 🎉
-

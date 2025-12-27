@@ -1,18 +1,19 @@
 """Vote extraction service using Google GenAI."""
 
-import logging
 import json
-import asyncio
-from typing import List, Optional, Dict, Any
+import logging
 import os
+from typing import Any, Optional
 
 from google import genai
 from google.genai import types
 
 from app.config import settings
+from app.core.exceptions import ExtractionException
 from app.models.vote_extraction import ElectionFormData
-from app.core.exceptions import ExtractionException, ValidationException
-from app.core.constants import GEMINI_API_TIMEOUT, SCHEMA_HASH_LENGTH
+
+# Initialize logger first
+logger = logging.getLogger(__name__)
 
 # Datadog LLM Observability
 try:
@@ -23,13 +24,15 @@ except ImportError:
     DDTRACE_AVAILABLE = False
     logger.warning("ddtrace not available - LLM observability will be disabled")
 
-logger = logging.getLogger(__name__)
 
-
-# Election form schema defined as an ARRAY to handle multiple forms (Constituency + PartyList) in one response
+# Election form schema defined as an ARRAY to handle
+# multiple forms (Constituency + PartyList) in one response
 ELECTION_DATA_SCHEMA = {
     "type": "ARRAY",
-    "description": "A list of election reports found in the input images (usually one Constituency report and one PartyList report).",
+    "description": (
+        "A list of election reports found in the input images "
+        "(usually one Constituency report and one PartyList report)."
+    ),
     "items": {
         "type": "OBJECT",
         "properties": {
@@ -40,7 +43,11 @@ ELECTION_DATA_SCHEMA = {
                     "form_type": {
                         "type": "STRING",
                         "enum": ["Constituency", "PartyList"],
-                        "description": "Identify if this specific report is for Constituency (Candidate) or PartyList (Party only). Check the header text (e.g., 'แบบบัญชีรายชื่อ' = PartyList).",
+                        "description": (
+                            "Identify if this specific report is for Constituency (Candidate) "
+                            "or PartyList (Party only). Check the header text "
+                            "(e.g., 'แบบบัญชีรายชื่อ' = PartyList)."
+                        ),
                     },
                     "date": {"type": "STRING", "description": "Date of election"},
                     "province": {"type": "STRING", "description": "Province name"},
@@ -166,9 +173,9 @@ class VoteExtractionService:
 
     async def extract_from_images(
         self,
-        image_files: List[bytes],
-        image_filenames: List[str],
-    ) -> Optional[Dict[str, Any]]:
+        image_files: list[bytes],
+        image_filenames: list[str],
+    ) -> Optional[dict[str, Any]]:
         """
         Extract vote data from multiple document pages using Gemini.
 
@@ -185,7 +192,9 @@ class VoteExtractionService:
         content_parts = []
 
         # A. Process Images (Loop through files)
-        for i, (image_bytes, filename) in enumerate(zip(image_files, image_filenames), 1):
+        for i, (image_bytes, filename) in enumerate(
+            zip(image_files, image_filenames, strict=False), 1
+        ):
             try:
                 # 1. Add an Index Label BEFORE the image
                 index_label = f"Page {i} (Filename: {filename})"
@@ -215,11 +224,11 @@ class VoteExtractionService:
         # Note: This is a template for prompt tracking
         prompt_text = """
         You are an expert data entry assistant for Thai Election documents (Form S.S. 5/18).
-        
+
         Instructions:
         1. Analyze the sequence of images labeled Page 1, Page 2, etc. provided above. These pages belong to the SAME single report.
         2. Extract information strictly according to the JSON schema provided.
-        3. Consolidate data from all pages. 
+        3. Consolidate data from all pages.
            - The header information (District, Date) is usually on Page 1.
            - The 'Vote Results' table often spans across multiple pages. Merge them into a single list.
         4. Validation: Ensure the 'total ballots used' matches the sum of 'good', 'bad', and 'no vote' ballots.

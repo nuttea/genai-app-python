@@ -8,4 +8,3 @@ exec uvicorn app.main:app \
     --port "${FASTAPI_PORT:-8000}" \
     --log-level "${LOG_LEVEL:-info}" \
     "$@"
-

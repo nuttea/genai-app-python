@@ -188,9 +188,9 @@ open https://app.datadoghq.com/apm/traces?query=service:genai-fastapi-backend
 
 ## Cost Estimates
 
-**APM**: ~$31/host/month + $0.002/span  
-**LLMObs**: Based on token volume  
-**Free Trial**: 14 days full features  
+**APM**: ~$31/host/month + $0.002/span
+**LLMObs**: Based on token volume
+**Free Trial**: 14 days full features
 
 Most small applications stay under $50/month.
 
@@ -203,4 +203,3 @@ Most small applications stay under $50/month.
 ---
 
 **Need help?** See [docs/DATADOG_SETUP.md](docs/DATADOG_SETUP.md) for detailed troubleshooting.
-

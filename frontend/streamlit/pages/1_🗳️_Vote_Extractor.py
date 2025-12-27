@@ -323,17 +323,17 @@ with st.expander("📖 How to use", expanded=False):
     st.markdown(
         """
         ### Instructions:
-        
+
         1. **Prepare your images**: Scan or photograph election form pages (JPG or PNG format)
         2. **Upload files**: Click "Browse files" and select all pages of the same report
         3. **Extract data**: Click "Extract Vote Data" button
         4. **Review results**: View extracted data in JSON format
-        
+
         ### Supported Formats:
         - Image types: JPG, JPEG, PNG
         - Multiple pages: Yes (will be consolidated into single report)
         - Form types: Constituency (candidates) and PartyList (parties)
-        
+
         ### What gets extracted:
         - **Form Information**: Date, Province, District, Polling Station, etc.
         - **Ballot Statistics**: Total ballots used, valid, void, and no-vote counts
@@ -481,7 +481,7 @@ if extract_button and uploaded_files:
                 1. The FastAPI backend is not running
                 2. Wrong API URL configuration
                 3. Network connectivity issues
-                
+
                 **Solutions:**
                 - Check if FastAPI backend is running: `docker-compose ps`
                 - Verify API URL in configuration

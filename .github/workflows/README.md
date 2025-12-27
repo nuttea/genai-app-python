@@ -338,8 +338,7 @@ jobs:
 
 ---
 
-**Workflows**: 3 (1 per service + code quality)  
-**Path-based**: ✅ Only affected services run  
-**Secure**: ✅ Workload Identity (no keys)  
+**Workflows**: 3 (1 per service + code quality)
+**Path-based**: ✅ Only affected services run
+**Secure**: ✅ Workload Identity (no keys)
 **Ready**: ✅ Add secrets and push to deploy!
-

@@ -395,7 +395,7 @@ See [LICENSE](LICENSE) file for details.
 - Cloud Run deployment ready
 - CI/CD pipelines configured
 
-**Current Version**: 0.1.0  
+**Current Version**: 0.1.0
 **Last Updated**: December 27, 2024
 
 ---

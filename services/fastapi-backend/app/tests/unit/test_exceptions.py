@@ -3,13 +3,13 @@
 import pytest
 
 from app.core.exceptions import (
-    GenAIException,
-    VertexAIException,
-    ExtractionException,
-    ValidationException,
     ConfigurationException,
-    TimeoutException,
+    ExtractionException,
+    GenAIException,
     RateLimitException,
+    TimeoutException,
+    ValidationException,
+    VertexAIException,
 )
 
 

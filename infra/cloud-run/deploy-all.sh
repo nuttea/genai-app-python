@@ -112,4 +112,3 @@ echo "   - Services scale to zero when not in use"
 echo "   - You only pay for actual usage"
 echo "   - Set --max-instances to control costs"
 echo ""
-

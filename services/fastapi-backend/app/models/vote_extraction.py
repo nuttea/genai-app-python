@@ -1,6 +1,7 @@
 """Pydantic models for vote extraction."""
 
-from typing import List, Optional
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -62,7 +63,7 @@ class ElectionFormData(BaseModel):
 
     form_info: FormInfo
     ballot_statistics: Optional[BallotStatistics] = None
-    vote_results: List[VoteResult] = Field(
+    vote_results: list[VoteResult] = Field(
         default_factory=list, description="Vote counts for all candidates/parties"
     )
 
@@ -71,7 +72,7 @@ class VoteExtractionResponse(BaseModel):
     """Response for vote extraction request."""
 
     success: bool = Field(..., description="Whether extraction was successful")
-    data: List[ElectionFormData] = Field(
+    data: list[ElectionFormData] = Field(
         default_factory=list, description="List of extracted data (one per report)"
     )
     error: Optional[str] = Field(None, description="Error message if extraction failed")

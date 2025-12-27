@@ -145,4 +145,3 @@ docs/ (organized documentation):
 - 🚀 [Quick Start](../QUICKSTART.md)
 - 🏗️ [Architecture](../PROJECT_PLAN.md)
 - 💻 [Development](getting-started/DEVELOPMENT.md)
-
