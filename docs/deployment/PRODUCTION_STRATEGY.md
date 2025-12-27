@@ -37,7 +37,6 @@ Tagged revision: 'prod'
     ↓
 URL: https://SERVICE-prod-HASH.run.app
 Environment: DD_ENV=prod
-Traffic: 100% on 'prod' tag
 ```
 
 ## URLs
