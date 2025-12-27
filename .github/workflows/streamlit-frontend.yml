@@ -108,6 +108,7 @@ jobs:
           gcloud builds submit \
             --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
             --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest \
+            --async \
             frontend/streamlit
 
       - name: Deploy to Cloud Run
