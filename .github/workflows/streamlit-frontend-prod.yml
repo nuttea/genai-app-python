@@ -79,7 +79,6 @@ jobs:
             --max-instances 10 \
             --min-instances 0 \
             --tag prod \
-            --no-traffic \
             --set-env-vars API_BASE_URL=${{ steps.get-backend-url.outputs.backend_url }} \
             --set-env-vars FASTAPI_ENV=production \
             --set-env-vars DD_SITE=datadoghq.com \
