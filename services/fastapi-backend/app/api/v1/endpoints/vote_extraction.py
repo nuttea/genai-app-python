@@ -78,10 +78,12 @@ async def extract_votes(
             )
 
         # Validate filename characters (prevent path traversal)
-        if not re.match(r"^[\w\-. ]+$", file.filename):
+        # Allow Unicode letters/digits (including Thai), dash, dot, underscore, space
+        # Block: / \ : * ? " < > |
+        if re.search(r'[/\\:*?"<>|]', file.filename):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid filename: {file.filename}. Only alphanumeric, dash, dot, underscore and space allowed.",
+                detail=f"Invalid filename: {file.filename}. Filename cannot contain: / \\ : * ? \" < > |",
             )
 
         # Validate file extension
