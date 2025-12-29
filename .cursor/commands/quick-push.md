@@ -49,6 +49,6 @@ Display:
 
 ## Alternative Methods
 The user can also use:
-- Shell script: `./quick-push.sh`
+- Shell script: `./scripts/quick-push.sh`
 - Make command: `make quick-push`
 

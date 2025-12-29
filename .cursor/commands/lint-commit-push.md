@@ -52,6 +52,6 @@ Display:
 
 ## Alternative Methods
 The user can also use:
-- Shell script: `./lint-commit-push.sh "commit message"`
+- Shell script: `./scripts/lint-commit-push.sh "commit message"`
 - Make command: `make lint-commit-push MSG="commit message"`
 

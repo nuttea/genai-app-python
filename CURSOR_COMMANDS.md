@@ -33,7 +33,7 @@ Run in terminal or via Cursor:
 
 ```bash
 # Using the script directly
-./lint-commit-push.sh "feat: Add new feature"
+./scripts/lint-commit-push.sh "feat: Add new feature"
 
 # Using Make
 make lint-commit-push MSG="feat: Add new feature"
@@ -55,7 +55,7 @@ make lint-commit-push MSG="feat: Add new feature"
 
 ```bash
 # Using the script
-./format-only.sh
+./scripts/format-only.sh
 
 # Using Make
 make format-only
@@ -76,7 +76,7 @@ make format-only
 
 ```bash
 # Using the script
-./quick-push.sh
+./scripts/quick-push.sh
 
 # Using Make
 make quick-push

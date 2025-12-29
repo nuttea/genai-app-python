@@ -105,7 +105,7 @@ Use these Cursor custom commands for the fastest workflow:
 make lint-commit-push MSG="feat: Add new feature"
 
 # Or using the script directly
-./lint-commit-push.sh "feat: Add new feature"
+./scripts/lint-commit-push.sh "feat: Add new feature"
 
 # Format only (no commit)
 make format-only

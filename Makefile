@@ -149,12 +149,12 @@ lint-commit-push: ## 🚀 Format, lint, commit, and push (Usage: make lint-commi
 		echo "Usage: make lint-commit-push MSG=\"your commit message\""; \
 		exit 1; \
 	fi
-	@./lint-commit-push.sh "$(MSG)"
+	@./scripts/lint-commit-push.sh "$(MSG)"
 
 format-only: format-all ## 🎨 Format all code (alias for format-all)
 
 quick-push: ## ⚡ Format and push with auto-generated message (use carefully!)
-	@./quick-push.sh
+	@./scripts/quick-push.sh
 
 # Docker
 docker-build: ## Build Docker images
