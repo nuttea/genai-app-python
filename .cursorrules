@@ -1,0 +1,85 @@
+# Cursor AI Custom Commands for GenAI App
+
+## Custom Commands
+
+### @lint-commit-push
+Formats code with Black, lints with Ruff, commits, and pushes to remote.
+
+**Usage**: `@lint-commit-push "your commit message"`
+
+**What it does**:
+1. ✅ Formats all code with Black (backend + frontend)
+2. 🔧 Lints and auto-fixes with Ruff
+3. 📝 Commits all changes with your message
+4. 🚀 Pushes to origin/main
+
+**Example**:
+```
+@lint-commit-push "feat: Add new feature"
+```
+
+**Note**: Always include a meaningful commit message describing your changes.
+
+---
+
+### @format-only
+Formats all code with Black without committing.
+
+**Usage**: `@format-only`
+
+**What it does**:
+- Formats backend code (services/fastapi-backend)
+- Formats frontend code (frontend/streamlit)
+
+**Use this** before making a commit to ensure code passes CI/CD checks.
+
+---
+
+### @quick-push
+Quick commit and push with automated message based on git diff.
+
+**Usage**: `@quick-push`
+
+**What it does**:
+1. Formats code with Black
+2. Generates commit message from changes
+3. Commits and pushes
+
+**Use carefully**: This auto-generates commit messages. For important changes, use `@lint-commit-push` with a custom message.
+
+---
+
+## Pre-Commit Checklist
+
+Before every commit, you should:
+
+1. **Format code** (required):
+   ```bash
+   cd services/fastapi-backend && poetry run black app/ && cd ../..
+   cd frontend/streamlit && poetry run black . && cd ../..
+   ```
+
+2. **Lint code** (optional but recommended):
+   ```bash
+   cd services/fastapi-backend && poetry run ruff check --fix app/ && cd ../..
+   cd frontend/streamlit && poetry run ruff check --fix . && cd ../..
+   ```
+
+3. **Commit and push**:
+   ```bash
+   git add -A
+   git commit -m "your message"
+   git push
+   ```
+
+Or use the custom commands above!
+
+---
+
+## Project Rules Reminder
+
+- ⚠️ **Always format with Black before committing** - CI/CD will fail otherwise
+- 📖 See `PRE-COMMIT-CHECKLIST.md` for detailed instructions
+- 🔧 See `FIX_CI_FORMATTING.md` if CI/CD fails with formatting errors
+- 📚 See `AGENTS.md` for comprehensive project guidelines
+

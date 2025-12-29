@@ -96,7 +96,29 @@ frontend/streamlit/
 
 **CRITICAL**: Always format code with Black before committing. CI/CD will fail if code is not formatted.
 
-### Required Before Every Commit
+### 🚀 Quick Commands (Recommended)
+
+Use these Cursor custom commands for the fastest workflow:
+
+```bash
+# Complete workflow: Format, lint, commit, and push
+make lint-commit-push MSG="feat: Add new feature"
+
+# Or using the script directly
+./lint-commit-push.sh "feat: Add new feature"
+
+# Format only (no commit)
+make format-only
+
+# Quick push with auto-generated message (for small changes)
+make quick-push
+```
+
+📖 **See [CURSOR_COMMANDS.md](./CURSOR_COMMANDS.md) for detailed usage and examples.**
+
+### Manual Process (Alternative)
+
+If you prefer manual control or the scripts don't work:
 
 **1. Format All Code (Required)**
 ```bash

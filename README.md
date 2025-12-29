@@ -10,9 +10,26 @@ Get started in 5 minutes! See **[QUICKSTART.md](QUICKSTART.md)** ⭐
 
 **Always format your code with Black before committing!**
 
-See **[PRE-COMMIT-CHECKLIST.md](PRE-COMMIT-CHECKLIST.md)** for detailed instructions.
+### Quick Commands (Cursor Custom Commands) 🚀
 
-Quick command:
+```bash
+# Complete workflow: Format, lint, commit, push
+make lint-commit-push MSG="your commit message"
+
+# Format only (review before committing)
+make format-only
+
+# Quick push with auto-generated message
+make quick-push
+```
+
+See **[CURSOR_COMMANDS.md](CURSOR_COMMANDS.md)** for detailed usage.
+
+### Manual Commands
+
+See **[PRE-COMMIT-CHECKLIST.md](PRE-COMMIT-CHECKLIST.md)** for manual steps.
+
+Quick one-liner:
 ```bash
 cd services/fastapi-backend && poetry run black app/ && cd ../.. && cd frontend/streamlit && poetry run black . && cd ../..
 ```

@@ -65,8 +65,10 @@ scripts/tests/
 
 ### 🌟 Essential (Start Here)
 1. **[QUICKSTART.md](./QUICKSTART.md)** - Get running in 5 minutes
-2. **[README.md](./README.md)** - Project overview
-3. **[docs/INDEX.md](./docs/INDEX.md)** - Full documentation index
+2. **[CURSOR_COMMANDS.md](./CURSOR_COMMANDS.md)** - 🎯 **NEW!** Cursor custom commands (lint, commit, push)
+3. **[PRE-COMMIT-CHECKLIST.md](./PRE-COMMIT-CHECKLIST.md)** - ⚠️ Format before commit (REQUIRED!)
+4. **[README.md](./README.md)** - Project overview
+5. **[docs/INDEX.md](./docs/INDEX.md)** - Full documentation index
 
 ### 🚀 Quick Starts (5-10 min reads)
 - **[Deployment](./docs/deployment/quickstart.md)** - Deploy to Cloud Run
