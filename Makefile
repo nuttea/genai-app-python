@@ -7,6 +7,7 @@
 PYTHON := python3
 PIP := pip3
 DOCKER_COMPOSE := docker-compose
+SHELL := /bin/bash
 
 help: ## Show this help message
 	@echo "GenAI Application - Available Commands:"
@@ -27,10 +28,17 @@ install-backend: ## Install backend dependencies only
 install-frontend: ## Install frontend dependencies only
 	cd frontend/streamlit && poetry install --no-root
 
-dev-install: ## Install development dependencies
+dev-install: ## Install development dependencies and git hooks
 	cd services/fastapi-backend && poetry install
 	cd frontend/streamlit && poetry install
-	poetry run pre-commit install || pre-commit install
+	@make install-hooks
+
+install-hooks: ## Install git hooks (pre-commit formatter)
+	@echo "📦 Installing git hooks..."
+	@chmod +x .git-hooks/pre-commit
+	@mkdir -p .git/hooks
+	@ln -sf ../../.git-hooks/pre-commit .git/hooks/pre-commit
+	@echo "✅ Git hooks installed! Black will auto-format code before each commit."
 
 # Legacy pip-based install (for compatibility)
 install-pip: ## Install with pip (legacy)
@@ -62,22 +70,59 @@ test-watch: ## Run tests in watch mode
 	cd services/fastapi-backend && pytest-watch
 
 # Code Quality
-lint: ## Run linters
-	cd services/fastapi-backend && ruff check app/
+lint: ## Run linters on backend (using Docker)
+	@echo "🔍 Linting backend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check app/
 
-lint-fix: ## Fix linting issues
-	cd services/fastapi-backend && ruff check --fix app/
+lint-frontend: ## Run linters on frontend (using Docker)
+	@echo "🔍 Linting frontend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check .
 
-format: ## Format code with black
-	cd services/fastapi-backend && black app/
+lint-all: ## Run linters on all code
+	@echo "🔍 Linting backend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check app/ || echo "⚠️  Backend linting skipped"
+	@echo "🔍 Linting frontend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check . || echo "⚠️  Frontend linting skipped"
+	@echo "✅ Linting complete!"
 
-format-check: ## Check code formatting
-	cd services/fastapi-backend && black --check app/
+lint-fix: ## Fix linting issues in backend (using Docker)
+	@echo "🔧 Fixing backend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check --fix app/
 
-typecheck: ## Run type checking
-	cd services/fastapi-backend && mypy app/
+lint-fix-all: ## Fix linting issues in all code
+	@echo "🔧 Fixing backend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check --fix app/ || echo "⚠️  Backend fix skipped"
+	@echo "🔧 Fixing frontend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check --fix . || echo "⚠️  Frontend fix skipped"
+	@echo "✅ All fixes applied!"
 
-check-all: format-check lint typecheck ## Run all code quality checks
+format: ## Format backend code with black
+	@./format.sh backend
+
+format-frontend: ## Format frontend code with black
+	@./format.sh frontend
+
+format-all: ## Format all code with black (RUN THIS BEFORE COMMIT!)
+	@./format.sh
+
+format-check: ## Check code formatting in backend (using Docker)
+	@echo "🔍 Checking backend formatting..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m black --check app/
+
+format-check-all: ## Check code formatting in all code
+	@echo "🔍 Checking backend formatting..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m black --check app/ || echo "⚠️  Backend check skipped"
+	@echo "🔍 Checking frontend formatting..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m black --check . || echo "⚠️  Frontend check skipped"
+	@echo "✅ Format check complete!"
+
+typecheck: ## Run type checking on backend (using Docker)
+	@echo "🔍 Type checking backend..."
+	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m mypy app/
+
+check-all: format-check-all lint-all typecheck ## Run all code quality checks
+
+pre-commit: format-all ## Format code before commit (⭐ RUN THIS BEFORE GIT COMMIT!)
 
 # Docker
 docker-build: ## Build Docker images

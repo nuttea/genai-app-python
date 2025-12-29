@@ -1,0 +1,22 @@
+#!/bin/bash
+# Pre-commit hook to format code with Black before committing
+
+# Run the format script
+./format.sh
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Formatting failed!"
+    echo "   Please fix the errors above and try again."
+    echo "   Or run 'git commit --no-verify' to skip formatting (not recommended)"
+    exit 1
+fi
+
+# Add formatted files to staging
+echo ""
+echo "📝 Adding formatted files to staging area..."
+git add -u
+
+echo "✅ Pre-commit checks passed!"
+exit 0
+

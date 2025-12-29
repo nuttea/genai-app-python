@@ -6,6 +6,17 @@ A comprehensive GenAI application platform built with **Python FastAPI**, **Goog
 
 Get started in 5 minutes! See **[QUICKSTART.md](QUICKSTART.md)** ⭐
 
+## ⚠️ Before You Commit
+
+**Always format your code with Black before committing!**
+
+See **[PRE-COMMIT-CHECKLIST.md](PRE-COMMIT-CHECKLIST.md)** for detailed instructions.
+
+Quick command:
+```bash
+cd services/fastapi-backend && poetry run black app/ && cd ../.. && cd frontend/streamlit && poetry run black . && cd ../..
+```
+
 ```bash
 # 1. Install Poetry (if not installed)
 curl -sSL https://install.python-poetry.org | python3 -
