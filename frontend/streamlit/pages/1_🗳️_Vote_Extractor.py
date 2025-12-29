@@ -12,9 +12,39 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from utils.datadog_rum import init_datadog_rum
 
+
+def get_config(key: str, default: str = "") -> str:
+    """
+    Get configuration from environment or secrets, with graceful fallback.
+    
+    Priority:
+    1. Environment variable (Cloud Run, Docker Compose)
+    2. Streamlit secrets.toml (local development)
+    3. Default value
+    
+    Args:
+        key: Configuration key name
+        default: Default value if not found
+        
+    Returns:
+        Configuration value
+    """
+    # First try environment variable
+    env_value = os.getenv(key)
+    if env_value:
+        return env_value
+    
+    # Then try secrets.toml (for local development)
+    try:
+        return st.secrets.get(key, default)
+    except Exception:
+        # No secrets file (normal for Cloud Run deployment)
+        return default
+
+
 # Configuration - prioritize environment variable over secrets
-API_BASE_URL = os.getenv("API_BASE_URL") or st.secrets.get("API_BASE_URL", "http://localhost:8000")
-API_KEY = os.getenv("API_KEY") or st.secrets.get("API_KEY", "")
+API_BASE_URL = get_config("API_BASE_URL", "http://localhost:8000")
+API_KEY = get_config("API_KEY", "")
 API_ENDPOINT = f"{API_BASE_URL}/api/v1/vote-extraction/extract"
 
 st.set_page_config(
