@@ -255,8 +255,7 @@ docs/
 ├── monitoring/
 │   ├── quickstart.md                       # Quick setup (2 min) ⭐
 │   ├── DATADOG_SETUP.md                    # Complete guide (45 min)
-│   ├── LLMOBS_NEXT_STEPS.md                # LLMObs roadmap
-│   └── DATADOG_BILLING_BILLABLE_UNITS.md   # Billing guide
+│   └── LLMOBS_NEXT_STEPS.md                # LLMObs roadmap
 │
 ├── features/
 │   ├── vote-extractor.md                   # Vote extraction guide (30 min)
@@ -279,14 +278,19 @@ docs/
 │   ├── features.md                         # Feature list
 │   ├── DYNAMIC_MODELS_IMPLEMENTATION.md    # Dynamic models impl
 │   ├── SETUP_GOOGLE_AI_API_KEY.md          # API key setup
-│   └── DOCKER_FIX_LOCAL_DEV.md             # Docker config
+│   ├── DOCKER_FIX_LOCAL_DEV.md             # Docker config
+│   ├── DATADOG_BILLING_BILLABLE_UNITS.md   # Billing guide
+│   ├── CURSOR_RULES_COMPLETE.md            # Cursor rules reference
+│   └── PROJECT_STRUCTURE.md                # Project structure
 │
 └── archive/                                # Historical/reference only
     ├── SETUP_COMPLETE.md
     ├── IMPLEMENTATION_SUMMARY.md
     ├── CLOUD_RUN_SETUP_COMPLETE.md
     ├── DATADOG_IMPLEMENTATION_SUMMARY.md
-    └── FINAL_IMPLEMENTATION_SUMMARY.md
+    ├── FINAL_IMPLEMENTATION_SUMMARY.md
+    ├── FINAL_ORGANIZATION_SUMMARY.md
+    └── NAVIGATION.md
 ```
 
 **Test Scripts:**

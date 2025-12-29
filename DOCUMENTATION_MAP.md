@@ -153,7 +153,6 @@ scripts/tests/
 - QUICKSTART.md - 5-minute setup
 - DOCUMENTATION_MAP.md - Master navigation
 - PROJECT_PLAN.md - Architecture
-- PROJECT_STRUCTURE.md - Project structure
 
 ## 🔗 Key Links
 
