@@ -19,11 +19,18 @@ docs/
 └── archive/              Historical implementation summaries
 ```
 
-### Test Scripts Structure (`scripts/tests/`)
+### Scripts Structure (`scripts/`)
 ```
-scripts/tests/
-├── README.md                     Index of test scripts
-└── test_*.py                     Test scripts
+scripts/
+├── tests/                        Test scripts
+│   ├── README.md                 Index of test scripts
+│   └── test_*.py                 Test scripts
+│
+└── *.sh                          Shell utility scripts
+    ├── format-only.sh            Format code
+    ├── lint-commit-push.sh       Complete workflow
+    ├── quick-push.sh             Quick push
+    └── check-services.sh         Service checks
 ```
 
 ## Steps
@@ -31,7 +38,8 @@ scripts/tests/
 ### 1. Analyze current file locations
 Identify files that need to be organized:
 - Look for markdown files (`.md`) in the root directory
-- Look for test scripts (`.py`, `.sh`) in the root or wrong directories
+- Look for shell scripts (`.sh`) in the root directory
+- Look for test scripts (`test_*.py`) in the root or wrong directories
 - Check for documentation that should be in `docs/` subdirectories
 - Identify any miscategorized files
 
@@ -48,8 +56,13 @@ For each file, decide the appropriate location based on:
 - Historical/deprecated → `docs/archive/`
 
 **Test scripts:**
-- All test scripts → `scripts/tests/`
+- All test scripts (`test_*.py`) → `scripts/tests/`
 - Create/update `scripts/tests/README.md` index
+
+**Shell scripts:**
+- Utility scripts (`.sh`) → `scripts/`
+- Examples: `format-only.sh`, `lint-commit-push.sh`, `quick-push.sh`
+- Keep deployment/infrastructure scripts in appropriate locations
 
 **Root directory exceptions (keep in root):**
 - `README.md` - Main project overview
@@ -125,6 +138,14 @@ mkdir -p scripts/tests
 git mv test_*.py scripts/tests/
 ```
 
+**Moving shell scripts:**
+```bash
+mkdir -p scripts
+git mv *.sh scripts/
+# Or selectively:
+git mv format-only.sh lint-commit-push.sh quick-push.sh scripts/
+```
+
 **Creating directory README:**
 ```bash
 cat > docs/subdirectory/README.md << 'EOF'
@@ -142,7 +163,7 @@ EOF
 
 ```bash
 # 1. Create directories
-mkdir -p docs/troubleshooting docs/investigations scripts/tests
+mkdir -p docs/troubleshooting docs/investigations scripts/tests scripts
 
 # 2. Move troubleshooting docs
 git mv TROUBLESHOOTING_*.md docs/troubleshooting/
@@ -153,10 +174,13 @@ git mv *_FINDINGS.md docs/investigations/
 # 4. Move test scripts
 git mv test_*.py scripts/tests/
 
-# 5. Update indexes
+# 5. Move shell scripts
+git mv format-only.sh lint-commit-push.sh quick-push.sh scripts/
+
+# 6. Update indexes
 # (Edit docs/INDEX.md and DOCUMENTATION_MAP.md)
 
-# 6. Commit
+# 7. Commit
 git add -A
 git commit -m "docs: Organize documentation and scripts"
 git push
