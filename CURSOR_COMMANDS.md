@@ -2,6 +2,26 @@
 
 Quick commands for Cursor AI to format, lint, commit, and push code efficiently.
 
+## 📝 Two Ways to Use
+
+### 1. Cursor Slash Commands (Native Integration) ⭐ NEW!
+Type in Cursor Agent chat:
+- `/lint-commit-push` - Complete workflow with Cursor AI
+- `/format-only` - Format code without committing
+- `/quick-push` - Auto-commit and push
+
+**Requires**: Cursor 0.41+ with custom commands support
+
+### 2. Shell Scripts & Make Commands (Works Everywhere)
+Run in terminal or via Cursor:
+- `make lint-commit-push MSG="message"` or `./lint-commit-push.sh "message"`
+- `make format-only` or `./format-only.sh`
+- `make quick-push` or `./quick-push.sh`
+
+**Requires**: Poetry, Black, Ruff installed
+
+---
+
 ## 🚀 Available Commands
 
 ### 1. `lint-commit-push` - Complete Workflow
@@ -76,13 +96,66 @@ make quick-push
 
 ---
 
+## 🎯 Using Cursor Slash Commands (Native Integration)
+
+Cursor's [custom slash commands](https://cursor.com/docs/agent/chat/commands) provide the most integrated experience:
+
+### How to Use
+
+1. Open Cursor Agent: `Cmd/Ctrl + L`
+2. Type `/` to see available commands
+3. Select your command or type it directly (e.g., `/lint-commit-push`)
+4. Cursor AI will execute the workflow and ask for input when needed
+
+### Available Slash Commands
+
+**`/lint-commit-push`** - Complete Workflow
+```
+1. Opens in Cursor Agent chat
+2. Formats code with Black
+3. Lints with Ruff
+4. Asks for your commit message
+5. Commits and pushes
+6. Shows summary and CI/CD link
+```
+
+**`/format-only`** - Format Without Committing
+```
+1. Formats all code
+2. Shows what was formatted
+3. Reminds you of next steps
+```
+
+**`/quick-push`** - Auto-Generated Message
+```
+1. Formats code
+2. Analyzes changes
+3. Generates commit message
+4. Commits and pushes
+5. Shows result
+```
+
+### Benefits of Slash Commands
+
+✅ **Native Cursor integration** - Works directly in Agent chat  
+✅ **Interactive** - AI asks clarifying questions  
+✅ **Visual feedback** - See each step in real-time  
+✅ **No terminal needed** - Everything happens in Cursor  
+✅ **Team sharing** - Commands stored in `.cursor/commands/`
+
+---
+
 ## 📋 Comparison
 
-| Command | Format | Lint | Custom Message | Auto Message | Commit | Push |
-|---------|--------|------|----------------|--------------|--------|------|
-| `lint-commit-push` | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| `format-only` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `quick-push` | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Method | Format | Lint | Custom Message | Auto Message | Commit | Push | Interactive |
+|--------|--------|------|----------------|--------------|--------|------|-------------|
+| **Slash Commands** (`/lint-commit-push`) | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ In Cursor |
+| **Shell Script** (`./lint-commit-push.sh`) | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | Terminal only |
+| **Make** (`make lint-commit-push`) | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | Terminal only |
+| `/format-only` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ In Cursor |
+| `/quick-push` | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ In Cursor |
+
+**Recommendation**: Use **slash commands** (`/lint-commit-push`) for the best Cursor-native experience!
 
 ---
 

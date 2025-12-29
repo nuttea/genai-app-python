@@ -1,0 +1,6 @@
+{
+  "name": "format-only",
+  "description": "Format all code with Black without committing (for review before commit)",
+  "prompt": "You are helping to format code with Black without committing.\n\n**Instructions**:\n1. Format all code with Black:\n   - Backend: `cd services/fastapi-backend && poetry run black app/ && cd ../..`\n   - Frontend: `cd frontend/streamlit && poetry run black . && cd ../..`\n\n2. Show a summary of what was formatted\n\n3. Remind the user of next steps:\n   ```\n   💡 Next steps:\n   1. Review the changes with: git diff\n   2. Stage changes: git add -A\n   3. Commit: git commit -m \"your message\"\n   4. Push: git push\n   \n   Or use: /lint-commit-push to do all steps at once\n   ```\n\n**Use this command when**: You want to format code and review the diff before committing.\n\n**Alternative**: The user can also use: `./format-only.sh` or `make format-only`"
+}
+

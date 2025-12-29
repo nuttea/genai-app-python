@@ -1,0 +1,6 @@
+{
+  "name": "quick-push",
+  "description": "Quick format, commit, and push with auto-generated message (for small changes)",
+  "prompt": "You are helping to quickly format, commit, and push code with an automatically generated commit message.\n\n**Instructions**:\n1. Format code with Black:\n   - Backend: `cd services/fastapi-backend && poetry run black app/ && cd ../..`\n   - Frontend: `cd frontend/streamlit && poetry run black . && cd ../..`\n\n2. Analyze changed files to generate an appropriate commit message:\n   - Check: `git diff --name-only`\n   - If .yml/.yaml files: \"chore: Update workflow configuration\"\n   - If .md files: \"docs: Update documentation\"\n   - If backend files: \"fix: Update backend code\"\n   - If frontend files: \"fix: Update frontend code\"\n   - Otherwise: \"chore: Update code\"\n\n3. Stage all changes, commit, and push:\n   ```bash\n   git add -A\n   git commit -m \"<generated message>\"\n   git push origin main\n   ```\n\n4. Show the generated message and latest commit\n\n**⚠️ Use carefully**: This auto-generates commit messages. For important changes, use `/lint-commit-push` with a custom message instead.\n\n**Alternative**: The user can also use: `./quick-push.sh` or `make quick-push`"
+}
+

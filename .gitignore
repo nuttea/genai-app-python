@@ -83,6 +83,7 @@ docker-compose.override.yml
 !package.json
 !tsconfig.json
 !*-example.json
+!.cursor/commands/*.json
 service-account-*.json
 gcloud-config/
 .gcloud/
