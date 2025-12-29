@@ -27,6 +27,8 @@ make pre-commit
 
 ## 🔍 Optional: Lint Check
 
+Check for code quality issues:
+
 ```bash
 # Backend
 cd services/fastapi-backend
@@ -36,6 +38,20 @@ cd ../..
 # Frontend
 cd frontend/streamlit
 poetry run ruff check .
+cd ../..
+```
+
+Auto-fix linting issues:
+
+```bash
+# Backend
+cd services/fastapi-backend
+poetry run ruff check --fix app/
+cd ../..
+
+# Frontend
+cd frontend/streamlit
+poetry run ruff check --fix .
 cd ../..
 ```
 

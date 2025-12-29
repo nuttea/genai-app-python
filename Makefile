@@ -70,31 +70,37 @@ test-watch: ## Run tests in watch mode
 	cd services/fastapi-backend && pytest-watch
 
 # Code Quality
-lint: ## Run linters on backend (using Docker)
-	@echo "🔍 Linting backend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check app/
+lint: ## Run linters on backend (manual: cd services/fastapi-backend && poetry run ruff check app/)
+	@echo "🔍 To lint backend, run:"
+	@echo "   cd services/fastapi-backend && poetry run ruff check app/"
 
-lint-frontend: ## Run linters on frontend (using Docker)
-	@echo "🔍 Linting frontend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check .
+lint-frontend: ## Run linters on frontend (manual: cd frontend/streamlit && poetry run ruff check .)
+	@echo "🔍 To lint frontend, run:"
+	@echo "   cd frontend/streamlit && poetry run ruff check ."
 
-lint-all: ## Run linters on all code
-	@echo "🔍 Linting backend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check app/ || echo "⚠️  Backend linting skipped"
-	@echo "🔍 Linting frontend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check . || echo "⚠️  Frontend linting skipped"
-	@echo "✅ Linting complete!"
+lint-all: ## Run linters on all code (see PRE-COMMIT-CHECKLIST.md)
+	@echo "🔍 To lint all code, run:"
+	@echo ""
+	@echo "Backend:"
+	@echo "  cd services/fastapi-backend && poetry run ruff check app/"
+	@echo ""
+	@echo "Frontend:"
+	@echo "  cd frontend/streamlit && poetry run ruff check ."
+	@echo ""
+	@echo "See PRE-COMMIT-CHECKLIST.md for more details"
 
-lint-fix: ## Fix linting issues in backend (using Docker)
-	@echo "🔧 Fixing backend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check --fix app/
+lint-fix: ## Fix linting issues in backend (manual: cd services/fastapi-backend && poetry run ruff check --fix app/)
+	@echo "🔧 To fix backend linting issues, run:"
+	@echo "   cd services/fastapi-backend && poetry run ruff check --fix app/"
 
 lint-fix-all: ## Fix linting issues in all code
-	@echo "🔧 Fixing backend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m ruff check --fix app/ || echo "⚠️  Backend fix skipped"
-	@echo "🔧 Fixing frontend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m ruff check --fix . || echo "⚠️  Frontend fix skipped"
-	@echo "✅ All fixes applied!"
+	@echo "🔧 To fix linting issues, run:"
+	@echo ""
+	@echo "Backend:"
+	@echo "  cd services/fastapi-backend && poetry run ruff check --fix app/"
+	@echo ""
+	@echo "Frontend:"
+	@echo "  cd frontend/streamlit && poetry run ruff check --fix ."
 
 format: ## Format backend code with black
 	@./format.sh backend
@@ -105,24 +111,36 @@ format-frontend: ## Format frontend code with black
 format-all: ## Format all code with black (RUN THIS BEFORE COMMIT!)
 	@./format.sh
 
-format-check: ## Check code formatting in backend (using Docker)
-	@echo "🔍 Checking backend formatting..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m black --check app/
+format-check: ## Check backend formatting (manual: cd services/fastapi-backend && poetry run black --check app/)
+	@echo "🔍 To check backend formatting, run:"
+	@echo "   cd services/fastapi-backend && poetry run black --check app/"
 
-format-check-all: ## Check code formatting in all code
-	@echo "🔍 Checking backend formatting..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m black --check app/ || echo "⚠️  Backend check skipped"
-	@echo "🔍 Checking frontend formatting..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps streamlit-frontend python3 -m black --check . || echo "⚠️  Frontend check skipped"
-	@echo "✅ Format check complete!"
+format-check-all: ## Check all code formatting
+	@echo "🔍 To check formatting, run:"
+	@echo ""
+	@echo "Backend:"
+	@echo "  cd services/fastapi-backend && poetry run black --check app/"
+	@echo ""
+	@echo "Frontend:"
+	@echo "  cd frontend/streamlit && poetry run black --check ."
 
-typecheck: ## Run type checking on backend (using Docker)
-	@echo "🔍 Type checking backend..."
-	@$(DOCKER_COMPOSE) run --rm --no-deps fastapi-backend python3 -m mypy app/
+typecheck: ## Run type checking on backend (manual: cd services/fastapi-backend && poetry run mypy app/)
+	@echo "🔍 To run type checking, run:"
+	@echo "   cd services/fastapi-backend && poetry run mypy app/"
 
-check-all: format-check-all lint-all typecheck ## Run all code quality checks
+check-all: ## Show all code quality check commands
+	@echo "🔍 Code Quality Checks"
+	@echo ""
+	@echo "1. Format Check:"
+	@make format-check-all
+	@echo ""
+	@echo "2. Linting:"
+	@make lint-all
+	@echo ""
+	@echo "3. Type Check:"
+	@make typecheck
 
-pre-commit: format-all ## Format code before commit (⭐ RUN THIS BEFORE GIT COMMIT!)
+pre-commit: format-all ## ⭐ Format code before commit (RUN THIS BEFORE GIT COMMIT!)
 
 # Docker
 docker-build: ## Build Docker images
