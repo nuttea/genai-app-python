@@ -397,56 +397,50 @@ with st.sidebar:
                 "max_tokens": 8192,
                 "top_p": 0.95,
                 "top_k": 40,
-            }
+            },
         }
 
     use_custom_config = st.checkbox(
         "Use custom model configuration",
         value=False,
-        help="Enable to customize provider, model, and parameters"
+        help="Enable to customize provider, model, and parameters",
     )
 
     llm_config = None
     if use_custom_config:
         # Get supported providers
         supported_providers = [
-            p for p in models_config.get("providers", [])
-            if p.get("supported", False)
+            p for p in models_config.get("providers", []) if p.get("supported", False)
         ]
 
         if supported_providers:
             # Provider selection
             provider_options = {p["display_name"]: p["name"] for p in supported_providers}
             selected_provider_display = st.selectbox(
-                "Provider",
-                options=list(provider_options.keys()),
-                help="Select the LLM provider"
+                "Provider", options=list(provider_options.keys()), help="Select the LLM provider"
             )
             selected_provider = provider_options[selected_provider_display]
 
             # Get provider details
             provider_data = next(
-                (p for p in supported_providers if p["name"] == selected_provider),
-                None
+                (p for p in supported_providers if p["name"] == selected_provider), None
             )
 
             if provider_data:
                 # Model selection
                 model_options = {
-                    m["display_name"]: m["name"]
-                    for m in provider_data.get("models", [])
+                    m["display_name"]: m["name"] for m in provider_data.get("models", [])
                 }
                 selected_model_display = st.selectbox(
                     "Model",
                     options=list(model_options.keys()),
-                    help="Select the specific model to use"
+                    help="Select the specific model to use",
                 )
                 selected_model = model_options[selected_model_display]
 
                 # Get model details for default values
                 model_data = next(
-                    (m for m in provider_data["models"] if m["name"] == selected_model),
-                    {}
+                    (m for m in provider_data["models"] if m["name"] == selected_model), {}
                 )
 
                 # Advanced parameters in expander
@@ -457,7 +451,7 @@ with st.sidebar:
                         max_value=2.0,
                         value=0.0,
                         step=0.1,
-                        help="Lower = more deterministic, Higher = more creative"
+                        help="Lower = more deterministic, Higher = more creative",
                     )
 
                     max_tokens = st.number_input(
@@ -466,7 +460,7 @@ with st.sidebar:
                         max_value=model_data.get("max_output_tokens", 8192),
                         value=8192,
                         step=512,
-                        help="Maximum number of tokens to generate"
+                        help="Maximum number of tokens to generate",
                     )
 
                     top_p = st.slider(
@@ -475,7 +469,7 @@ with st.sidebar:
                         max_value=1.0,
                         value=0.95,
                         step=0.05,
-                        help="Nucleus sampling parameter"
+                        help="Nucleus sampling parameter",
                     )
 
                     top_k = st.number_input(
@@ -484,7 +478,7 @@ with st.sidebar:
                         max_value=100,
                         value=40,
                         step=1,
-                        help="Top-k sampling parameter (Vertex AI)"
+                        help="Top-k sampling parameter (Vertex AI)",
                     )
 
                 # Build LLM config

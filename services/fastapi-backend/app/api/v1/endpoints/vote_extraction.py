@@ -173,7 +173,9 @@ async def extract_votes(
         try:
             llm_config_dict = json.loads(llm_config_json)
             llm_config = LLMConfig(**llm_config_dict)
-            logger.info(f"Using custom LLM config: provider={llm_config.provider}, model={llm_config.model}")
+            logger.info(
+                f"Using custom LLM config: provider={llm_config.provider}, model={llm_config.model}"
+            )
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"Invalid LLM config JSON, using defaults: {e}")
             # Continue with default config
@@ -375,18 +377,20 @@ async def fetch_models_from_api() -> list[dict]:
                 if "generateContent" not in supported_actions:
                     continue
 
-                transformed.append({
-                    "name": model_name,
-                    "display_name": model.get("displayName", model_name),
-                    "description": model.get("description", "")[:200],
-                    "context_window": model.get("inputTokenLimit", 0),
-                    "max_output_tokens": model.get("outputTokenLimit", 0),
-                    "version": model_name.split("-")[1] if "-" in model_name else "unknown",
-                    "temperature": 0.0,
-                    "max_temperature": model.get("temperature", 2.0),
-                    "top_p": model.get("topP", 0.95),
-                    "top_k": model.get("topK", 40),
-                })
+                transformed.append(
+                    {
+                        "name": model_name,
+                        "display_name": model.get("displayName", model_name),
+                        "description": model.get("description", "")[:200],
+                        "context_window": model.get("inputTokenLimit", 0),
+                        "max_output_tokens": model.get("outputTokenLimit", 0),
+                        "version": model_name.split("-")[1] if "-" in model_name else "unknown",
+                        "temperature": 0.0,
+                        "max_temperature": model.get("temperature", 2.0),
+                        "top_p": model.get("topP", 0.95),
+                        "top_k": model.get("topK", 40),
+                    }
+                )
 
             # Update cache
             _models_cache = transformed
@@ -491,67 +495,67 @@ async def list_models() -> JSONResponse:
         gemini_models = get_static_gemini_models()
 
     models_config = {
-            "providers": [
-                {
-                    "name": "vertex_ai",
-                    "display_name": "Google Vertex AI / Gemini API",
-                    "models": gemini_models,
-                    "default_model": "gemini-2.5-flash",
-                    "supported": True,
-                    "dynamic_listing": bool(settings.gemini_api_key),
-                },
-                {
-                    "name": "openai",
-                    "display_name": "OpenAI",
-                    "models": [
-                        {
-                            "name": "gpt-4o",
-                            "display_name": "GPT-4o",
-                            "context_window": 128000,
-                            "max_output_tokens": 16384,
-                        },
-                        {
-                            "name": "gpt-4o-mini",
-                            "display_name": "GPT-4o Mini",
-                            "context_window": 128000,
-                            "max_output_tokens": 16384,
-                        },
-                    ],
-                    "default_model": "gpt-4o-mini",
-                    "supported": False,
-                    "note": "Coming soon",
-                },
-                {
-                    "name": "anthropic",
-                    "display_name": "Anthropic",
-                    "models": [
-                        {
-                            "name": "claude-3-5-sonnet-20241022",
-                            "display_name": "Claude 3.5 Sonnet",
-                            "context_window": 200000,
-                            "max_output_tokens": 8192,
-                        },
-                        {
-                            "name": "claude-3-5-haiku-20241022",
-                            "display_name": "Claude 3.5 Haiku",
-                            "context_window": 200000,
-                            "max_output_tokens": 8192,
-                        },
-                    ],
-                    "default_model": "claude-3-5-sonnet-20241022",
-                    "supported": False,
-                    "note": "Coming soon",
-                },
-            ],
-            "default_config": {
-                "provider": "vertex_ai",
-                "model": "gemini-2.5-flash",
-                "temperature": 0.0,
-                "max_tokens": 16384,
-                "top_p": 0.95,
-                "top_k": 40,
+        "providers": [
+            {
+                "name": "vertex_ai",
+                "display_name": "Google Vertex AI / Gemini API",
+                "models": gemini_models,
+                "default_model": "gemini-2.5-flash",
+                "supported": True,
+                "dynamic_listing": bool(settings.gemini_api_key),
             },
-        }
+            {
+                "name": "openai",
+                "display_name": "OpenAI",
+                "models": [
+                    {
+                        "name": "gpt-4o",
+                        "display_name": "GPT-4o",
+                        "context_window": 128000,
+                        "max_output_tokens": 16384,
+                    },
+                    {
+                        "name": "gpt-4o-mini",
+                        "display_name": "GPT-4o Mini",
+                        "context_window": 128000,
+                        "max_output_tokens": 16384,
+                    },
+                ],
+                "default_model": "gpt-4o-mini",
+                "supported": False,
+                "note": "Coming soon",
+            },
+            {
+                "name": "anthropic",
+                "display_name": "Anthropic",
+                "models": [
+                    {
+                        "name": "claude-3-5-sonnet-20241022",
+                        "display_name": "Claude 3.5 Sonnet",
+                        "context_window": 200000,
+                        "max_output_tokens": 8192,
+                    },
+                    {
+                        "name": "claude-3-5-haiku-20241022",
+                        "display_name": "Claude 3.5 Haiku",
+                        "context_window": 200000,
+                        "max_output_tokens": 8192,
+                    },
+                ],
+                "default_model": "claude-3-5-sonnet-20241022",
+                "supported": False,
+                "note": "Coming soon",
+            },
+        ],
+        "default_config": {
+            "provider": "vertex_ai",
+            "model": "gemini-2.5-flash",
+            "temperature": 0.0,
+            "max_tokens": 16384,
+            "top_p": 0.95,
+            "top_k": 40,
+        },
+    }
 
     return JSONResponse(content=models_config)
 

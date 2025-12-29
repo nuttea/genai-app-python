@@ -62,8 +62,7 @@ class Settings(BaseSettings):
 
     # Google AI API Configuration (for dynamic model listing)
     gemini_api_key: str = Field(
-        default="",
-        description="Google AI API key for dynamic model listing (optional)"
+        default="", description="Google AI API key for dynamic model listing (optional)"
     )
 
     # Rate Limiting
