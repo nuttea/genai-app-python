@@ -35,6 +35,229 @@ _cache_timestamp: Optional[float] = None
 CACHE_TTL = 3600  # 1 hour cache
 
 
+async def _validate_and_read_files(
+    files: list[UploadFile],
+) -> tuple[list[bytes], list[str]]:
+    """
+    Validate and read uploaded files.
+    
+    Returns:
+        Tuple of (image_files, image_filenames)
+        
+    Raises:
+        HTTPException for validation errors
+    """
+    allowed_types = {"image/jpeg", "image/jpg", "image/png"}
+    image_files = []
+    image_filenames = []
+    total_size = 0
+
+    for file in files:
+        # Validate filename
+        if not file.filename or len(file.filename) > MAX_FILENAME_LENGTH:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid filename length. Maximum {MAX_FILENAME_LENGTH} characters.",
+            )
+
+        # Validate filename characters (prevent path traversal)
+        if re.search(r'[/\\:*?"<>|]', file.filename):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Invalid filename: {file.filename}. Filename cannot contain: / \\ : * ? " < > |',
+            )
+
+        # Validate file extension
+        if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid file extension for {file.filename}. Only JPG and PNG are supported.",
+            )
+
+        # Check content type
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid file type: {file.filename}. Only JPG and PNG images are supported.",
+            )
+
+        # Read file content
+        try:
+            content = await file.read()
+
+            if not content:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Empty file: {file.filename}",
+                )
+
+            # Check individual file size
+            file_size_mb = len(content) / (1024 * 1024)
+            if len(content) > MAX_FILE_SIZE_BYTES:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=(
+                        f"File {file.filename} is too large ({file_size_mb:.1f}MB). "
+                        f"Maximum file size is {MAX_FILE_SIZE_MB}MB."
+                    ),
+                )
+
+            # Track total size
+            total_size += len(content)
+
+            # Check total size
+            if total_size > MAX_TOTAL_SIZE_BYTES:
+                total_size_mb = total_size / (1024 * 1024)
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=(
+                        f"Total upload size ({total_size_mb:.1f}MB) exceeds limit ({MAX_TOTAL_SIZE_MB}MB). "
+                        f"Please reduce the number of files or image quality."
+                    ),
+                )
+
+            image_files.append(content)
+            image_filenames.append(file.filename)
+            logger.info(
+                f"Received file: {file.filename}",
+                extra={
+                    "file_size_bytes": len(content),
+                    "file_size_mb": f"{file_size_mb:.2f}",
+                },
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error reading file {file.filename}: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error reading file: {file.filename}",
+            )
+
+    return image_files, image_filenames
+
+
+async def _parse_llm_config(llm_config_json: str | None) -> LLMConfig | None:
+    """Parse LLM configuration from JSON string."""
+    if not llm_config_json:
+        return None
+
+    try:
+        llm_config_dict = json.loads(llm_config_json)
+        llm_config = LLMConfig(**llm_config_dict)
+        logger.info(
+            f"Using custom LLM config: provider={llm_config.provider}, model={llm_config.model}"
+        )
+        return llm_config
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning(f"Invalid LLM config JSON, using defaults: {e}")
+        return None
+
+
+async def _parse_extraction_results(
+    result: dict | list,
+    image_files_count: int,
+) -> tuple[list[ElectionFormData], list[str]]:
+    """
+    Parse and validate extraction results.
+    
+    Returns:
+        Tuple of (extracted_reports, validation_warnings)
+        
+    Raises:
+        HTTPException if no valid reports could be extracted
+    """
+    extracted_reports = []
+    validation_warnings = []
+
+    # Handle both single dict and list of dicts
+    if isinstance(result, dict):
+        results_to_process = [result]
+    elif isinstance(result, list):
+        results_to_process = result
+    else:
+        logger.error(f"Unexpected result type: {type(result)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unexpected result type: {type(result).__name__}",
+        )
+
+    # Process each report
+    for idx, report_data in enumerate(results_to_process):
+        if not isinstance(report_data, dict):
+            logger.warning(f"Skipping non-dict element at index {idx}: {type(report_data)}")
+            continue
+
+        try:
+            logger.debug(
+                f"Parsing report {idx + 1}",
+                extra={
+                    "report_index": idx + 1,
+                    "report_data_keys": (
+                        list(report_data.keys())
+                        if isinstance(report_data, dict)
+                        else "not_dict"
+                    ),
+                    "vote_results_count": (
+                        len(report_data.get("vote_results", []))
+                        if isinstance(report_data, dict)
+                        else 0
+                    ),
+                },
+            )
+
+            extracted_data = ElectionFormData(**report_data)
+
+            # Validate consistency
+            is_valid, error_msg = await vote_extraction_service.validate_extraction(
+                extracted_data
+            )
+            if not is_valid:
+                logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
+                validation_warnings.append(f"Report {idx + 1}: {error_msg}")
+
+            extracted_reports.append(extracted_data)
+            logger.info(f"Successfully parsed report {idx + 1}/{len(results_to_process)}")
+
+        except Exception as e:
+            logger.error(
+                f"Error parsing report {idx + 1}: {e}",
+                extra={
+                    "report_index": idx + 1,
+                    "error_type": type(e).__name__,
+                    "report_data_sample": str(report_data)[:500] if report_data else "None",
+                },
+                exc_info=True,
+            )
+            validation_warnings.append(f"Report {idx + 1}: Failed to parse - {str(e)}")
+
+    # Check if any reports were successfully extracted
+    if not extracted_reports:
+        error_detail = "No valid reports could be extracted from the data"
+        if validation_warnings:
+            error_detail += ":\n" + "\n".join(validation_warnings)
+
+        logger.error(
+            "All reports failed to parse",
+            extra={
+                "pages_processed": image_files_count,
+                "errors": validation_warnings,
+            },
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": error_detail,
+                "pages_processed": image_files_count,
+                "errors": validation_warnings,
+            },
+        )
+
+    return extracted_reports, validation_warnings
+
+
 @router.post(
     "/extract",
     response_model=VoteExtractionResponse,
@@ -74,111 +297,11 @@ async def extract_votes(
             detail="No files provided. Please upload at least one image.",
         )
 
-    # Validate file types and sizes
-    allowed_types = {"image/jpeg", "image/jpg", "image/png"}
-    image_files = []
-    image_filenames = []
-    total_size = 0
-
-    for file in files:
-        # Validate filename
-        if not file.filename or len(file.filename) > MAX_FILENAME_LENGTH:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid filename length. Maximum {MAX_FILENAME_LENGTH} characters.",
-            )
-
-        # Validate filename characters (prevent path traversal)
-        # Allow Unicode letters/digits (including Thai), dash, dot, underscore, space
-        # Block: / \ : * ? " < > |
-        if re.search(r'[/\\:*?"<>|]', file.filename):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Invalid filename: {file.filename}. Filename cannot contain: / \\ : * ? " < > |',
-            )
-
-        # Validate file extension
-        if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid file extension for {file.filename}. Only JPG and PNG are supported.",
-            )
-
-        # Check content type
-        if file.content_type not in allowed_types:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid file type: {file.filename}. Only JPG and PNG images are supported.",
-            )
-
-        # Read file content
-        try:
-            content = await file.read()
-
-            # Check if file is empty
-            if not content:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Empty file: {file.filename}",
-                )
-
-            # Check individual file size
-            file_size_mb = len(content) / (1024 * 1024)
-            if len(content) > MAX_FILE_SIZE_BYTES:
-                raise HTTPException(
-                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=(
-                        f"File {file.filename} is too large ({file_size_mb:.1f}MB). "
-                        f"Maximum file size is {MAX_FILE_SIZE_MB}MB."
-                    ),
-                )
-
-            # Track total size
-            total_size += len(content)
-
-            # Check total size (Cloud Run limit is 32MB)
-            if total_size > MAX_TOTAL_SIZE_BYTES:
-                total_size_mb = total_size / (1024 * 1024)
-                raise HTTPException(
-                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                    detail=(
-                        f"Total upload size ({total_size_mb:.1f}MB) exceeds limit ({MAX_TOTAL_SIZE_MB}MB). "
-                        f"Please reduce the number of files or image quality."
-                    ),
-                )
-
-            image_files.append(content)
-            image_filenames.append(file.filename)
-            logger.info(
-                f"Received file: {file.filename}",
-                extra={
-                    "file_size_bytes": len(content),
-                    "file_size_mb": f"{file_size_mb:.2f}",
-                },
-            )
-
-        except HTTPException:
-            # Re-raise HTTP exceptions (validation errors)
-            raise
-        except Exception as e:
-            logger.error(f"Error reading file {file.filename}: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error reading file: {file.filename}",
-            )
+    # Validate and read files
+    image_files, image_filenames = await _validate_and_read_files(files)
 
     # Parse LLM configuration
-    llm_config = None
-    if llm_config_json:
-        try:
-            llm_config_dict = json.loads(llm_config_json)
-            llm_config = LLMConfig(**llm_config_dict)
-            logger.info(
-                f"Using custom LLM config: provider={llm_config.provider}, model={llm_config.model}"
-            )
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Invalid LLM config JSON, using defaults: {e}")
-            # Continue with default config
+    llm_config = await _parse_llm_config(llm_config_json)
 
     # Extract vote data
     try:
@@ -199,100 +322,9 @@ async def extract_votes(
 
         # Parse and validate extracted data
         try:
-            extracted_reports = []
-            validation_warnings = []
-
-            # Handle both single dict and list of dicts
-            if isinstance(result, dict):
-                # Single report - wrap in list
-                results_to_process = [result]
-            elif isinstance(result, list):
-                # Multiple reports or list response
-                results_to_process = result
-            else:
-                logger.error(f"Unexpected result type: {type(result)}")
-                return VoteExtractionResponse(
-                    success=False,
-                    data=[],
-                    error=f"Unexpected result type: {type(result).__name__}",
-                    pages_processed=len(image_files),
-                    reports_extracted=0,
-                )
-
-            # Process each report
-            for idx, report_data in enumerate(results_to_process):
-                if not isinstance(report_data, dict):
-                    logger.warning(f"Skipping non-dict element at index {idx}: {type(report_data)}")
-                    continue
-
-                try:
-                    # Log raw report data for debugging
-                    logger.debug(
-                        f"Parsing report {idx + 1}",
-                        extra={
-                            "report_index": idx + 1,
-                            "report_data_keys": (
-                                list(report_data.keys())
-                                if isinstance(report_data, dict)
-                                else "not_dict"
-                            ),
-                            "vote_results_count": (
-                                len(report_data.get("vote_results", []))
-                                if isinstance(report_data, dict)
-                                else 0
-                            ),
-                        },
-                    )
-
-                    extracted_data = ElectionFormData(**report_data)
-
-                    # Validate consistency
-                    is_valid, error_msg = await vote_extraction_service.validate_extraction(
-                        extracted_data
-                    )
-                    if not is_valid:
-                        logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
-                        validation_warnings.append(f"Report {idx + 1}: {error_msg}")
-
-                    extracted_reports.append(extracted_data)
-                    logger.info(f"Successfully parsed report {idx + 1}/{len(results_to_process)}")
-
-                except Exception as e:
-                    # Log at ERROR level for parsing failures with full details
-                    logger.error(
-                        f"Error parsing report {idx + 1}: {e}",
-                        extra={
-                            "report_index": idx + 1,
-                            "error_type": type(e).__name__,
-                            "report_data_sample": str(report_data)[:500] if report_data else "None",
-                        },
-                        exc_info=True,
-                    )
-                    validation_warnings.append(f"Report {idx + 1}: Failed to parse - {str(e)}")
-
-            # Return results
-            if not extracted_reports:
-                error_detail = "No valid reports could be extracted from the data"
-                if validation_warnings:
-                    error_detail += ":\n" + "\n".join(validation_warnings)
-
-                logger.error(
-                    "All reports failed to parse",
-                    extra={
-                        "pages_processed": len(image_files),
-                        "errors": validation_warnings,
-                    },
-                )
-
-                # Return 422 Unprocessable Entity for validation errors
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail={
-                        "message": error_detail,
-                        "pages_processed": len(image_files),
-                        "errors": validation_warnings,
-                    },
-                )
+            extracted_reports, validation_warnings = await _parse_extraction_results(
+                result, len(image_files)
+            )
 
             # Build response with warnings if any
             error_msg = None
@@ -308,7 +340,7 @@ async def extract_votes(
             )
 
         except HTTPException:
-            # Re-raise HTTP exceptions (already handled above)
+            # Re-raise HTTP exceptions (already handled)
             raise
 
         except Exception as e:
