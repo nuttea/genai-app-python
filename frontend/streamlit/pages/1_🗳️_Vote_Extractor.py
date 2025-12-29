@@ -346,7 +346,7 @@ st.markdown("---")
 with st.sidebar:
     st.header("⚙️ LLM Configuration")
     st.caption("Optional: Customize the AI model used for extraction")
-    
+
     # Fetch available models from backend
     try:
         with httpx.Client(timeout=10.0) as client:  # 10 second timeout
@@ -399,13 +399,13 @@ with st.sidebar:
                 "top_k": 40,
             }
         }
-    
+
     use_custom_config = st.checkbox(
         "Use custom model configuration",
         value=False,
         help="Enable to customize provider, model, and parameters"
     )
-    
+
     llm_config = None
     if use_custom_config:
         # Get supported providers
@@ -413,7 +413,7 @@ with st.sidebar:
             p for p in models_config.get("providers", [])
             if p.get("supported", False)
         ]
-        
+
         if supported_providers:
             # Provider selection
             provider_options = {p["display_name"]: p["name"] for p in supported_providers}
@@ -423,13 +423,13 @@ with st.sidebar:
                 help="Select the LLM provider"
             )
             selected_provider = provider_options[selected_provider_display]
-            
+
             # Get provider details
             provider_data = next(
                 (p for p in supported_providers if p["name"] == selected_provider),
                 None
             )
-            
+
             if provider_data:
                 # Model selection
                 model_options = {
@@ -442,13 +442,13 @@ with st.sidebar:
                     help="Select the specific model to use"
                 )
                 selected_model = model_options[selected_model_display]
-                
+
                 # Get model details for default values
                 model_data = next(
                     (m for m in provider_data["models"] if m["name"] == selected_model),
                     {}
                 )
-                
+
                 # Advanced parameters in expander
                 with st.expander("🔧 Advanced Parameters"):
                     temperature = st.slider(
@@ -459,7 +459,7 @@ with st.sidebar:
                         step=0.1,
                         help="Lower = more deterministic, Higher = more creative"
                     )
-                    
+
                     max_tokens = st.number_input(
                         "Max Tokens",
                         min_value=1024,
@@ -468,7 +468,7 @@ with st.sidebar:
                         step=512,
                         help="Maximum number of tokens to generate"
                     )
-                    
+
                     top_p = st.slider(
                         "Top P",
                         min_value=0.0,
@@ -477,7 +477,7 @@ with st.sidebar:
                         step=0.05,
                         help="Nucleus sampling parameter"
                     )
-                    
+
                     top_k = st.number_input(
                         "Top K",
                         min_value=1,
@@ -486,7 +486,7 @@ with st.sidebar:
                         step=1,
                         help="Top-k sampling parameter (Vertex AI)"
                     )
-                
+
                 # Build LLM config
                 llm_config = {
                     "provider": selected_provider,
@@ -496,7 +496,7 @@ with st.sidebar:
                     "top_p": top_p,
                     "top_k": top_k,
                 }
-                
+
                 st.success(f"✅ Using: {selected_model_display}")
         else:
             st.warning("No supported providers available")

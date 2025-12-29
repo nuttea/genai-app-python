@@ -191,17 +191,17 @@ class VoteExtractionService:
         # Set up LLM configuration (use provided config or defaults)
         if llm_config is None:
             llm_config = LLMConfig()  # Use defaults
-        
+
         # For now, only Vertex AI is supported
         if llm_config.provider != "vertex_ai":
             logger.warning(f"Provider {llm_config.provider} not yet supported, using vertex_ai")
             llm_config.provider = "vertex_ai"
-        
+
         logger.info(
             f"Extracting with LLM config: provider={llm_config.provider}, "
             f"model={llm_config.model}, temp={llm_config.temperature}"
         )
-        
+
         client = self._get_client()
 
         # List to hold all content parts (Text labels + Image bytes)
@@ -292,7 +292,7 @@ class VoteExtractionService:
                 top_p=llm_config.top_p,
                 top_k=llm_config.top_k,
             )
-            
+
             # Attach prompt metadata to the LLM span if LLMObs is enabled
             if self._llmobs_enabled and DDTRACE_AVAILABLE:
                 with LLMObs.annotation_context(prompt=prompt_metadata):

@@ -59,10 +59,10 @@ class Settings(BaseSettings):
     default_max_tokens: int = Field(default=16384, ge=1, le=65536)
     default_top_p: float = Field(default=0.95, ge=0.0, le=1.0)
     default_top_k: int = Field(default=40, ge=1, le=100)
-    
+
     # Google AI API Configuration (for dynamic model listing)
     gemini_api_key: str = Field(
-        default="", 
+        default="",
         description="Google AI API key for dynamic model listing (optional)"
     )
 

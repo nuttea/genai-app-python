@@ -22,7 +22,7 @@ from app.core.constants import (
 )
 from app.core.rate_limiting import limiter
 from app.core.security import verify_api_key
-from app.models.vote_extraction import ElectionFormData, VoteExtractionResponse, LLMConfig
+from app.models.vote_extraction import ElectionFormData, LLMConfig, VoteExtractionResponse
 from app.services.vote_extraction_service import vote_extraction_service
 
 logger = logging.getLogger(__name__)
@@ -177,7 +177,7 @@ async def extract_votes(
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"Invalid LLM config JSON, using defaults: {e}")
             # Continue with default config
-    
+
     # Extract vote data
     try:
         result = await vote_extraction_service.extract_from_images(
@@ -334,47 +334,47 @@ async def extract_votes(
 async def fetch_models_from_api() -> list[dict]:
     """
     Fetch models dynamically from Google AI API REST endpoint.
-    
+
     Returns:
         List of model dictionaries, or empty list if fetch fails
     """
     global _models_cache, _cache_timestamp
-    
+
     # Check cache first
     if _models_cache and _cache_timestamp:
         if time.time() - _cache_timestamp < CACHE_TTL:
             logger.info("Returning models from cache")
             return _models_cache
-    
+
     # Check if API key is configured
     api_key = settings.gemini_api_key
     if not api_key:
         logger.info("GEMINI_API_KEY not configured, using static fallback")
         return []
-    
+
     try:
         logger.info("Fetching models from Google AI API")
         async with httpx.AsyncClient(timeout=5.0) as client:
             url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
             response = await client.get(url)
             response.raise_for_status()
-            
+
             models_data = response.json()
-            
+
             # Transform to our format - filter for Gemini models only
             transformed = []
             for model in models_data.get("models", []):
                 model_name = model.get("name", "").replace("models/", "")
-                
+
                 # Only include Gemini models (not embeddings or Gemma)
                 if not model_name.startswith("gemini-"):
                     continue
-                
+
                 # Only include models that support generateContent
                 supported_actions = model.get("supportedGenerationMethods", [])
                 if "generateContent" not in supported_actions:
                     continue
-                
+
                 transformed.append({
                     "name": model_name,
                     "display_name": model.get("displayName", model_name),
@@ -387,14 +387,14 @@ async def fetch_models_from_api() -> list[dict]:
                     "top_p": model.get("topP", 0.95),
                     "top_k": model.get("topK", 40),
                 })
-            
+
             # Update cache
             _models_cache = transformed
             _cache_timestamp = time.time()
-            
+
             logger.info(f"Successfully fetched {len(transformed)} models from API")
             return transformed
-            
+
     except httpx.TimeoutException:
         logger.warning("Timeout fetching models from API, using fallback")
         return []
@@ -409,7 +409,7 @@ async def fetch_models_from_api() -> list[dict]:
 def get_static_gemini_models() -> list[dict]:
     """
     Get curated static list of Gemini models as fallback.
-    
+
     Returns:
         List of model dictionaries
     """
@@ -469,27 +469,27 @@ def get_static_gemini_models() -> list[dict]:
 async def list_models() -> JSONResponse:
     """
     List available LLM providers and their models.
-    
+
     Dynamically fetches models from Google AI API if GEMINI_API_KEY is configured,
     otherwise falls back to curated static list.
-    
+
     Benefits of dynamic fetching:
     - Always up-to-date with latest models
     - Auto-discovers new models
-    
+
     Cache: Models are cached for 1 hour to reduce API calls
     Fallback: If API fetch fails, uses static list automatically
-    
+
     Reference: https://ai.google.dev/api/models
     """
     # Try dynamic fetch first
     gemini_models = await fetch_models_from_api()
-    
+
     # Fallback to static list if dynamic fetch returns empty
     if not gemini_models:
         logger.info("Using static fallback models list")
         gemini_models = get_static_gemini_models()
-    
+
     models_config = {
             "providers": [
                 {
@@ -552,7 +552,7 @@ async def list_models() -> JSONResponse:
                 "top_k": 40,
             },
         }
-        
+
     return JSONResponse(content=models_config)
 
 
