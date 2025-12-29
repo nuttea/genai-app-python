@@ -25,7 +25,8 @@ This is a production-ready GenAI application platform for Thai election vote ext
 
 ### Python
 - Use **type hints** for all function parameters and returns
-- Follow **PEP 8** with Black formatting
+- Follow **PEP 8** with **Black formatting** (Line length: 100, Python 3.11)
+- **⚠️ CRITICAL**: Always run Black formatter before committing (see Pre-Commit Process below)
 - Use **Pydantic** for data validation and settings
 - **Async/await** for I/O operations
 - **Poetry** for dependency management (no pip install directly)
@@ -91,6 +92,68 @@ frontend/streamlit/
 └── Dockerfile                # Production Dockerfile
 ```
 
+## ⚠️ Pre-Commit Process (REQUIRED)
+
+**CRITICAL**: Always format code with Black before committing. CI/CD will fail if code is not formatted.
+
+### Required Before Every Commit
+
+**1. Format All Code (Required)**
+```bash
+# Backend
+cd services/fastapi-backend
+poetry run black app/
+cd ../..
+
+# Frontend
+cd frontend/streamlit
+poetry run black .
+cd ../..
+```
+
+**2. Optional: Lint Check**
+```bash
+# Backend
+cd services/fastapi-backend
+poetry run ruff check --fix app/
+cd ../..
+
+# Frontend
+cd frontend/streamlit
+poetry run ruff check --fix .
+cd ../..
+```
+
+**3. Commit & Push**
+```bash
+git add -A
+git commit -m "your message"
+git push
+```
+
+### Quick Reference
+
+- **One-liner**: See `PRE-COMMIT-CHECKLIST.md` for copy-paste commands
+- **Makefile**: `make pre-commit` (formats all code)
+- **CI/CD Check**: `.github/workflows/fastapi-backend.yml` runs `black --check`
+
+### If CI/CD Fails (Formatting Error)
+
+If GitHub Actions fails with "Run Black (check only)" error:
+
+1. Format the code locally (commands above)
+2. Commit and push the formatting fix
+3. CI/CD will automatically re-run and pass
+
+See `FIX_CI_FORMATTING.md` for detailed troubleshooting.
+
+### Important Files
+
+- `PRE-COMMIT-CHECKLIST.md` - Manual formatting checklist
+- `BLACK_FORMATTING_SETUP.md` - Complete Black setup documentation
+- `FIX_CI_FORMATTING.md` - How to fix CI/CD formatting failures
+- `.git-hooks/` - Optional pre-commit hooks (may not work in all environments)
+
 ## Common Tasks
 
 ### Adding a New API Endpoint
@@ -113,9 +176,11 @@ frontend/streamlit/
 4. Document in `docs/features/LLM_CONFIGURATION.md`
 
 ### Troubleshooting Common Issues
+- **CI/CD formatting failure**: Run Black formatter before committing (see `FIX_CI_FORMATTING.md`)
 - **JSON parsing errors**: Check `max_tokens` limit (see `docs/troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md`)
 - **Model listing returns 0**: Expected with Vertex AI (see `docs/investigations/MODELS_API_FINDINGS.md`)
 - **Docker startup errors**: Check `docker-compose.yml` overrides (see `docs/reference/DOCKER_FIX_LOCAL_DEV.md`)
+- **Poetry/Black not working**: Check environment setup, may need `scfw run poetry` wrapper
 
 ## Testing
 
@@ -204,12 +269,13 @@ docker-compose up -d
 - ✅ Use RUM for frontend monitoring
 
 ### Code Quality
+- ✅ **Format with Black BEFORE every commit** (CI/CD requirement)
 - ✅ Write type hints for all functions
 - ✅ Add docstrings for public APIs
 - ✅ Write tests for new features
-- ✅ Use Black for formatting
-- ✅ Run linters before committing
+- ✅ Run linters (Ruff) to catch code issues
 - ✅ Keep functions small and focused
+- ✅ Check `PRE-COMMIT-CHECKLIST.md` before committing
 
 ## Important Notes
 
@@ -230,11 +296,12 @@ docker-compose up -d
 
 ## Getting Help
 
-1. **Documentation**: Check `DOCUMENTATION_MAP.md` for navigation
-2. **Troubleshooting**: See `docs/troubleshooting/`
-3. **Investigations**: See `docs/investigations/`
-4. **Tests**: Run `scripts/tests/` scripts
-5. **Logs**: `docker logs genai-fastapi-backend --tail 100`
+1. **Pre-Commit Issues**: Check `PRE-COMMIT-CHECKLIST.md` or `FIX_CI_FORMATTING.md`
+2. **Documentation**: Check `DOCUMENTATION_MAP.md` for navigation
+3. **Troubleshooting**: See `docs/troubleshooting/`
+4. **Investigations**: See `docs/investigations/`
+5. **Tests**: Run `scripts/tests/` scripts
+6. **Logs**: `docker logs genai-fastapi-backend --tail 100`
 
 ## Version Info
 
@@ -249,8 +316,12 @@ docker-compose up -d
 **When in doubt, check the documentation first!**
 
 **Priority order:**
-1. `QUICKSTART.md` - Get started
-2. `DOCUMENTATION_MAP.md` - Find relevant docs
-3. `docs/troubleshooting/` - Fix issues
-4. `docs/investigations/` - Understand findings
+1. **Before committing**: `PRE-COMMIT-CHECKLIST.md` - Format code with Black
+2. `QUICKSTART.md` - Get started
+3. `DOCUMENTATION_MAP.md` - Find relevant docs
+4. `FIX_CI_FORMATTING.md` - Fix CI/CD formatting failures
+5. `docs/troubleshooting/` - Fix issues
+6. `docs/investigations/` - Understand findings
+
+**⚠️ REMEMBER**: Always format with Black before committing!
 
