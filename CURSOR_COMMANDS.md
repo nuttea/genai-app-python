@@ -10,6 +10,8 @@ Type in Cursor Agent chat:
 - `/format-only` - Format code without committing
 - `/quick-push` - Auto-commit and push
 
+**How it works**: Commands are plain **Markdown files** (`.md`) stored in `.cursor/commands/` that Cursor automatically detects
+
 **Requires**: Cursor 0.41+ with custom commands support
 
 ### 2. Shell Scripts & Make Commands (Works Everywhere)

@@ -1,6 +1,0 @@
-{
-  "name": "lint-commit-push",
-  "description": "Format code with Black, lint with Ruff, commit, and push to remote",
-  "prompt": "You are helping to format, lint, commit, and push code changes.\n\n**Instructions**:\n1. First, format all code with Black:\n   - Backend: `cd services/fastapi-backend && poetry run black app/ && cd ../..`\n   - Frontend: `cd frontend/streamlit && poetry run black . && cd ../..`\n\n2. Then lint with Ruff (optional but recommended):\n   - Backend: `cd services/fastapi-backend && poetry run ruff check --fix app/ && cd ../..`\n   - Frontend: `cd frontend/streamlit && poetry run ruff check --fix . && cd ../..`\n\n3. Ask the user for a commit message if not provided\n\n4. Stage all changes, commit with the message, and push:\n   ```bash\n   git add -A\n   git commit -m \"<user's message>\"\n   git push origin main\n   ```\n\n5. Show a summary:\n   - Latest commit (git log -1 --oneline)\n   - Link to CI/CD: https://github.com/nuttea/genai-app-python/actions\n\n**Critical**: Always format with Black before committing. CI/CD will fail otherwise.\n\n**Alternative**: The user can also use the shell script: `./lint-commit-push.sh \"message\"` or `make lint-commit-push MSG=\"message\"`"
-}
-
