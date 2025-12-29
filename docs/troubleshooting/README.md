@@ -29,7 +29,15 @@ max_tokens = 65536  # Maximum (Gemini 2.5 Flash)
 
 ## 🔍 Common Issues
 
-### 1. Server Error 500 - JSON Parsing
+### 1. Streamlit Secrets Error (Cloud Run)
+**Symptoms:**
+- `StreamlitSecretNotFoundError: No secrets found`
+- "Valid paths for a secrets.toml file..." error
+- App crashes on Cloud Run startup
+
+**Solution:** → [STREAMLIT_SECRETS_CLOUD_RUN.md](./STREAMLIT_SECRETS_CLOUD_RUN.md)
+
+### 2. Server Error 500 - JSON Parsing
 **Symptoms:**
 - "Unterminated string" errors
 - "Expecting delimiter" errors  
@@ -37,14 +45,14 @@ max_tokens = 65536  # Maximum (Gemini 2.5 Flash)
 
 **Solution:** → [TROUBLESHOOTING_MAX_TOKENS.md](./TROUBLESHOOTING_MAX_TOKENS.md)
 
-### 2. Model Listing Returns Empty
+### 3. Model Listing Returns Empty
 **Symptoms:**
 - `client.models.list()` returns 0 models
 - Models work for inference but not listing
 
 **Solution:** → [../investigations/MODELS_API_FINDINGS.md](../investigations/MODELS_API_FINDINGS.md)
 
-### 3. Docker Startup Errors (Local Dev)
+### 4. Docker Startup Errors (Local Dev)
 **Symptoms:**
 - "datadog-init: no such file or directory"
 - Container fails to start locally
