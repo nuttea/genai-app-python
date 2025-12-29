@@ -54,11 +54,17 @@ class Settings(BaseSettings):
     )
 
     # Vertex AI Model Configuration
-    default_model: str = Field(default="gemini-pro", description="Default model")
-    default_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    default_max_tokens: int = Field(default=1024, ge=1, le=32768)
+    default_model: str = Field(default="gemini-2.5-flash", description="Default model")
+    default_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    default_max_tokens: int = Field(default=16384, ge=1, le=65536)
     default_top_p: float = Field(default=0.95, ge=0.0, le=1.0)
     default_top_k: int = Field(default=40, ge=1, le=100)
+    
+    # Google AI API Configuration (for dynamic model listing)
+    gemini_api_key: str = Field(
+        default="", 
+        description="Google AI API key for dynamic model listing (optional)"
+    )
 
     # Rate Limiting
     rate_limit_enabled: bool = Field(default=True)

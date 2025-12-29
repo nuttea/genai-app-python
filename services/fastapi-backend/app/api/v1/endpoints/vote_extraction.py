@@ -1,11 +1,16 @@
 """Vote extraction endpoints."""
 
+import json
 import logging
 import re
+import time
+from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+import httpx
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 
+from app.config import settings
 from app.core.constants import (
     MAX_FILE_SIZE_BYTES,
     MAX_FILE_SIZE_MB,
@@ -17,12 +22,17 @@ from app.core.constants import (
 )
 from app.core.rate_limiting import limiter
 from app.core.security import verify_api_key
-from app.models.vote_extraction import ElectionFormData, VoteExtractionResponse
+from app.models.vote_extraction import ElectionFormData, VoteExtractionResponse, LLMConfig
 from app.services.vote_extraction_service import vote_extraction_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vote-extraction", tags=["vote-extraction"])
+
+# Cache for dynamically fetched models
+_models_cache: Optional[list[dict]] = None
+_cache_timestamp: Optional[float] = None
+CACHE_TTL = 3600  # 1 hour cache
 
 
 @router.post(
@@ -38,6 +48,7 @@ async def extract_votes(
     files: list[UploadFile] = File(
         ..., description="Election form images (multiple pages supported)"
     ),
+    llm_config_json: str = Form(None, description="Optional LLM configuration as JSON"),
     api_key: str = Depends(verify_api_key),
 ) -> VoteExtractionResponse:
     """
@@ -156,11 +167,23 @@ async def extract_votes(
                 detail=f"Error reading file: {file.filename}",
             )
 
+    # Parse LLM configuration
+    llm_config = None
+    if llm_config_json:
+        try:
+            llm_config_dict = json.loads(llm_config_json)
+            llm_config = LLMConfig(**llm_config_dict)
+            logger.info(f"Using custom LLM config: provider={llm_config.provider}, model={llm_config.model}")
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Invalid LLM config JSON, using defaults: {e}")
+            # Continue with default config
+    
     # Extract vote data
     try:
         result = await vote_extraction_service.extract_from_images(
             image_files=image_files,
             image_filenames=image_filenames,
+            llm_config=llm_config,
         )
 
         if not result:
@@ -306,6 +329,231 @@ async def extract_votes(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during extraction: {str(e)}",
         )
+
+
+async def fetch_models_from_api() -> list[dict]:
+    """
+    Fetch models dynamically from Google AI API REST endpoint.
+    
+    Returns:
+        List of model dictionaries, or empty list if fetch fails
+    """
+    global _models_cache, _cache_timestamp
+    
+    # Check cache first
+    if _models_cache and _cache_timestamp:
+        if time.time() - _cache_timestamp < CACHE_TTL:
+            logger.info("Returning models from cache")
+            return _models_cache
+    
+    # Check if API key is configured
+    api_key = settings.gemini_api_key
+    if not api_key:
+        logger.info("GEMINI_API_KEY not configured, using static fallback")
+        return []
+    
+    try:
+        logger.info("Fetching models from Google AI API")
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+            response = await client.get(url)
+            response.raise_for_status()
+            
+            models_data = response.json()
+            
+            # Transform to our format - filter for Gemini models only
+            transformed = []
+            for model in models_data.get("models", []):
+                model_name = model.get("name", "").replace("models/", "")
+                
+                # Only include Gemini models (not embeddings or Gemma)
+                if not model_name.startswith("gemini-"):
+                    continue
+                
+                # Only include models that support generateContent
+                supported_actions = model.get("supportedGenerationMethods", [])
+                if "generateContent" not in supported_actions:
+                    continue
+                
+                transformed.append({
+                    "name": model_name,
+                    "display_name": model.get("displayName", model_name),
+                    "description": model.get("description", "")[:200],
+                    "context_window": model.get("inputTokenLimit", 0),
+                    "max_output_tokens": model.get("outputTokenLimit", 0),
+                    "version": model_name.split("-")[1] if "-" in model_name else "unknown",
+                    "temperature": 0.0,
+                    "max_temperature": model.get("temperature", 2.0),
+                    "top_p": model.get("topP", 0.95),
+                    "top_k": model.get("topK", 40),
+                })
+            
+            # Update cache
+            _models_cache = transformed
+            _cache_timestamp = time.time()
+            
+            logger.info(f"Successfully fetched {len(transformed)} models from API")
+            return transformed
+            
+    except httpx.TimeoutException:
+        logger.warning("Timeout fetching models from API, using fallback")
+        return []
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"HTTP error fetching models from API: {e.response.status_code}")
+        return []
+    except Exception as e:
+        logger.error(f"Error fetching models from API: {e}", exc_info=True)
+        return []
+
+
+def get_static_gemini_models() -> list[dict]:
+    """
+    Get curated static list of Gemini models as fallback.
+    
+    Returns:
+        List of model dictionaries
+    """
+    return [
+        {
+            "name": "gemini-2.5-flash",
+            "display_name": "Gemini 2.5 Flash",
+            "description": "Fast and efficient model for most tasks",
+            "context_window": 1048576,
+            "max_output_tokens": 8192,
+            "version": "2.5",
+            "temperature": 0.0,
+            "max_temperature": 2.0,
+            "top_p": 0.95,
+            "top_k": 40,
+        },
+        {
+            "name": "gemini-2.0-flash-exp",
+            "display_name": "Gemini 2.0 Flash (Experimental)",
+            "description": "Experimental features and improvements",
+            "context_window": 1048576,
+            "max_output_tokens": 8192,
+            "version": "2.0",
+            "temperature": 0.0,
+            "max_temperature": 2.0,
+            "top_p": 0.95,
+            "top_k": 40,
+        },
+        {
+            "name": "gemini-1.5-flash-002",
+            "display_name": "Gemini 1.5 Flash",
+            "description": "Stable and reliable model",
+            "context_window": 1048576,
+            "max_output_tokens": 8192,
+            "version": "1.5",
+            "temperature": 0.0,
+            "max_temperature": 2.0,
+            "top_p": 0.95,
+            "top_k": 40,
+        },
+        {
+            "name": "gemini-1.5-pro-002",
+            "display_name": "Gemini 1.5 Pro",
+            "description": "Most capable model for complex tasks",
+            "context_window": 2097152,
+            "max_output_tokens": 8192,
+            "version": "1.5",
+            "temperature": 0.0,
+            "max_temperature": 2.0,
+            "top_p": 0.95,
+            "top_k": 40,
+        },
+    ]
+
+
+@router.get("/models", summary="List available LLM models")
+async def list_models() -> JSONResponse:
+    """
+    List available LLM providers and their models.
+    
+    Dynamically fetches models from Google AI API if GEMINI_API_KEY is configured,
+    otherwise falls back to curated static list.
+    
+    Benefits of dynamic fetching:
+    - Always up-to-date with latest models
+    - Auto-discovers new models
+    
+    Cache: Models are cached for 1 hour to reduce API calls
+    Fallback: If API fetch fails, uses static list automatically
+    
+    Reference: https://ai.google.dev/api/models
+    """
+    # Try dynamic fetch first
+    gemini_models = await fetch_models_from_api()
+    
+    # Fallback to static list if dynamic fetch returns empty
+    if not gemini_models:
+        logger.info("Using static fallback models list")
+        gemini_models = get_static_gemini_models()
+    
+    models_config = {
+            "providers": [
+                {
+                    "name": "vertex_ai",
+                    "display_name": "Google Vertex AI / Gemini API",
+                    "models": gemini_models,
+                    "default_model": "gemini-2.5-flash",
+                    "supported": True,
+                    "dynamic_listing": bool(settings.gemini_api_key),
+                },
+                {
+                    "name": "openai",
+                    "display_name": "OpenAI",
+                    "models": [
+                        {
+                            "name": "gpt-4o",
+                            "display_name": "GPT-4o",
+                            "context_window": 128000,
+                            "max_output_tokens": 16384,
+                        },
+                        {
+                            "name": "gpt-4o-mini",
+                            "display_name": "GPT-4o Mini",
+                            "context_window": 128000,
+                            "max_output_tokens": 16384,
+                        },
+                    ],
+                    "default_model": "gpt-4o-mini",
+                    "supported": False,
+                    "note": "Coming soon",
+                },
+                {
+                    "name": "anthropic",
+                    "display_name": "Anthropic",
+                    "models": [
+                        {
+                            "name": "claude-3-5-sonnet-20241022",
+                            "display_name": "Claude 3.5 Sonnet",
+                            "context_window": 200000,
+                            "max_output_tokens": 8192,
+                        },
+                        {
+                            "name": "claude-3-5-haiku-20241022",
+                            "display_name": "Claude 3.5 Haiku",
+                            "context_window": 200000,
+                            "max_output_tokens": 8192,
+                        },
+                    ],
+                    "default_model": "claude-3-5-sonnet-20241022",
+                    "supported": False,
+                    "note": "Coming soon",
+                },
+            ],
+            "default_config": {
+                "provider": "vertex_ai",
+                "model": "gemini-2.5-flash",
+                "temperature": 0.0,
+                "max_tokens": 16384,
+                "top_p": 0.95,
+                "top_k": 40,
+            },
+        }
+        
+    return JSONResponse(content=models_config)
 
 
 @router.get(

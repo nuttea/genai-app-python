@@ -80,3 +80,39 @@ class VoteExtractionResponse(BaseModel):
     reports_extracted: int = Field(
         default=0, description="Number of reports successfully extracted"
     )
+
+
+class LLMConfig(BaseModel):
+    """Configuration for LLM provider and model."""
+
+    provider: str = Field(
+        default="vertex_ai",
+        description="LLM provider: vertex_ai, openai, anthropic",
+    )
+    model: str = Field(
+        default="gemini-2.5-flash",
+        description="Model name for the selected provider",
+    )
+    temperature: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=2.0,
+        description="Sampling temperature (0.0-2.0)",
+    )
+    max_tokens: int = Field(
+        default=16384,
+        gt=0,
+        le=65536,
+        description="Maximum tokens to generate (Gemini 2.5 Flash supports up to 65,536)",
+    )
+    top_p: Optional[float] = Field(
+        default=0.95,
+        ge=0.0,
+        le=1.0,
+        description="Nucleus sampling parameter",
+    )
+    top_k: Optional[int] = Field(
+        default=40,
+        gt=0,
+        description="Top-k sampling parameter (Vertex AI)",
+    )

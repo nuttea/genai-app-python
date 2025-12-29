@@ -342,6 +342,173 @@ with st.expander("📖 How to use", expanded=False):
 
 st.markdown("---")
 
+# Sidebar: LLM Configuration
+with st.sidebar:
+    st.header("⚙️ LLM Configuration")
+    st.caption("Optional: Customize the AI model used for extraction")
+    
+    # Fetch available models from backend
+    try:
+        with httpx.Client(timeout=10.0) as client:  # 10 second timeout
+            models_response = client.get(f"{API_BASE_URL}/api/v1/vote-extraction/models")
+            models_config = models_response.json()
+    except Exception as e:
+        st.warning(f"Could not fetch models from API: {str(e)}")
+        # Fallback to static list of common models
+        models_config = {
+            "providers": [
+                {
+                    "name": "vertex_ai",
+                    "display_name": "Google Vertex AI",
+                    "models": [
+                        {
+                            "name": "gemini-2.5-flash",
+                            "display_name": "Gemini 2.5 Flash",
+                            "context_window": 1048576,
+                            "max_output_tokens": 8192,
+                        },
+                        {
+                            "name": "gemini-2.0-flash-exp",
+                            "display_name": "Gemini 2.0 Flash (Experimental)",
+                            "context_window": 1048576,
+                            "max_output_tokens": 8192,
+                        },
+                        {
+                            "name": "gemini-1.5-flash-002",
+                            "display_name": "Gemini 1.5 Flash",
+                            "context_window": 1048576,
+                            "max_output_tokens": 8192,
+                        },
+                        {
+                            "name": "gemini-1.5-pro-002",
+                            "display_name": "Gemini 1.5 Pro",
+                            "context_window": 2097152,
+                            "max_output_tokens": 8192,
+                        },
+                    ],
+                    "default_model": "gemini-2.5-flash",
+                    "supported": True,
+                }
+            ],
+            "default_config": {
+                "provider": "vertex_ai",
+                "model": "gemini-2.5-flash",
+                "temperature": 0.0,
+                "max_tokens": 8192,
+                "top_p": 0.95,
+                "top_k": 40,
+            }
+        }
+    
+    use_custom_config = st.checkbox(
+        "Use custom model configuration",
+        value=False,
+        help="Enable to customize provider, model, and parameters"
+    )
+    
+    llm_config = None
+    if use_custom_config:
+        # Get supported providers
+        supported_providers = [
+            p for p in models_config.get("providers", [])
+            if p.get("supported", False)
+        ]
+        
+        if supported_providers:
+            # Provider selection
+            provider_options = {p["display_name"]: p["name"] for p in supported_providers}
+            selected_provider_display = st.selectbox(
+                "Provider",
+                options=list(provider_options.keys()),
+                help="Select the LLM provider"
+            )
+            selected_provider = provider_options[selected_provider_display]
+            
+            # Get provider details
+            provider_data = next(
+                (p for p in supported_providers if p["name"] == selected_provider),
+                None
+            )
+            
+            if provider_data:
+                # Model selection
+                model_options = {
+                    m["display_name"]: m["name"]
+                    for m in provider_data.get("models", [])
+                }
+                selected_model_display = st.selectbox(
+                    "Model",
+                    options=list(model_options.keys()),
+                    help="Select the specific model to use"
+                )
+                selected_model = model_options[selected_model_display]
+                
+                # Get model details for default values
+                model_data = next(
+                    (m for m in provider_data["models"] if m["name"] == selected_model),
+                    {}
+                )
+                
+                # Advanced parameters in expander
+                with st.expander("🔧 Advanced Parameters"):
+                    temperature = st.slider(
+                        "Temperature",
+                        min_value=0.0,
+                        max_value=2.0,
+                        value=0.0,
+                        step=0.1,
+                        help="Lower = more deterministic, Higher = more creative"
+                    )
+                    
+                    max_tokens = st.number_input(
+                        "Max Tokens",
+                        min_value=1024,
+                        max_value=model_data.get("max_output_tokens", 8192),
+                        value=8192,
+                        step=512,
+                        help="Maximum number of tokens to generate"
+                    )
+                    
+                    top_p = st.slider(
+                        "Top P",
+                        min_value=0.0,
+                        max_value=1.0,
+                        value=0.95,
+                        step=0.05,
+                        help="Nucleus sampling parameter"
+                    )
+                    
+                    top_k = st.number_input(
+                        "Top K",
+                        min_value=1,
+                        max_value=100,
+                        value=40,
+                        step=1,
+                        help="Top-k sampling parameter (Vertex AI)"
+                    )
+                
+                # Build LLM config
+                llm_config = {
+                    "provider": selected_provider,
+                    "model": selected_model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "top_p": top_p,
+                    "top_k": top_k,
+                }
+                
+                st.success(f"✅ Using: {selected_model_display}")
+        else:
+            st.warning("No supported providers available")
+    else:
+        default_config = models_config.get("default_config", {})
+        st.info(
+            f"Using default: {default_config.get('model', 'gemini-2.5-flash')}\n\n"
+            f"Temperature: {default_config.get('temperature', 0.0)}"
+        )
+
+st.markdown("---")
+
 # File uploader
 st.subheader("📤 Upload Election Form Images")
 st.caption("⚠️ Limits: 10MB per file, 30MB total upload size")
@@ -408,7 +575,7 @@ with col2:
     )
 
 
-def process_extraction(uploaded_files):
+def process_extraction(uploaded_files, llm_config=None):
     """Process extraction and display results."""
     # Prepare files for upload
     files = []
@@ -420,9 +587,14 @@ def process_extraction(uploaded_files):
     if API_KEY:
         headers["X-API-Key"] = API_KEY
 
+    # Prepare data with optional LLM config
+    data = {}
+    if llm_config:
+        data["llm_config_json"] = json.dumps(llm_config)
+
     # Call API
     with httpx.Client(timeout=120.0) as client:
-        response = client.post(API_ENDPOINT, files=files, headers=headers)
+        response = client.post(API_ENDPOINT, files=files, headers=headers, data=data)
         response.raise_for_status()
         return response.json()
 
@@ -468,7 +640,7 @@ def display_extraction_results(result):
 if extract_button and uploaded_files:
     with st.spinner("🔄 Processing images and extracting data..."):
         try:
-            result = process_extraction(uploaded_files)
+            result = process_extraction(uploaded_files, llm_config)
             # Store result in session state
             st.session_state.extraction_result = result
         except httpx.ConnectError as e:

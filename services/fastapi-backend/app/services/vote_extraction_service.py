@@ -10,7 +10,7 @@ from google.genai import types
 
 from app.config import settings
 from app.core.exceptions import ExtractionException
-from app.models.vote_extraction import ElectionFormData
+from app.models.vote_extraction import ElectionFormData, LLMConfig
 
 # Initialize logger first
 logger = logging.getLogger(__name__)
@@ -175,6 +175,7 @@ class VoteExtractionService:
         self,
         image_files: list[bytes],
         image_filenames: list[str],
+        llm_config: Optional["LLMConfig"] = None,
     ) -> Optional[dict[str, Any]]:
         """
         Extract vote data from multiple document pages using Gemini.
@@ -182,10 +183,25 @@ class VoteExtractionService:
         Args:
             image_files: List of image bytes
             image_filenames: List of filenames for reference
+            llm_config: Optional LLM configuration (provider, model, parameters)
 
         Returns:
             Extracted data as dictionary, or None if extraction fails
         """
+        # Set up LLM configuration (use provided config or defaults)
+        if llm_config is None:
+            llm_config = LLMConfig()  # Use defaults
+        
+        # For now, only Vertex AI is supported
+        if llm_config.provider != "vertex_ai":
+            logger.warning(f"Provider {llm_config.provider} not yet supported, using vertex_ai")
+            llm_config.provider = "vertex_ai"
+        
+        logger.info(
+            f"Extracting with LLM config: provider={llm_config.provider}, "
+            f"model={llm_config.model}, temp={llm_config.temperature}"
+        )
+        
         client = self._get_client()
 
         # List to hold all content parts (Text labels + Image bytes)
@@ -267,28 +283,30 @@ class VoteExtractionService:
                 },
             }
 
+            # Prepare generation config
+            generation_config = types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ELECTION_DATA_SCHEMA,
+                temperature=llm_config.temperature,
+                max_output_tokens=llm_config.max_tokens,
+                top_p=llm_config.top_p,
+                top_k=llm_config.top_k,
+            )
+            
             # Attach prompt metadata to the LLM span if LLMObs is enabled
             if self._llmobs_enabled and DDTRACE_AVAILABLE:
                 with LLMObs.annotation_context(prompt=prompt_metadata):
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model=llm_config.model,
                         contents=content_parts,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            response_schema=ELECTION_DATA_SCHEMA,
-                            temperature=0.0,  # Low temperature for factual extraction
-                        ),
+                        config=generation_config,
                     )
             else:
                 # Call without prompt tracking if LLMObs not available
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model=llm_config.model,
                     contents=content_parts,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=ELECTION_DATA_SCHEMA,
-                        temperature=0.0,  # Low temperature for factual extraction
-                    ),
+                    config=generation_config,
                 )
 
             result = json.loads(response.text)

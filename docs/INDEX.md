@@ -26,6 +26,21 @@ Start here if you're new to the project:
    - Enable full observability
    - APM and LLM tracking
 
+5. **[getting-started/PRODUCTION_QUICKSTART.md](getting-started/PRODUCTION_QUICKSTART.md)**
+   - Production deployment strategy
+   - Branch management (main/prod)
+   - Cloud Run revision tags
+
+6. **[getting-started/LLM_CONFIG_QUICKSTART.md](getting-started/LLM_CONFIG_QUICKSTART.md)**
+   - LLM model selection and configuration
+   - Parameter tuning guide
+   - Frontend integration
+
+7. **[getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md](getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md)**
+   - LLM Observability evaluations
+   - Custom evaluations setup
+   - Dataset management
+
 ## 📖 Complete Guides (30-60 minutes)
 
 Comprehensive documentation for deep dives:
@@ -87,6 +102,37 @@ Comprehensive documentation for deep dives:
   - API integration
   - Batch processing
 
+- **[features/LLM_CONFIGURATION.md](features/LLM_CONFIGURATION.md)**
+  - Dynamic LLM provider/model selection
+  - Model parameter tuning
+  - Configuration guide
+  - Best practices
+
+### Troubleshooting
+- **[troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)**
+  - JSON parsing errors (Unterminated string)
+  - max_tokens configuration
+  - Capacity guidelines
+  - Solutions for multi-page extractions
+
+- **[troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)**
+  - Recent fixes and improvements
+  - Testing instructions
+
+### Investigations
+- **[investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)**
+  - Why `client.models.list()` returns 0 models
+  - REST API vs Python SDK comparison
+  - Static vs dynamic model listing
+
+- **[investigations/INVESTIGATION_COMPLETE.md](investigations/INVESTIGATION_COMPLETE.md)**
+  - Executive summary of findings
+  - Validation of static model list approach
+
+- **[investigations/OPTIONAL_DYNAMIC_MODELS.md](investigations/OPTIONAL_DYNAMIC_MODELS.md)**
+  - Dynamic model listing with Google AI API
+  - Trade-offs and considerations
+
 ### Reference
 - **[reference/environment-variables.md](reference/environment-variables.md)**
   - All environment variables
@@ -99,6 +145,22 @@ Comprehensive documentation for deep dives:
   - Implemented vs planned
   - Technical details
   - Use cases
+
+- **[reference/DYNAMIC_MODELS_IMPLEMENTATION.md](reference/DYNAMIC_MODELS_IMPLEMENTATION.md)**
+  - Dynamic model listing implementation
+  - Architecture and design decisions
+  - Caching strategy
+  - Performance metrics
+
+- **[reference/SETUP_GOOGLE_AI_API_KEY.md](reference/SETUP_GOOGLE_AI_API_KEY.md)**
+  - Google AI API key setup
+  - Configuration for dynamic model listing
+  - Secret Manager integration
+
+- **[reference/DOCKER_FIX_LOCAL_DEV.md](reference/DOCKER_FIX_LOCAL_DEV.md)**
+  - Docker Compose configuration
+  - Local development overrides
+  - Datadog serverless-init handling
 
 ## 🏗️ Architecture & Planning
 
@@ -171,38 +233,73 @@ Comprehensive documentation for deep dives:
 
 ```
 docs/
-├── INDEX.md                          ← You are here
+├── INDEX.md                                ← You are here
 │
 ├── getting-started/
-│   ├── GETTING_STARTED.md            # Detailed setup (30 min)
-│   └── DEVELOPMENT.md                # Development guide (45 min)
+│   ├── GETTING_STARTED.md                  # Detailed setup (30 min)
+│   ├── DEVELOPMENT.md                      # Development guide (45 min)
+│   ├── PRODUCTION_QUICKSTART.md            # Production deployment (5 min) ⭐
+│   ├── LLM_CONFIG_QUICKSTART.md            # LLM configuration (5 min) ⭐
+│   └── LLMOBS_EVALUATIONS_QUICKSTART.md    # LLMObs evaluations (5 min) ⭐
 │
 ├── deployment/
-│   ├── quickstart.md                 # Quick deploy (10 min) ⭐
-│   └── CLOUD_RUN_DEPLOYMENT.md       # Complete guide (60 min)
+│   ├── quickstart.md                       # Quick deploy (10 min) ⭐
+│   ├── CLOUD_RUN_DEPLOYMENT.md             # Complete guide (60 min)
+│   └── PRODUCTION_STRATEGY.md              # Production strategy
 │
 ├── security/
-│   ├── api-key-quickstart.md         # Quick setup (2 min) ⭐
-│   ├── API_KEY_SETUP.md              # Complete guide (20 min)
-│   └── AUTHENTICATION.md             # GCP auth (30 min)
+│   ├── api-key-quickstart.md               # Quick setup (2 min) ⭐
+│   ├── API_KEY_SETUP.md                    # Complete guide (20 min)
+│   └── AUTHENTICATION.md                   # GCP auth (30 min)
 │
 ├── monitoring/
-│   ├── quickstart.md                 # Quick setup (2 min) ⭐
-│   └── DATADOG_SETUP.md              # Complete guide (45 min)
+│   ├── quickstart.md                       # Quick setup (2 min) ⭐
+│   ├── DATADOG_SETUP.md                    # Complete guide (45 min)
+│   ├── LLMOBS_NEXT_STEPS.md                # LLMObs roadmap
+│   └── DATADOG_BILLING_BILLABLE_UNITS.md   # Billing guide
 │
 ├── features/
-│   └── vote-extractor.md             # Vote extraction guide (30 min)
+│   ├── vote-extractor.md                   # Vote extraction guide (30 min)
+│   └── LLM_CONFIGURATION.md                # LLM config guide
+│
+├── troubleshooting/
+│   ├── README.md                           # Troubleshooting index
+│   ├── TROUBLESHOOTING_MAX_TOKENS.md       # JSON parsing errors
+│   └── FIX_SUMMARY.md                      # Recent fixes
+│
+├── investigations/
+│   ├── README.md                           # Investigation index
+│   ├── MODELS_API_FINDINGS.md              # Model listing findings
+│   ├── INVESTIGATION_COMPLETE.md           # Investigation summary
+│   ├── OPTIONAL_DYNAMIC_MODELS.md          # Dynamic models approach
+│   └── TEST_MODELS_API.md                  # Test results
 │
 ├── reference/
-│   ├── environment-variables.md      # All env vars
-│   └── features.md                   # Feature list
+│   ├── environment-variables.md            # All env vars
+│   ├── features.md                         # Feature list
+│   ├── DYNAMIC_MODELS_IMPLEMENTATION.md    # Dynamic models impl
+│   ├── SETUP_GOOGLE_AI_API_KEY.md          # API key setup
+│   └── DOCKER_FIX_LOCAL_DEV.md             # Docker config
 │
-└── archive/                          # Historical/reference only
+└── archive/                                # Historical/reference only
     ├── SETUP_COMPLETE.md
     ├── IMPLEMENTATION_SUMMARY.md
     ├── CLOUD_RUN_SETUP_COMPLETE.md
     ├── DATADOG_IMPLEMENTATION_SUMMARY.md
     └── FINAL_IMPLEMENTATION_SUMMARY.md
+```
+
+**Test Scripts:**
+```
+scripts/tests/
+├── README.md                           # Test scripts index
+├── test_google_ai_api.py               # Google AI API test
+├── test_rest_api_models.py             # REST API test
+├── test_both_sdk_approaches.py         # SDK comparison
+├── test_gemini_models_api.py           # Vertex AI test
+├── test_dynamic_models.py              # Dynamic listing test
+├── debug_models_api.py                 # Debug script
+└── test_list_all_models.sh             # Shell script
 ```
 
 ## 🎯 Learning Paths
@@ -240,12 +337,15 @@ docs/
 
 ## 📊 Documentation Statistics
 
-- **Total Files**: 17 markdown documents
-- **Total Content**: ~10,000+ lines
-- **Categories**: 6 main categories
-- **Quick Starts**: 4 guides
-- **Complete Guides**: 8 guides
-- **Reference**: 2 documents
+- **Total Files**: 30+ markdown documents
+- **Total Content**: ~15,000+ lines
+- **Categories**: 9 main categories
+- **Quick Starts**: 7 guides
+- **Complete Guides**: 12 guides
+- **Reference**: 5 documents
+- **Troubleshooting**: 2 guides
+- **Investigations**: 4 reports
+- **Test Scripts**: 7 scripts
 - **Archive**: 5 summaries
 
 ## 🔍 Search by Topic
@@ -286,6 +386,30 @@ docs/
 ### Architecture
 - [PROJECT_PLAN.md](../PROJECT_PLAN.md)
 
+### LLM Configuration
+- [getting-started/LLM_CONFIG_QUICKSTART.md](getting-started/LLM_CONFIG_QUICKSTART.md)
+- [features/LLM_CONFIGURATION.md](features/LLM_CONFIGURATION.md)
+
+### Production Deployment
+- [getting-started/PRODUCTION_QUICKSTART.md](getting-started/PRODUCTION_QUICKSTART.md)
+- [deployment/PRODUCTION_STRATEGY.md](deployment/PRODUCTION_STRATEGY.md)
+
+### LLM Observability
+- [getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md](getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md)
+- [monitoring/LLMOBS_NEXT_STEPS.md](monitoring/LLMOBS_NEXT_STEPS.md)
+
+### Troubleshooting
+- [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
+- [troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)
+
+### Model Listing
+- [investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)
+- [investigations/INVESTIGATION_COMPLETE.md](investigations/INVESTIGATION_COMPLETE.md)
+- [reference/DYNAMIC_MODELS_IMPLEMENTATION.md](reference/DYNAMIC_MODELS_IMPLEMENTATION.md)
+
+### Test Scripts
+- [../../scripts/tests/README.md](../../scripts/tests/README.md)
+
 ## 💡 Tips for Reading
 
 1. **⭐ Starred documents** are quick starts - read these first
@@ -307,9 +431,14 @@ docs/
 **Common Questions:**
 - "How do I start?" → [QUICKSTART.md](../QUICKSTART.md)
 - "How do I deploy?" → [deployment/quickstart.md](deployment/quickstart.md)
+- "How do I deploy to production?" → [getting-started/PRODUCTION_QUICKSTART.md](getting-started/PRODUCTION_QUICKSTART.md)
 - "How do I secure it?" → [security/api-key-quickstart.md](security/api-key-quickstart.md)
 - "How do I monitor?" → [monitoring/quickstart.md](monitoring/quickstart.md)
 - "How does it work?" → [PROJECT_PLAN.md](../PROJECT_PLAN.md)
+- "How do I configure LLMs?" → [getting-started/LLM_CONFIG_QUICKSTART.md](getting-started/LLM_CONFIG_QUICKSTART.md)
+- "JSON parsing errors?" → [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
+- "Why no models listed?" → [investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)
+- "How to test?" → [../../scripts/tests/README.md](../../scripts/tests/README.md)
 
 ## 📝 Documentation Updates
 

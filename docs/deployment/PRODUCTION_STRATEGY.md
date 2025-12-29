@@ -150,7 +150,6 @@ gh pr merge --merge
 # GitHub Actions deploys to Cloud Run (prod)
 # URL: https://SERVICE-prod-HASH.run.app
 # DD_ENV: prod
-# Traffic: 100% to 'prod' tag
 ```
 
 ## Quick Commands
