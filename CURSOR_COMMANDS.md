@@ -9,6 +9,7 @@ Type in Cursor Agent chat:
 - `/lint-commit-push` - Complete workflow with Cursor AI
 - `/format-only` - Format code without committing
 - `/quick-push` - Auto-commit and push
+- `/organize-docs` - Organize documentation and scripts into proper directories
 
 **How it works**: Commands are plain **Markdown files** (`.md`) stored in `.cursor/commands/` that Cursor automatically detects
 
@@ -98,6 +99,44 @@ make quick-push
 
 ---
 
+### 4. `organize-docs` - Organize Documentation and Scripts
+
+**Systematically organize documentation files and test scripts into proper directories.**
+
+```bash
+# Using Cursor slash command (recommended)
+Type /organize-docs in Cursor Agent (Cmd/Ctrl + L)
+```
+
+**What it does**:
+1. 📋 Analyzes current file locations
+2. 🗂️ Determines correct destinations based on project structure
+3. 📦 Moves files to appropriate directories:
+   - Documentation → `docs/` subdirectories
+   - Test scripts → `scripts/tests/`
+4. 🔗 Updates indexes and cross-references
+5. ✅ Commits the organization
+
+**Project structure it follows**:
+```
+docs/
+├── getting-started/     Quick starts
+├── deployment/          Deployment guides
+├── troubleshooting/     Problem solving
+├── investigations/      Research findings
+├── reference/           Technical reference
+└── archive/            Historical docs
+
+scripts/tests/
+└── test_*.py           Test scripts
+```
+
+**Use when**: Files are scattered in the root directory or need reorganization.
+
+**Interactive**: Cursor AI guides you through the entire process, suggesting moves and updating references.
+
+---
+
 ## 🎯 Using Cursor Slash Commands (Native Integration)
 
 Cursor's [custom slash commands](https://cursor.com/docs/agent/chat/commands) provide the most integrated experience:
@@ -135,6 +174,15 @@ Cursor's [custom slash commands](https://cursor.com/docs/agent/chat/commands) pr
 3. Generates commit message
 4. Commits and pushes
 5. Shows result
+```
+
+**`/organize-docs`** - Organize Documentation
+```
+1. Analyzes file locations
+2. Suggests proper directories
+3. Moves files systematically
+4. Updates indexes and links
+5. Commits organization
 ```
 
 ### Benefits of Slash Commands

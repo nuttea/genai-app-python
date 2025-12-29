@@ -9,6 +9,7 @@ According to the [Cursor documentation](https://cursor.com/docs/agent/chat/comma
 - `/lint-commit-push` - Complete workflow (format, lint, commit, push)
 - `/format-only` - Format code without committing
 - `/quick-push` - Quick push with auto-generated message
+- `/organize-docs` - Organize documentation and scripts into proper directories
 
 ## Usage
 
