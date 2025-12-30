@@ -1,8 +1,8 @@
-# H2C (HTTP/2 Cleartext) Test Results
+# ✅ H2C (HTTP/2 Cleartext) Test Results
 
 ## Overview
 
-Tested the Datadog Content Creator service to confirm HTTP/2 Cleartext (h2c) support using curl's `--http2-prior-knowledge` flag.
+Successfully tested the Datadog Content Creator service to confirm HTTP/2 Cleartext (h2c) support using curl's `--http2-prior-knowledge` flag.
 
 ## Test Command
 
@@ -20,36 +20,48 @@ This command:
 ✅ **Working h2c**: Server responds with `HTTP/2` in the status line
 ❌ **No h2c support**: Connection fails or falls back to HTTP/1.1
 
-## Test Results
+## ✅ Test Results (PASSING)
 
-### Test 1: Root Endpoint
+### Test 1: Health Check Endpoint
+```bash
+curl -v --http2-prior-knowledge http://localhost:8002/health
+```
+
+**Result**: ✅ **SUCCESS**
+```
+> GET /health HTTP/2
+> Host: localhost:8002
+< HTTP/2 200 
+< server: hypercorn-h2
+< content-type: application/json
+{"status":"healthy","service":"adk-content-creator","version":"0.1.0"}
+```
+
+Key observations:
+- ✅ Protocol: **HTTP/2 200**
+- ✅ Server: **hypercorn-h2** (confirms HTTP/2 support)
+- ✅ Full JSON response received
+- ✅ No connection errors
+
+### Test 2: Root Endpoint
 ```bash
 curl -i --http2-prior-knowledge http://localhost:8002
 ```
 
-**Result**: ✅ Success
+**Result**: ✅ **SUCCESS**
 - Protocol: HTTP/2 200
 - Server: hypercorn-h2
-- Content negotiation working
+- Service info returned correctly
 
-### Test 2: Health Check
+### Test 3: Service Info Endpoint
 ```bash
-curl -i --http2-prior-knowledge http://localhost:8002/health
+curl --http2-prior-knowledge http://localhost:8002/info
 ```
 
-**Result**: ✅ Success
-- Protocol: HTTP/2 200
-- Response: `{"status":"healthy","service":"adk-content-creator","version":"0.1.0"}`
-
-### Test 3: Service Info
-```bash
-curl -i --http2-prior-knowledge http://localhost:8002/info
-```
-
-**Result**: ✅ Success
+**Result**: ✅ **SUCCESS**
 - Protocol: HTTP/2 200
 - All service capabilities listed
-- Full JSON response received
+- Full JSON response with all fields
 
 ## Verification
 
