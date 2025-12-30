@@ -192,4 +192,3 @@ See existing organization in:
 - `docs/INDEX.md` - Full documentation index
 - `DOCUMENTATION_MAP.md` - Master documentation map
 - `scripts/tests/README.md` - Test scripts index
-

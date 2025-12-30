@@ -49,14 +49,14 @@ async def test_vote_extraction_success():
     # Arrange
     files = [create_test_image()]
     llm_config = LLMConfig(model="gemini-2.5-flash", temperature=0.0)
-    
+
     # Act
     result = await vote_extraction_service.extract_from_images(
         image_files=files,
         image_filenames=["test.jpg"],
         llm_config=llm_config
     )
-    
+
     # Assert
     assert result is not None
     assert result["success"] is True
@@ -131,11 +131,11 @@ async def test_extraction_with_mock(mock_client):
     mock_client.return_value.models.generate_content = AsyncMock(
         return_value=mock_response
     )
-    
+
     # Test
     result = await service.extract(files)
     assert result is not None
-    
+
     # Verify mock was called
     mock_client.return_value.models.generate_content.assert_called_once()
 
@@ -183,7 +183,7 @@ from fastapi import HTTPException
 def test_invalid_file_format_raises_http_exception():
     with pytest.raises(HTTPException) as exc_info:
         validate_file("file.txt")
-    
+
     assert exc_info.value.status_code == 400
     assert "Invalid format" in exc_info.value.detail
 
@@ -205,14 +205,14 @@ def test_invalid_file():
 async def test_extract_votes_endpoint_success(test_client):
     # Prepare test data
     files = [("files", ("test.jpg", test_image, "image/jpeg"))]
-    
+
     # Call endpoint
     response = await test_client.post(
         "/api/v1/vote-extraction/extract",
         files=files,
         headers={"X-API-Key": "test-key"}
     )
-    
+
     # Verify response
     assert response.status_code == 200
     data = response.json()
@@ -389,4 +389,3 @@ assert result["data"]
 - ❌ Don't ignore test failures
 - ❌ Don't write tests without assertions
 - ❌ Don't test private methods directly (test through public API)
-

@@ -2,11 +2,10 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException, status
-
 from app.models.requests import ChatCompletionRequest
 from app.models.responses import ChatCompletionResponse, ErrorResponse
 from app.services.genai_service import genai_service
+from fastapi import APIRouter, HTTPException, status
 
 logger = logging.getLogger(__name__)
 

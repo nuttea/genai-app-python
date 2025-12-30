@@ -64,17 +64,17 @@ Successfully implemented **dynamic model listing** using Google AI API REST endp
 async def fetch_models_from_api() -> list[dict]:
     """Fetch models dynamically from Google AI API REST endpoint."""
     global _models_cache, _cache_timestamp
-    
+
     # Check cache
     if _models_cache and _cache_timestamp:
         if time.time() - _cache_timestamp < CACHE_TTL:
             return _models_cache
-    
+
     # Fetch from API
     async with httpx.AsyncClient(timeout=5.0) as client:
         url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
         response = await client.get(url)
-        
+
         # Transform and filter models
         # Cache results
         # Return transformed list
@@ -87,11 +87,11 @@ async def list_models() -> JSONResponse:
     """List available LLM models with dynamic fetching."""
     # Try dynamic fetch
     gemini_models = await fetch_models_from_api()
-    
+
     # Fallback to static if needed
     if not gemini_models:
         gemini_models = get_static_gemini_models()
-    
+
     return JSONResponse(content=models_config)
 ```
 
@@ -237,7 +237,7 @@ gemini_models = [
 
 ## 🎉 Summary
 
-**Dynamic model listing is now live!** 
+**Dynamic model listing is now live!**
 
 The backend automatically fetches and caches the latest Gemini models from Google AI API, providing users with **26+ models** instead of the previous static list of 4.
 
@@ -254,4 +254,3 @@ When you push to `main` branch, GitHub Actions will automatically:
 3. Deploy to Cloud Run with dynamic model listing enabled
 
 **Everything is ready for production! 🚀**
-

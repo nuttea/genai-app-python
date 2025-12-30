@@ -82,15 +82,15 @@ async def generate_structured_output(
     max_tokens: int = 16384
 ) -> dict:
     """Generate structured output from images."""
-    
+
     client = get_client()
-    
+
     # Prepare content
     content_parts = [
         types.Part.from_text("Extract structured data from these images."),
         *[types.Part.from_bytes(data=img, mime_type="image/jpeg") for img in images]
     ]
-    
+
     # Generate with schema
     response = client.models.generate_content(
         model=model,
@@ -104,11 +104,11 @@ async def generate_structured_output(
             top_k=40
         )
     )
-    
+
     # Parse response
     if not response.text:
         raise ValueError("Empty response from model")
-    
+
     try:
         return json.loads(response.text)
     except json.JSONDecodeError as e:
@@ -186,12 +186,12 @@ except json.JSONDecodeError as e:
     # Model returned invalid JSON (truncation?)
     logger.error(f"JSON parsing failed: {e}", extra={"response_length": len(response.text)})
     raise ValueError(f"Invalid JSON from model. May need higher max_tokens. Error: {e}")
-    
+
 except GoogleAPIError as e:
     # Vertex AI API error
     logger.error(f"Vertex AI error: {e}", extra={"error_code": e.code})
     raise HTTPException(status_code=503, detail=f"LLM service error: {str(e)}")
-    
+
 except ValueError as e:
     # Schema validation or empty response
     logger.error(f"Validation error: {e}")
@@ -332,4 +332,3 @@ config = {
 - ❌ Don't use Google AI API key in production (use Vertex AI)
 - ❌ Don't forget LLMObs tracing for cost tracking
 - ❌ Don't hardcode prompts (make them configurable)
-

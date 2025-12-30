@@ -22,11 +22,11 @@ try:
         project=project,
         location=location
     )
-    
+
     print("Calling client.models.list()...")
     models_list = list(client_vertex.models.list())
     print(f"Number of models returned: {len(models_list)}")
-    
+
     if models_list:
         print("\n📋 All models:")
         for i, m in enumerate(models_list, 1):
@@ -41,7 +41,7 @@ try:
                 print(f"     Output Tokens: {m.output_token_limit}")
     else:
         print("  ❌ No models returned (empty list)")
-        
+
         # Try to list what's available
         print("\n  Trying to get specific model info...")
         try:
@@ -49,7 +49,7 @@ try:
             print(f"  ✅ gemini-2.5-flash exists: {model_info.name}")
         except Exception as e:
             print(f"  ❌ Error getting gemini-2.5-flash: {e}")
-            
+
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
@@ -62,15 +62,15 @@ print("-" * 60)
 if os.getenv("GEMINI_API_KEY"):
     try:
         client_ai = genai.Client()  # Uses GEMINI_API_KEY
-        
+
         models_list = list(client_ai.models.list())
         print(f"Number of models: {len(models_list)}")
-        
+
         if models_list:
             print("\nSample models:")
             for m in models_list[:5]:
                 print(f"  - {m.base_model_id}")
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
 else:
@@ -83,7 +83,7 @@ print("-" * 60)
 # Try to use a known model directly without listing
 known_models = [
     "gemini-2.5-flash",
-    "gemini-2.0-flash-exp", 
+    "gemini-2.0-flash-exp",
     "gemini-1.5-flash-002",
     "gemini-1.5-pro-002"
 ]
@@ -114,9 +114,8 @@ If Test 1 returns 0 models but Test 3 shows models are available:
 If Test 2 (Google AI API) returns models:
   → Could use Google AI API for listing
   → But continue using Vertex AI for inference
-  
+
 Recommendation:
   → Use static/hardcoded list of Gemini models
   → Update list manually when new models are released
 """)
-

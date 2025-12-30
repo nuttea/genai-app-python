@@ -5,10 +5,9 @@ import uuid
 from collections.abc import AsyncGenerator
 
 import vertexai
-from vertexai.generative_models import ChatSession, GenerativeModel
-
 from app.config import settings
 from app.core.exceptions import ConfigurationException, VertexAIException
+from vertexai.generative_models import ChatSession, GenerativeModel
 
 logger = logging.getLogger(__name__)
 

@@ -9,4 +9,3 @@ echo "=============================================="
 echo ""
 
 python test_gemini_models_api.py
-

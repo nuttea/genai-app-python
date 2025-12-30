@@ -1,11 +1,14 @@
 """Unit tests for Pydantic models."""
 
 import pytest
+from app.models.vote_extraction import (
+    BallotStatistics,
+    ElectionFormData,
+    FormInfo,
+    VoteExtractionResponse,
+    VoteResult,
+)
 from pydantic import ValidationError
-
-from app.models.vote_extraction import (BallotStatistics, ElectionFormData,
-                                        FormInfo, VoteExtractionResponse,
-                                        VoteResult)
 
 
 class TestFormInfo:

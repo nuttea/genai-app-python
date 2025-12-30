@@ -73,7 +73,7 @@ We use a **curated static model list** in:
 gemini_models = [
     {
         "name": "gemini-2.5-flash",
-        "display_name": "Gemini 2.5 Flash", 
+        "display_name": "Gemini 2.5 Flash",
         "description": "Fast and versatile multimodal model...",
         "context_window": 1_048_576,
         "output_tokens": 65_536,
@@ -161,4 +161,3 @@ load_dotenv(Path(__file__).parent / '.env')
 - ✅ Faster for users
 
 No changes needed to the application - **our implementation is already optimal!** 🎉
-

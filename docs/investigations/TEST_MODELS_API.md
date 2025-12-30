@@ -192,4 +192,3 @@ Make sure your service account or user has:
 ---
 
 **Test it now and let me know the results!** 🧪
-

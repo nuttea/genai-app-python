@@ -50,7 +50,7 @@ try:
     # Pass api_key explicitly
     client = genai.Client(api_key=api_key)
     print("✅ Client initialized successfully\n")
-    
+
 except Exception as e:
     print(f"❌ Failed to initialize client: {e}")
     exit(1)
@@ -64,17 +64,17 @@ print("=" * 70)
 
 try:
     print("\nCalling client.models.list()...\n")
-    
+
     all_models = []
     for model in client.models.list():
         all_models.append(model)
-    
+
     print(f"✅ SUCCESS! Found {len(all_models)} models\n")
-    
+
     # Display all models
     print("📋 All Available Models:")
     print("-" * 70)
-    
+
     for i, m in enumerate(all_models, 1):
         print(f"\n{i}. {m.base_model_id}")
         print(f"   Display Name: {m.display_name}")
@@ -87,46 +87,46 @@ try:
             print(f"   Input Token Limit: {m.input_token_limit:,}")
         if hasattr(m, 'output_token_limit'):
             print(f"   Output Token Limit: {m.output_token_limit:,}")
-    
+
     # ========================================================================
     # Filter by Action Type
     # ========================================================================
     print("\n" + "=" * 70)
     print("Models Supporting 'generateContent'")
     print("=" * 70)
-    
+
     generate_models = [
-        m for m in all_models 
+        m for m in all_models
         if hasattr(m, 'supported_actions') and "generateContent" in m.supported_actions
     ]
-    
+
     print(f"\n✅ {len(generate_models)} models support text generation:\n")
     for m in generate_models:
         print(f"  - {m.base_model_id}")
-    
+
     # ========================================================================
     # Filter for Embedding Models
     # ========================================================================
     print("\n" + "=" * 70)
     print("Models Supporting 'embedContent'")
     print("=" * 70)
-    
+
     embed_models = [
-        m for m in all_models 
+        m for m in all_models
         if hasattr(m, 'supported_actions') and "embedContent" in m.supported_actions
     ]
-    
+
     print(f"\n✅ {len(embed_models)} models support embeddings:\n")
     for m in embed_models:
         print(f"  - {m.base_model_id}")
-    
+
     # ========================================================================
     # Test Generation with a Model
     # ========================================================================
     print("\n" + "=" * 70)
     print("Testing Generation with gemini-2.5-flash")
     print("=" * 70)
-    
+
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -136,7 +136,7 @@ try:
         print(f"Response: {response.text}\n")
     except Exception as e:
         print(f"\n❌ Generation failed: {e}\n")
-    
+
 except Exception as e:
     print(f"❌ Error listing models: {e}")
     import traceback
@@ -174,4 +174,3 @@ If we wanted dynamic listing, we could:
 
 Current solution (static list) is simpler and more reliable.
 """)
-

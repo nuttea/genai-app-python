@@ -69,4 +69,3 @@ Or use the one-liner from `PRE-COMMIT-CHECKLIST.md`.
 Black is configured in each service's `pyproject.toml`:
 - Line length: 100 characters
 - Target Python version: 3.11
-

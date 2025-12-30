@@ -5,11 +5,11 @@ Usage:
     # Make sure your .env file has:
     # GOOGLE_CLOUD_PROJECT=your-project-id
     # VERTEX_AI_LOCATION=us-central1
-    
+
     # Load environment and run:
     source .env
     python test_gemini_models_api.py
-    
+
     # Or with poetry:
     cd services/fastapi-backend
     poetry run python ../../test_gemini_models_api.py
@@ -47,10 +47,10 @@ try:
         location=location
     )
     print("✅ Client initialized successfully with Vertex AI\n")
-    
+
     # Alternative: Use Google AI API instead of Vertex AI
     # client = genai.Client()  # Uses GEMINI_API_KEY env var
-    
+
     print("Listing ALL models (no filter):\n")
     all_models = []
     for m in client.models.list():
@@ -65,9 +65,9 @@ try:
         if hasattr(m, 'output_token_limit'):
             print(f"    Output Tokens: {m.output_token_limit}")
         print()
-    
+
     print(f"\nTotal models returned: {len(all_models)}")
-    
+
     # Now filter by generateContent
     print("\n" + "=" * 60)
     print("Filtering for models that support generateContent:\n")
@@ -76,9 +76,9 @@ try:
         if hasattr(m, 'supported_actions') and "generateContent" in m.supported_actions:
             print(f"  - {m.base_model_id if hasattr(m, 'base_model_id') else m.name}")
             generate_models.append(m)
-    
+
     print(f"\nTotal models supporting generateContent: {len(generate_models)}")
-    
+
     print("\n" + "=" * 60)
     print("Filtering for models that support embedContent:\n")
     embed_models = []
@@ -86,9 +86,9 @@ try:
         if hasattr(m, 'supported_actions') and "embedContent" in m.supported_actions:
             print(f"  - {m.base_model_id if hasattr(m, 'base_model_id') else m.name}")
             embed_models.append(m)
-    
+
     print(f"\nTotal models supporting embedContent: {len(embed_models)}")
-    
+
 except Exception as e:
     print(f"❌ Error: {e}")
     print(f"Error type: {type(e).__name__}")
@@ -98,4 +98,3 @@ except Exception as e:
 print("\n" + "=" * 60)
 print("Test completed")
 print("=" * 60)
-

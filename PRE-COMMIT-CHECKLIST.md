@@ -62,7 +62,7 @@ Before each commit:
 # 1. Format backend
 cd services/fastapi-backend && uv run black app/ && cd ../..
 
-# 2. Format frontend  
+# 2. Format frontend
 cd frontend/streamlit && uv run black . && cd ../..
 
 # 3. Git add and commit
@@ -100,4 +100,3 @@ Black is configured in each service's `pyproject.toml`:
 - Or use VS Code's "Format on Save" feature with the Black extension
 
 - Consider using a pre-commit hook (see `.git-hooks/README.md`) if your environment supports it
-

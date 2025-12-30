@@ -104,14 +104,14 @@ async def action_endpoint(
 ) -> ResponseModel:
     """
     Endpoint docstring with details.
-    
+
     Args:
         request: Description of request
         api_key: API key for authentication
-        
+
     Returns:
         ResponseModel: Description of response
-        
+
     Raises:
         HTTPException: When validation fails
     """
@@ -135,7 +135,7 @@ logger = logging.getLogger(__name__)
 
 class YourService:
     """Service for handling business logic."""
-    
+
     async def process(
         self,
         data: dict[str, Any],
@@ -143,25 +143,25 @@ class YourService:
     ) -> dict[str, Any]:
         """
         Process data with optional configuration.
-        
+
         Args:
             data: Input data to process
             config: Optional configuration
-            
+
         Returns:
             Processed result dictionary
-            
+
         Raises:
             ValueError: If data validation fails
         """
         logger.info("Processing data", extra={"data_keys": list(data.keys())})
-        
+
         try:
             # Business logic here
             result = await self._do_processing(data, config)
             logger.info("Processing complete", extra={"result_size": len(result)})
             return result
-            
+
         except Exception as e:
             logger.error(f"Processing failed: {e}", exc_info=True)
             raise ValueError(f"Failed to process: {str(e)}")
@@ -176,22 +176,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """Application settings from environment variables."""
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore"
     )
-    
+
     # Google Cloud
     google_cloud_project: str = Field(description="GCP Project ID")
     vertex_ai_location: str = Field(default="us-central1")
-    
+
     # API Configuration
     api_key_required: bool = Field(default=False)
     cors_origins: list[str] = Field(default=["*"])
-    
+
     # LLM Configuration
     default_model: str = Field(default="gemini-2.5-flash")
     default_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
@@ -322,4 +322,3 @@ async def expensive_operation():
 - ❌ Don't catch generic `Exception` without re-raising
 - ❌ Don't use `pip` - use `poetry`
 - ❌ Don't modify `docker-compose.yml` entrypoint/command for Cloud Run
-

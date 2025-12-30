@@ -106,7 +106,7 @@ def get_dynamic_model_list():
     """Fetch models from Google AI API REST endpoint."""
     api_key = os.getenv("GEMINI_API_KEY")
     url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-    
+
     response = requests.get(url)
     response.raise_for_status()
     return response.json()["models"]

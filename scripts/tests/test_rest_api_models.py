@@ -41,85 +41,85 @@ print(f"\nCalling: {url[:80]}...\n")
 
 try:
     response = requests.get(url, timeout=10)
-    
+
     print(f"Status Code: {response.status_code}")
-    
+
     if response.status_code == 200:
         data = response.json()
         models = data.get('models', [])
-        
+
         print(f"✅ SUCCESS! Found {len(models)} models\n")
-        
+
         if models:
             print("📋 Available Models:")
             print("-" * 70)
-            
+
             for i, model in enumerate(models, 1):
                 name = model.get('name', 'Unknown')
                 display_name = model.get('displayName', 'Unknown')
                 description = model.get('description', 'No description')
-                
+
                 print(f"\n{i}. {name}")
                 print(f"   Display Name: {display_name}")
-                
+
                 # Truncate long descriptions
                 if len(description) > 100:
                     description = description[:100] + "..."
                 print(f"   Description: {description}")
-                
+
                 # Show supported generation methods
                 if 'supportedGenerationMethods' in model:
                     methods = model['supportedGenerationMethods']
                     print(f"   Supported Methods: {', '.join(methods)}")
-                
+
                 # Show input/output token limits
                 if 'inputTokenLimit' in model:
                     print(f"   Input Token Limit: {model['inputTokenLimit']:,}")
                 if 'outputTokenLimit' in model:
                     print(f"   Output Token Limit: {model['outputTokenLimit']:,}")
-            
+
             # ================================================================
             # Filter by generation method
             # ================================================================
             print("\n" + "=" * 70)
             print("Models Supporting 'generateContent'")
             print("=" * 70)
-            
+
             generate_models = [
                 m for m in models
                 if 'generateContent' in m.get('supportedGenerationMethods', [])
             ]
-            
+
             print(f"\n✅ {len(generate_models)} models support text generation:\n")
             for m in generate_models:
                 print(f"  - {m.get('name')}")
                 print(f"    ({m.get('displayName')})")
-            
+
             # ================================================================
             # Filter by embedding method
             # ================================================================
             print("\n" + "=" * 70)
             print("Models Supporting 'embedContent'")
             print("=" * 70)
-            
+
             embed_models = [
                 m for m in models
                 if 'embedContent' in m.get('supportedGenerationMethods', [])
             ]
-            
+
             print(f"\n✅ {len(embed_models)} models support embeddings:\n")
             for m in embed_models:
                 print(f"  - {m.get('name')}")
                 print(f"    ({m.get('displayName')})")
-            
+
         else:
             print("⚠️ No models found in response")
             print(f"\nRaw response: {data}")
-            
+
     else:
         print(f"❌ Request failed!")
         print(f"Response: {response.text[:500]}")
-        
+
 except requests.exceptions.Timeout:
     print("❌ Request timed out")
 except Exception as e:
@@ -141,7 +141,7 @@ print(f"\nCalling: {url[:80]}...\n")
 
 try:
     response = requests.get(url, timeout=10)
-    
+
     if response.status_code == 200:
         model = response.json()
         print(f"✅ Model found: {model.get('displayName')}")
@@ -158,7 +158,7 @@ try:
     else:
         print(f"❌ Model not found or error: {response.status_code}")
         print(f"Response: {response.text[:200]}")
-        
+
 except Exception as e:
     print(f"❌ Error: {e}")
 
@@ -185,4 +185,3 @@ If REST API also returns empty:
   ❌ Static list remains the best approach
   ✅ All known models still work for generation
 """)
-

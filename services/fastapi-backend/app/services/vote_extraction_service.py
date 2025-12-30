@@ -5,12 +5,11 @@ import logging
 import os
 from typing import Any, Optional
 
-from google import genai
-from google.genai import types
-
 from app.config import settings
 from app.core.exceptions import ExtractionException
 from app.models.vote_extraction import ElectionFormData, LLMConfig
+from google import genai
+from google.genai import types
 
 # Initialize logger first
 logger = logging.getLogger(__name__)

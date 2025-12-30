@@ -85,4 +85,3 @@ Quick start guides and complete setup documentation for getting the GenAI Applic
 ---
 
 **Last Updated:** December 29, 2024
-

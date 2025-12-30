@@ -3,12 +3,11 @@
 import logging
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse
-
 from app.models.requests import GenerateRequest
 from app.models.responses import ErrorResponse, GenerateResponse
 from app.services.genai_service import genai_service
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 

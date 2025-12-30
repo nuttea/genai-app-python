@@ -198,4 +198,3 @@ sed -i '/GEMINI_API_KEY/d' .env
 ---
 
 **For production, stick with Vertex AI!** This API key setup is just for testing/comparison. 🔐
-

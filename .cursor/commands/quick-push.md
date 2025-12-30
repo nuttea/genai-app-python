@@ -51,4 +51,3 @@ Display:
 The user can also use:
 - Shell script: `./scripts/quick-push.sh`
 - Make command: `make quick-push`
-

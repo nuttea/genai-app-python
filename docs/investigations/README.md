@@ -45,4 +45,3 @@ This directory contains detailed investigation reports and findings from trouble
 ---
 
 **Last Updated:** 2024-12-29
-

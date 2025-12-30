@@ -161,11 +161,11 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
     st.info(f"📎 {len(uploaded_files)} file(s) selected")
-    
+
     # Validate file sizes
     total_size = sum(file.size for file in uploaded_files)
     max_size = 30 * 1024 * 1024  # 30MB
-    
+
     if total_size > max_size:
         st.error(f"❌ Total size exceeds {max_size // (1024*1024)}MB limit")
     else:
@@ -183,7 +183,7 @@ if uploaded_files:
 # ✅ Good - Organized sidebar with sections
 with st.sidebar:
     st.title("⚙️ Settings")
-    
+
     with st.expander("🔧 Advanced Options", expanded=False):
         temperature = st.slider(
             "Temperature",
@@ -193,7 +193,7 @@ with st.sidebar:
             step=0.1,
             help="Higher = more creative, Lower = more deterministic"
         )
-        
+
         max_tokens = st.number_input(
             "Max Output Tokens",
             min_value=1024,
@@ -201,7 +201,7 @@ with st.sidebar:
             value=16384,
             step=1024
         )
-    
+
     if st.button("🔄 Reset to Defaults"):
         st.session_state.clear()
         st.rerun()
@@ -285,7 +285,7 @@ def add_datadog_rum():
     """Add Datadog RUM script to page."""
     DD_RUM_APPLICATION_ID = st.secrets.get("DD_RUM_APPLICATION_ID")
     DD_RUM_CLIENT_TOKEN = st.secrets.get("DD_RUM_CLIENT_TOKEN")
-    
+
     if DD_RUM_APPLICATION_ID and DD_RUM_CLIENT_TOKEN:
         rum_script = f"""
         <script>
@@ -324,12 +324,12 @@ add_datadog_rum()
 # ✅ Good - Form with validation
 with st.form("my_form"):
     st.write("Fill out the form")
-    
+
     name = st.text_input("Name")
     email = st.text_input("Email")
-    
+
     submitted = st.form_submit_button("Submit")
-    
+
     if submitted:
         if not name or not email:
             st.error("Please fill all fields")
@@ -365,4 +365,3 @@ if results:
 - ❌ Don't ignore mobile responsiveness
 - ❌ Don't hardcode API URLs - use environment variables
 - ❌ Don't forget to add `st.set_page_config()` at the top
-

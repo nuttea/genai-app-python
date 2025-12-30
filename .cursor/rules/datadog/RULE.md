@@ -78,20 +78,20 @@ with tracer.trace("custom.operation", service="fastapi-backend") as span:
     # Operation metadata
     span.set_tag("operation.type", "llm_generation")
     span.set_tag("operation.name", "vote_extraction")
-    
+
     # Input metadata
     span.set_tag("input.file_count", len(files))
     span.set_tag("input.total_size_mb", total_size / (1024*1024))
-    
+
     # LLM metadata
     span.set_tag("llm.model", model_name)
     span.set_tag("llm.temperature", temperature)
-    
+
     # Metrics
     span.set_metric("llm.tokens.input", input_tokens)
     span.set_metric("llm.tokens.output", output_tokens)
     span.set_metric("processing.duration_ms", duration_ms)
-    
+
     result = await process()
 
 # ❌ Bad - No tags
@@ -120,11 +120,11 @@ with tracer.trace("llm.generation", service="fastapi-backend") as span:
     span.set_tag("llm.model_provider", "google")
     span.set_tag("llm.temperature", 0.0)
     span.set_tag("llm.max_tokens", 16384)
-    
+
     span.set_metric("llm.tokens.prompt", input_tokens)
     span.set_metric("llm.tokens.completion", output_tokens)
     span.set_metric("llm.tokens.total", input_tokens + output_tokens)
-    
+
     response = await generate(prompt)
 
 # ❌ Bad - No LLMObs
@@ -262,11 +262,11 @@ gcloud run deploy $SERVICE --image $IMAGE
 - name: High Error Rate
   query: "errors per minute > 10"
   message: "Error rate elevated in {{service.name}}"
-  
+
 - name: LLM Token Limit
   query: "avg:llm.tokens.output > 60000"
   message: "Approaching token limit, may cause truncation"
-  
+
 - name: Slow Response Time
   query: "p95:trace.duration > 30s"
   message: "95th percentile latency exceeded 30s"
@@ -320,4 +320,3 @@ DD_LOGS_CONFIG_PROCESSING_RULES: |
 - ❌ Don't log sensitive data (PII, API keys)
 - ❌ Don't set DD_TRACE_SAMPLE_RATE < 1.0 without understanding impact
 - ❌ Don't deploy without Datadog in production
-

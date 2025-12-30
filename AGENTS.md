@@ -346,4 +346,3 @@ docker-compose up -d
 6. `docs/investigations/` - Understand findings
 
 **⚠️ REMEMBER**: Always format with Black before committing!
-

@@ -163,7 +163,7 @@ New sidebar in Vote Extractor page with:
 Optional: Customize the AI model used for extraction
 
 □ Use custom model configuration
-  
+
 ℹ️ Using default: gemini-2.0-flash-exp
    Temperature: 0.1
 ```
@@ -175,7 +175,7 @@ When enabled:
 Optional: Customize the AI model used for extraction
 
 ☑ Use custom model configuration
-  
+
 Provider: [Google Vertex AI ▼]
 Model: [Gemini 2.0 Flash (Experimental) ▼]
 
@@ -403,4 +403,3 @@ Add tests for:
 ---
 
 **Ready for experimentation and evaluation!** 🚀
-

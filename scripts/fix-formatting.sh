@@ -35,4 +35,3 @@ echo "Now run:"
 echo "  git add -A"
 echo "  git commit -m 'fix: Apply Black formatting to pass CI/CD checks'"
 echo "  git push"
-

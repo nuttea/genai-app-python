@@ -13,7 +13,7 @@ Ensure all Python code is consistently formatted with Black before committing to
 Black is configured in both backend and frontend:
 - **Line length**: 100 characters
 - **Target Python**: 3.11
-- **Files**: 
+- **Files**:
   - `services/fastapi-backend/pyproject.toml`
   - `frontend/streamlit/pyproject.toml`
 
@@ -169,4 +169,3 @@ Then always run the formatting commands manually (see PRE-COMMIT-CHECKLIST.md).
 ---
 
 **Last Updated**: December 29, 2024
-

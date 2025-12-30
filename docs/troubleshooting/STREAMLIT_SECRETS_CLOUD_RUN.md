@@ -5,8 +5,8 @@
 Streamlit app deployed to Cloud Run fails with:
 
 ```
-streamlit.errors.StreamlitSecretNotFoundError: No secrets found. 
-Valid paths for a secrets.toml file or secret directories are: 
+streamlit.errors.StreamlitSecretNotFoundError: No secrets found.
+Valid paths for a secrets.toml file or secret directories are:
 /home/appuser/.streamlit/secrets.toml, /app/.streamlit/secrets.toml
 ```
 
@@ -30,7 +30,7 @@ def get_config(key: str, default: str = "") -> str:
     env_value = os.getenv(key)
     if env_value:
         return env_value
-    
+
     # Then try secrets.toml (for local development)
     try:
         return st.secrets.get(key, default)
@@ -163,9 +163,8 @@ No additional configuration needed! ✅
 
 ---
 
-**Created**: December 29, 2024  
-**Related**: 
+**Created**: December 29, 2024
+**Related**:
 - Cloud Run deployment: `infra/cloud-run/deploy-frontend.sh`
 - CI/CD workflow: `.github/workflows/streamlit-frontend.yml`
 - Docker Compose: `docker-compose.yml`
-

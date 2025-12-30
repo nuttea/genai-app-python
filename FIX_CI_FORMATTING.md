@@ -90,6 +90,5 @@ Once you've formatted and pushed, the CI/CD will automatically run again and sho
 
 ---
 
-**Created**: December 29, 2024  
+**Created**: December 29, 2024
 **Related**: [PRE-COMMIT-CHECKLIST.md](./PRE-COMMIT-CHECKLIST.md), [BLACK_FORMATTING_SETUP.md](./BLACK_FORMATTING_SETUP.md)
-

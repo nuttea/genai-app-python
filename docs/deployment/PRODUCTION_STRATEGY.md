@@ -86,7 +86,7 @@ Create rule for `prod` branch:
 - ✅ **Require a pull request before merging**
   - ✅ Require approvals (minimum: 1)
   - ✅ Dismiss stale pull request approvals when new commits are pushed
-  
+
 - ✅ **Require status checks to pass before merging**
   - ✅ Require branches to be up to date before merging
   - Required checks:
@@ -323,4 +323,3 @@ gcloud run services update-traffic SERVICE_NAME \
 - Branch protection on prod
 - PR required for production changes
 - Easy rollback with revision tags
-

@@ -147,4 +147,3 @@ See `docs/monitoring/LLMOBS_NEXT_STEPS.md` for:
 ---
 
 **Total setup time: ~20 minutes to first evaluation!** ⚡
-

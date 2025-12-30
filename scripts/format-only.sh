@@ -35,4 +35,3 @@ echo "  3. Commit: git commit -m 'your message'"
 echo "  4. Push: git push"
 echo ""
 echo "Or use: ./lint-commit-push.sh 'your message'"
-

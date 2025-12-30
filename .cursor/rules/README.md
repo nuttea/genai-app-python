@@ -88,7 +88,7 @@ Each rule is in its own folder with a `RULE.md` file:
 
 ### For AI Assistants
 
-Rules are automatically applied when working on files matching the scope patterns.  
+Rules are automatically applied when working on files matching the scope patterns.
 AI assistants should:
 1. Read relevant rules based on file paths
 2. Follow patterns and standards defined in rules
@@ -168,21 +168,21 @@ To add a new rule:
 2. Create `RULE.md` with structure:
    ```markdown
    # Rule Category Name
-   
+
    ## Scope
    **Paths**: `pattern/**/*.ext`
-   
+
    ## Standards
-   
+
    ### Pattern Name
    ```✅ Good
    [example]
    ```
-   
+
    ```❌ Bad
    [example]
    ```
-   
+
    ## Don't
    - ❌ Anti-pattern 1
    - ❌ Anti-pattern 2
@@ -218,11 +218,10 @@ Rules are enforced through:
 
 ---
 
-**Version**: 1.0  
+**Version**: 1.0
 **Last Updated**: December 29, 2024
 
 **For more information**, see:
 - [AGENTS.md](../../AGENTS.md) - AI agent instructions
 - [DOCUMENTATION_MAP.md](../../DOCUMENTATION_MAP.md) - Master documentation
 - [docs/INDEX.md](../../docs/INDEX.md) - Full documentation index
-

@@ -37,25 +37,25 @@ print("Method: genai.Client(vertexai=True).models.list()\n")
 
 try:
     from google import genai
-    
+
     client = genai.Client(
         vertexai=True,
         project=project,
         location=location
     )
-    
+
     print("Calling client.models.list()...")
     models = list(client.models.list())
-    
+
     print(f"Result: {len(models)} models")
-    
+
     if models:
         print("\nModels returned:")
         for m in models:
             print(f"  - {m.name}")
     else:
         print("❌ No models returned (empty list)")
-        
+
 except Exception as e:
     print(f"❌ Error: {e}")
 
@@ -70,21 +70,21 @@ print("Method: aiplatform.Model.list()\n")
 
 try:
     from google.cloud import aiplatform
-    
+
     aiplatform.init(project=project, location=location)
-    
+
     print("Calling aiplatform.Model.list()...")
     models = list(aiplatform.Model.list())
-    
+
     print(f"Result: {len(models)} models")
-    
+
     if models:
         print("\nModels returned:")
         for m in models:
             print(f"  - {m.display_name} ({m.name})")
     else:
         print("❌ No models returned (empty list)")
-        
+
 except ImportError:
     print("⚠️ google-cloud-aiplatform not installed")
     print("   Install: pip install google-cloud-aiplatform")
@@ -103,12 +103,12 @@ print("Method: Check if there's a list method\n")
 try:
     import vertexai
     from vertexai.preview import generative_models
-    
+
     vertexai.init(project=project, location=location)
-    
+
     print("Initialized vertexai")
     print(f"Available in generative_models: {dir(generative_models)}\n")
-    
+
     # Check if there's a list_models or similar method
     if hasattr(generative_models, 'list_models'):
         print("Found list_models() method!")
@@ -125,7 +125,7 @@ try:
     else:
         print("❌ No list_models() or get_model() method found")
         print("   Available methods:", [m for m in dir(generative_models) if not m.startswith('_')])
-        
+
 except ImportError as e:
     print(f"⚠️ Could not import vertexai: {e}")
 except Exception as e:
@@ -144,33 +144,33 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 if gemini_api_key:
     try:
         from google import genai
-        
+
         # Initialize client WITHOUT vertexai=True (uses Google AI API)
         # Pass api_key explicitly
         client_ai = genai.Client(api_key=gemini_api_key)
-        
+
         print("Calling client.models.list() with Google AI API...")
         models = list(client_ai.models.list())
-        
+
         print(f"Result: {len(models)} models")
-        
+
         if models:
             print("\n✅ SUCCESS! Models returned:")
             for i, m in enumerate(models[:10], 1):  # Show first 10
                 print(f"  {i}. {m.base_model_id if hasattr(m, 'base_model_id') else m.name}")
                 if hasattr(m, 'supported_actions'):
                     print(f"     Actions: {m.supported_actions}")
-            
+
             if len(models) > 10:
                 print(f"\n  ... and {len(models) - 10} more models")
-            
+
             # Filter for generateContent
             generate_models = [m for m in models if hasattr(m, 'supported_actions') and "generateContent" in m.supported_actions]
             print(f"\n📊 Models supporting generateContent: {len(generate_models)}")
-            
+
         else:
             print("❌ No models returned (empty list)")
-            
+
     except Exception as e:
         print(f"❌ Error: {e}")
 else:
@@ -190,22 +190,22 @@ print("Testing if gemini-2.5-flash works for generation with Vertex AI...\n")
 
 try:
     from google import genai
-    
+
     client = genai.Client(
         vertexai=True,
         project=project,
         location=location
     )
-    
+
     print("Attempting generate_content with gemini-2.5-flash...")
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents="Respond with just 'OK'"
     )
-    
+
     print(f"✅ SUCCESS! Model works!")
     print(f"   Response: {response.text}")
-    
+
 except Exception as e:
     print(f"❌ Failed: {e}")
 
@@ -221,12 +221,12 @@ Based on testing:
 1. google-genai with vertexai=True (VERTEX AI)
    - models.list() → Returns empty for Gemini models ❌
    - generate_content() → Works perfectly! ✅
-   
+
 2. google-genai without vertexai (GOOGLE AI API)
    - models.list() → Returns full list of Gemini models! ✅
    - Requires GEMINI_API_KEY environment variable
    - Can dynamically fetch model list
-   
+
 3. google-cloud-aiplatform (Vertex AI SDK)
    - Model.list() → Returns empty for Gemini models ❌
    - Same limitation as google-genai with vertexai=True
@@ -258,4 +258,3 @@ WORKING MODEL IDS:
 
 All work for generation with both APIs!
 """)
-

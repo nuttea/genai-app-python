@@ -206,22 +206,22 @@ POST /api/v1/vote-extraction/extract
 
 ### Config Not Applied?
 
-✅ Check JSON format  
-✅ Verify model name spelling  
-✅ Ensure provider is "vertex_ai"  
-✅ Check backend logs  
+✅ Check JSON format
+✅ Verify model name spelling
+✅ Ensure provider is "vertex_ai"
+✅ Check backend logs
 
 ### Timeout?
 
-✅ Use Flash model (faster)  
-✅ Reduce max_tokens  
-✅ Increase client timeout  
+✅ Use Flash model (faster)
+✅ Reduce max_tokens
+✅ Increase client timeout
 
 ### Inconsistent Results?
 
-✅ Lower temperature (0.0-0.1)  
-✅ Use same model consistently  
-✅ Check for form quality issues  
+✅ Lower temperature (0.0-0.1)
+✅ Use same model consistently
+✅ Check for form quality issues
 
 ## 📚 Full Documentation
 
@@ -243,4 +243,3 @@ See `docs/features/LLM_CONFIGURATION.md` for:
 ---
 
 **Total setup time: ~2 minutes to first custom extraction!** ⚡
-

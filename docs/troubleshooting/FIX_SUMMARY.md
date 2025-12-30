@@ -3,7 +3,7 @@
 ## 🐛 Problem
 ```
 ❌ Server error: 500
-Details: Error during extraction: Invalid extraction response: 
+Details: Error during extraction: Invalid extraction response:
 Unterminated string starting at: line 572 column 27 (char 14177)
 ```
 
@@ -68,4 +68,3 @@ le = 65,536         # Max possible with Gemini 2.5 Flash
 **Your backend is running with the fix applied.**
 
 Try your 6-page extraction again - it should work now! 🎉
-

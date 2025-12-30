@@ -6,7 +6,7 @@ When extracting vote data from multiple pages (especially 4+ pages), you may enc
 
 ```
 ❌ Server error: 500
-Details: Error during extraction: Invalid extraction response: 
+Details: Error during extraction: Invalid extraction response:
 Unterminated string starting at: line 572 column 27 (char 14177)
 ```
 
@@ -15,7 +15,7 @@ Unterminated string starting at: line 572 column 27 (char 14177)
 The **`max_tokens` (max output tokens) was set too low**, causing the LLM's JSON response to get truncated mid-string when processing large amounts of data.
 
 ### What Was Happening:
-- **Default**: `max_tokens = 8,192` 
+- **Default**: `max_tokens = 8,192`
 - **Needed**: ~15,000-20,000 tokens for 6 pages of election data
 - **Result**: Response cut off at 8,192 tokens → Invalid JSON
 
@@ -137,7 +137,7 @@ To track token usage in production, check Datadog LLM Observability:
 
 ```sql
 -- LLM Observability Dashboard
-SELECT 
+SELECT
   avg(input_tokens),
   avg(output_tokens),
   max(output_tokens)
@@ -167,11 +167,10 @@ WHERE model = 'gemini-2.5-flash'
 
 ## 🎉 Resolution
 
-✅ **Fixed by increasing `max_tokens` from 8,192 to 16,384 (default)**  
-✅ **Maximum now 65,536 tokens (Gemini 2.5 Flash limit)**  
+✅ **Fixed by increasing `max_tokens` from 8,192 to 16,384 (default)**
+✅ **Maximum now 65,536 tokens (Gemini 2.5 Flash limit)**
 ✅ **Can now handle 10+ page documents reliably**
 
 ---
 
 **Note**: This fix applies to local development and will be deployed to production on next push to `main` branch.
-

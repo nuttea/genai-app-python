@@ -1,10 +1,9 @@
 """Unit tests for security utilities."""
 
 import pytest
-from fastapi import HTTPException
-
 from app.config import settings
 from app.core.security import verify_api_key
+from fastapi import HTTPException
 
 
 class TestAPIKeyValidation:

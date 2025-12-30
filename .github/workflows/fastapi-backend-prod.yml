@@ -99,14 +99,14 @@ jobs:
           PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.REGION }} \
             --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
-          
+
           if [ -z "$PROD_URL" ]; then
             echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
             PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
               --region ${{ env.REGION }} \
               --format 'value(status.url)')
           fi
-          
+
           echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
           echo "🌐 Production URL (tag=prod): $PROD_URL"
 
@@ -134,4 +134,3 @@ jobs:
           echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Production traffic: 100% on 'prod' tag" >> $GITHUB_STEP_SUMMARY
-

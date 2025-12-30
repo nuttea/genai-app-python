@@ -1,8 +1,7 @@
 """API v1 router."""
 
-from fastapi import APIRouter
-
 from app.api.v1.endpoints import chat, generate, health, vote_extraction
+from fastapi import APIRouter
 
 # Create API router
 api_router = APIRouter()

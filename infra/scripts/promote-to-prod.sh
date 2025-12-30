@@ -128,4 +128,3 @@ echo "     - Backend:  https://genai-fastapi-backend-prod-HASH.run.app"
 echo "     - Frontend: https://genai-streamlit-frontend-prod-HASH.run.app"
 echo ""
 echo "🔍 Monitor in Datadog with: env:prod"
-

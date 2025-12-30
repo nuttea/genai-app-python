@@ -171,4 +171,3 @@ env:dev vs env:prod
 ---
 
 **Ready to deploy?** Run: `./infra/scripts/promote-to-prod.sh` 🚀
-

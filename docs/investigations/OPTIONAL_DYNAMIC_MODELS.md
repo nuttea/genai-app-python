@@ -65,25 +65,25 @@ CACHE_TTL = 3600  # 1 hour
 async def fetch_models_from_api() -> list[dict]:
     """Fetch models dynamically from Google AI API."""
     global _models_cache, _cache_timestamp
-    
+
     # Check cache
     if _models_cache and _cache_timestamp:
         if time.time() - _cache_timestamp < CACHE_TTL:
             return _models_cache
-    
+
     # Fetch from API
     api_key = settings.gemini_api_key
     if not api_key:
         return []  # Fallback to static list
-    
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
             response = await client.get(url)
             response.raise_for_status()
-            
+
             models_data = response.json()
-            
+
             # Transform to our format
             transformed = []
             for model in models_data.get("models", []):
@@ -96,13 +96,13 @@ async def fetch_models_from_api() -> list[dict]:
                         "output_tokens": model.get("outputTokenLimit", 0),
                         "supported": True,
                     })
-            
+
             # Update cache
             _models_cache = transformed
             _cache_timestamp = time.time()
-            
+
             return transformed
-            
+
     except Exception as e:
         logger.error(f"Failed to fetch models from API: {e}")
         return []  # Fallback to static list
@@ -110,14 +110,14 @@ async def fetch_models_from_api() -> list[dict]:
 @router.get("/models", summary="List available LLM models")
 async def list_models() -> JSONResponse:
     """List available LLM models with dynamic fetching."""
-    
+
     # Try dynamic fetch first
     dynamic_models = await fetch_models_from_api()
-    
+
     # Fallback to static list if dynamic fails
     if not dynamic_models:
         dynamic_models = gemini_models  # Our curated static list
-    
+
     models_config = {
         "providers": [
             {
@@ -137,7 +137,7 @@ async def list_models() -> JSONResponse:
             "top_k": 40,
         },
     }
-    
+
     return JSONResponse(content=models_config)
 ```
 
@@ -177,9 +177,8 @@ Only if:
 
 Your `GEMINI_API_KEY` in Secret Manager is available if needed, but our static list approach is:
 - Faster
-- More reliable  
+- More reliable
 - Simpler to maintain
 - Better for production
 
 No changes recommended! 🎉
-

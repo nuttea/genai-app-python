@@ -5,16 +5,15 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+from app.api.v1.router import api_router
+from app.config import settings
+from app.core.logging import setup_logging
+from app.core.rate_limiting import limiter
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-
-from app.api.v1.router import api_router
-from app.config import settings
-from app.core.logging import setup_logging
-from app.core.rate_limiting import limiter
 
 # Setup logging
 setup_logging(log_level=settings.log_level)

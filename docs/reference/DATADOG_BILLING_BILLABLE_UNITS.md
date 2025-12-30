@@ -148,7 +148,7 @@ Datadog categorizes serverless into two main types:
 - **Includes**: 50GB ingested spans, 300K indexed spans per 1M traced invocations
 - **Sampling**: Customers can control percentage traced via `DD_TRACE_SAMPLING_RULES`
 
-**Traced Invocation Definition**: 
+**Traced Invocation Definition**:
 - Trace includes a span named `aws.lambda`
 - OR trace includes `@_dd.origin:xray` with `operation_name:aws.lambda.function`
 
@@ -439,9 +439,9 @@ Datadog categorizes serverless into two main types:
 
 **Calculation Formula**:
 ```
-Total Traced Invocations = 
-    (Total Lambda Invocations) × 
-    (% of functions with APM enabled) × 
+Total Traced Invocations =
+    (Total Lambda Invocations) ×
+    (% of functions with APM enabled) ×
     (Sampling Rate)
 ```
 
@@ -503,7 +503,7 @@ aws cloudwatch get-metric-statistics \
 - Azure Monitor → Query `azure.web_serverfarms.current_instance_count`
 - **Quick Graph in Datadog** (if on trial):
   ```
-  count_nonzero(default_zero(sum:azure.app_services.cpu_time{*} 
+  count_nonzero(default_zero(sum:azure.app_services.cpu_time{*}
     by {instance,name,subscription_id,resource_group}.rollup(sum, 300)))
   ```
 
@@ -511,7 +511,7 @@ aws cloudwatch get-metric-statistics \
 - **Quick Graph in Datadog**:
   ```
   count_nonzero(sum:datadog.serverless.traced_invocations{
-    resource_provider:azure, resource_type:appservice} 
+    resource_provider:azure, resource_type:appservice}
     by {resource_id,instance_id}.as_count().rollup(count, 300))
   ```
 
@@ -521,7 +521,7 @@ aws cloudwatch get-metric-statistics \
 - Azure Monitor → Query `azure.app_containerapps.replicas`
 - **Quick Graph in Datadog**:
   ```
-  count_nonzero(default_zero(sum:azure.app_containerapps.replicas{*} 
+  count_nonzero(default_zero(sum:azure.app_containerapps.replicas{*}
     by {name,subscription_id,resource_group}.rollup(sum, 300)))
   ```
 
@@ -529,7 +529,7 @@ aws cloudwatch get-metric-statistics \
 - **Quick Graph in Datadog**:
   ```
   count_nonzero(sum:datadog.serverless.traced_invocations{
-    resource_provider:azure, resource_type:containerapp} 
+    resource_provider:azure, resource_type:containerapp}
     by {resource_id,instance_id}.as_count().rollup(count, 300))
   ```
 
@@ -540,7 +540,7 @@ aws cloudwatch get-metric-statistics \
 - **Quick Graph in Datadog**:
   ```
   count_nonzero(default_zero(sum:azure.functions.function_execution_count{
-    (NOT plan_tier:flexconsumption OR workflowstandard) AND instance:*} 
+    (NOT plan_tier:flexconsumption OR workflowstandard) AND instance:*}
     by {name,instance,subscription_id,resource_group}.as_count().rollup(sum, 300)))
   ```
 
@@ -559,7 +559,7 @@ aws cloudwatch get-metric-statistics \
 - **Quick Graph in Datadog**:
   ```
   count_nonzero(sum:datadog.serverless.traced_invocations{
-    resource_provider:gcp,resource_type:cloudrun} 
+    resource_provider:gcp,resource_type:cloudrun}
     by {resource_id,instance_id}.as_count().rollup(count, 300))
   ```
 
@@ -662,4 +662,3 @@ aws cloudwatch get-metric-statistics \
 ---
 
 *Last Updated: Based on research from Datadog internal Confluence documentation (December 2025)*
-

@@ -4,9 +4,9 @@
 
 The Streamlit frontend container was failing to start with this error:
 ```
-Error response from daemon: failed to create task for container: failed to create shim task: 
-OCI runtime create failed: runc create failed: unable to start container process: 
-error during container init: exec: "/app/datadog-init": stat /app/datadog-init: 
+Error response from daemon: failed to create task for container: failed to create shim task:
+OCI runtime create failed: runc create failed: unable to start container process:
+error during container init: exec: "/app/datadog-init": stat /app/datadog-init:
 no such file or directory: unknown
 ```
 
@@ -40,11 +40,11 @@ streamlit-frontend:
 
 ## Benefits
 
-✅ **Local Development**: Works without Datadog serverless-init  
-✅ **Hot Reload**: Backend has `--reload` flag for development  
-✅ **Cloud Run**: Dockerfiles unchanged, optimized for production  
-✅ **Consistent**: Same approach for both services  
-✅ **No Tracing Overhead**: Lighter weight for local dev  
+✅ **Local Development**: Works without Datadog serverless-init
+✅ **Hot Reload**: Backend has `--reload` flag for development
+✅ **Cloud Run**: Dockerfiles unchanged, optimized for production
+✅ **Consistent**: Same approach for both services
+✅ **No Tracing Overhead**: Lighter weight for local dev
 
 ## Usage
 
@@ -165,4 +165,3 @@ Note: Requires DD_API_KEY to be set.
 ---
 
 **The fix is now applied! Containers should start successfully.** 🚀
-

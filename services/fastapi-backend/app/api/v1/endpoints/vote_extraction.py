@@ -6,20 +6,22 @@ import re
 import time
 
 import httpx
-from fastapi import (APIRouter, Depends, File, Form, HTTPException, Request,
-                     UploadFile, status)
-from fastapi.responses import JSONResponse
-
 from app.config import settings
-from app.core.constants import (MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB,
-                                MAX_FILENAME_LENGTH, MAX_TOTAL_SIZE_BYTES,
-                                MAX_TOTAL_SIZE_MB, RATE_LIMIT_VOTE_EXTRACTION,
-                                RATE_LIMIT_VOTE_EXTRACTION_HOURLY)
+from app.core.constants import (
+    MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_FILENAME_LENGTH,
+    MAX_TOTAL_SIZE_BYTES,
+    MAX_TOTAL_SIZE_MB,
+    RATE_LIMIT_VOTE_EXTRACTION,
+    RATE_LIMIT_VOTE_EXTRACTION_HOURLY,
+)
 from app.core.rate_limiting import limiter
 from app.core.security import verify_api_key
-from app.models.vote_extraction import (ElectionFormData, LLMConfig,
-                                        VoteExtractionResponse)
+from app.models.vote_extraction import ElectionFormData, LLMConfig, VoteExtractionResponse
 from app.services.vote_extraction_service import vote_extraction_service
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 

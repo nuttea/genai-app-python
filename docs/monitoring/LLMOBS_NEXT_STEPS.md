@@ -34,10 +34,10 @@ def calculate_quality_score(response: str, expected: str) -> float:
 def extract_vote_data(image_data):
     # Your LLM call
     result = vertex_ai_client.generate_content(...)
-    
+
     # Export span context for evaluation
     span_context = LLMObs.export_span()
-    
+
     # Submit custom evaluation
     LLMObs.submit_evaluation_for(
         span=span_context,
@@ -51,7 +51,7 @@ def extract_vote_data(image_data):
             "version": "v1.0"
         }
     )
-    
+
     return result
 ```
 
@@ -73,7 +73,7 @@ def classify_output_quality(response: dict) -> str:
 def extract_vote_data(image_data):
     result = vertex_ai_client.generate_content(...)
     span_context = LLMObs.export_span()
-    
+
     LLMObs.submit_evaluation_for(
         span=span_context,
         ml_app="vote-extractor",
@@ -85,7 +85,7 @@ def extract_vote_data(image_data):
             "classifier_version": "v2.0"
         }
     )
-    
+
     return result
 ```
 
@@ -120,7 +120,7 @@ async def submit_feedback(feedback: FeedbackRequest):
             "span_id": feedback.span_id,
             "trace_id": feedback.trace_id
         }
-        
+
         # Submit feedback as evaluation
         LLMObs.submit_evaluation_for(
             span=span_context,
@@ -135,7 +135,7 @@ async def submit_feedback(feedback: FeedbackRequest):
                 **(feedback.tags or {})
             }
         )
-        
+
         # Optionally submit numeric score separately
         if feedback.quality_score:
             LLMObs.submit_evaluation_for(
@@ -146,9 +146,9 @@ async def submit_feedback(feedback: FeedbackRequest):
                 value=feedback.quality_score,
                 tags={"feedback_type": feedback.feedback_type}
             )
-        
+
         return {"status": "success", "message": "Feedback recorded"}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 ```
@@ -163,31 +163,31 @@ import requests
 def display_extraction_results_with_feedback(result, span_id, trace_id):
     """Display results with feedback collection"""
     st.json(result)
-    
+
     # Feedback section
     st.markdown("---")
     st.subheader("📝 How was this extraction?")
-    
+
     col1, col2, col3 = st.columns(3)
-    
+
     with col1:
         if st.button("👍 Good"):
             submit_feedback(span_id, trace_id, "thumbs_up")
             st.success("Thanks for your feedback!")
-    
+
     with col2:
         if st.button("👎 Poor"):
             submit_feedback(span_id, trace_id, "thumbs_down")
             st.success("Thanks for your feedback!")
-    
+
     # Detailed feedback
     with st.expander("Provide detailed feedback"):
         quality_score = st.slider("Quality (1-5 stars)", 1, 5, 3)
         comment = st.text_area("Comments (optional)")
-        
+
         if st.button("Submit Detailed Feedback"):
             submit_feedback(
-                span_id, trace_id, 
+                span_id, trace_id,
                 "thumbs_up" if quality_score >= 3 else "thumbs_down",
                 comment=comment,
                 quality_score=quality_score
@@ -197,7 +197,7 @@ def display_extraction_results_with_feedback(result, span_id, trace_id):
 def submit_feedback(span_id, trace_id, feedback_type, comment=None, quality_score=None):
     """Submit feedback to backend API"""
     api_url = f"{st.session_state.get('api_base_url')}/api/v1/feedback"
-    
+
     payload = {
         "span_id": span_id,
         "trace_id": trace_id,
@@ -209,7 +209,7 @@ def submit_feedback(span_id, trace_id, feedback_type, comment=None, quality_scor
             "page": "vote_extractor"
         }
     }
-    
+
     try:
         response = requests.post(
             api_url,
@@ -230,7 +230,7 @@ from ddtrace.llmobs import LLMObs
 
 def extract_with_annotation(image_data, expected_result=None):
     """Extract data and annotate for dataset creation"""
-    
+
     with LLMObs.annotation_context(
         tags={
             "dataset_candidate": "true",  # Mark as potential golden dataset entry
@@ -239,12 +239,12 @@ def extract_with_annotation(image_data, expected_result=None):
         }
     ):
         result = vertex_ai_client.generate_content(...)
-        
+
         # If ground truth available, evaluate accuracy
         if expected_result:
             accuracy = calculate_accuracy(result, expected_result)
             span_context = LLMObs.export_span()
-            
+
             # Mark high-quality results for golden dataset
             if accuracy > 0.95:
                 LLMObs.submit_evaluation_for(
@@ -259,7 +259,7 @@ def extract_with_annotation(image_data, expected_result=None):
                         "dataset_category": "high_quality"
                     }
                 )
-        
+
         return result
 ```
 
@@ -325,23 +325,23 @@ async def list_datasets() -> List[dict]:
 async def create_dataset(dataset: Dataset):
     """Create a new dataset"""
     file_path = Path(DATASET_STORAGE_PATH) / f"{dataset.name}_{dataset.version}.json"
-    
+
     if file_path.exists():
         raise HTTPException(status_code=400, detail="Dataset already exists")
-    
+
     with open(file_path, "w") as f:
         json.dump(dataset.dict(), f, indent=2, default=str)
-    
+
     return {"status": "created", "name": dataset.name}
 
 @router.get("/datasets/{name}/{version}")
 async def get_dataset(name: str, version: str):
     """Get a specific dataset"""
     file_path = Path(DATASET_STORAGE_PATH) / f"{name}_{version}.json"
-    
+
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Dataset not found")
-    
+
     with open(file_path) as f:
         return json.load(f)
 
@@ -349,10 +349,10 @@ async def get_dataset(name: str, version: str):
 async def add_entry_to_dataset(name: str, version: str, entry: DatasetEntry):
     """Add an entry to a dataset"""
     file_path = Path(DATASET_STORAGE_PATH) / f"{name}_{version}.json"
-    
+
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Dataset not found")
-    
+
     with open(file_path, "r+") as f:
         dataset = json.load(f)
         dataset["entries"].append(entry.dict(default=str))
@@ -360,7 +360,7 @@ async def add_entry_to_dataset(name: str, version: str, entry: DatasetEntry):
         f.seek(0)
         json.dump(dataset, f, indent=2, default=str)
         f.truncate()
-    
+
     return {"status": "added", "entry_id": entry.id}
 
 @router.post("/datasets/{name}/{version}/from-trace")
@@ -369,7 +369,7 @@ async def add_trace_to_dataset(name: str, version: str, span_id: str, trace_id: 
     # Fetch trace from Datadog (use Datadog API)
     # Extract input/output from trace
     # Add to dataset
-    
+
     # This would require Datadog API integration
     # For now, return placeholder
     return {
@@ -424,7 +424,7 @@ with st.form("create_dataset"):
     name = st.text_input("Dataset Name", "vote_extraction_test")
     version = st.text_input("Version", "v1.0")
     description = st.text_area("Description")
-    
+
     if st.form_submit_button("Create Dataset"):
         payload = {
             "name": name,
@@ -435,12 +435,12 @@ with st.form("create_dataset"):
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
-        
+
         response = requests.post(
             f"{API_BASE_URL}/api/v1/datasets",
             json=payload
         )
-        
+
         if response.ok:
             st.success(f"Dataset '{name}' created!")
             st.rerun()
@@ -457,13 +457,13 @@ selected_dataset = st.selectbox(
 if selected_dataset:
     name, version = selected_dataset.split("_")
     response = requests.get(f"{API_BASE_URL}/api/v1/datasets/{name}/{version}")
-    
+
     if response.ok:
         dataset = response.json()
         st.subheader(f"Dataset: {dataset['name']} ({dataset['version']})")
         st.write(dataset['description'])
         st.metric("Total Entries", len(dataset['entries']))
-        
+
         if dataset['entries']:
             for entry in dataset['entries']:
                 with st.expander(f"Entry {entry['id']}"):
@@ -504,15 +504,15 @@ from ddtrace.llmobs.decorators import llm
 @llm(model_name="gemini-2.5-flash", name="extract_with_context", model_provider="vertexai")
 def extract_with_rag_context(image_data, reference_docs):
     """Extract votes with RAG context for Ragas evaluation"""
-    
+
     # Prepare prompt with context
     prompt = f"""
     Reference documentation:
     {reference_docs}
-    
+
     Extract vote data from the following image...
     """
-    
+
     # Use annotation_context to provide RAG context for Ragas
     with LLMObs.annotation_context(
         prompt={
@@ -527,7 +527,7 @@ def extract_with_rag_context(image_data, reference_docs):
         result = vertex_ai_client.generate_content(
             contents=[image_data, prompt]
         )
-    
+
     return result
 ```
 
@@ -541,37 +541,37 @@ import json
 
 def run_ragas_experiment(dataset_name: str, version: str):
     """Run Ragas evaluation on a dataset"""
-    
+
     # Load dataset
     with open(f"data/datasets/{dataset_name}_{version}.json") as f:
         dataset = json.load(f)
-    
+
     results = []
-    
+
     for entry in dataset["entries"]:
         # Extract with RAG context
         result = extract_with_rag_context(
             entry["input_data"],
             entry.get("reference_docs", "")
         )
-        
+
         # Ragas will automatically evaluate:
         # - Faithfulness (is answer faithful to context?)
         # - Answer Relevancy (is answer relevant to question?)
         # - Context Precision (is context relevant?)
-        
+
         results.append({
             "entry_id": entry["id"],
             "result": result,
             "expected": entry["expected_output"]
         })
-    
+
     return results
 
 if __name__ == "__main__":
     # Run experiment
     results = run_ragas_experiment("vote_extraction_test", "v1.0")
-    
+
     # Results will be visible in Datadog LLMObs UI
     # under Custom Evaluations
     print(f"Experiment complete. Check Datadog for Ragas evaluation scores.")
@@ -583,7 +583,7 @@ if __name__ == "__main__":
 # experiments/prompt_comparison.py
 def run_prompt_ab_test():
     """Compare two different prompt strategies"""
-    
+
     prompts = {
         "prompt_a": """Extract all vote data from the image in JSON format...""",
         "prompt_b": """Analyze the election form and extract:
@@ -591,7 +591,7 @@ def run_prompt_ab_test():
         2. Vote results
         3. Ballot statistics..."""
     }
-    
+
     for prompt_name, prompt_template in prompts.items():
         with LLMObs.annotation_context(
             tags={
@@ -600,7 +600,7 @@ def run_prompt_ab_test():
             }
         ):
             result = extract_vote_data_with_prompt(image_data, prompt_template)
-            
+
             # Results will be tagged with prompt_version
             # allowing comparison in Datadog
 ```
@@ -688,4 +688,3 @@ Alert on:
 5. **Scale**: Expand to more use cases
 
 **Ready to enhance your LLM observability!** 🚀
-

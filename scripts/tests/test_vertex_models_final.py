@@ -56,7 +56,7 @@ print("Even though models.list() returns empty, we can USE the models!\n")
 
 known_gemini_models = [
     "gemini-2.5-flash",
-    "gemini-2.0-flash-exp", 
+    "gemini-2.0-flash-exp",
     "gemini-1.5-flash-002",
     "gemini-1.5-pro-002"
 ]
@@ -83,13 +83,13 @@ print("This SDK can list custom models but also not first-party ones.\n")
 
 try:
     from google.cloud import aiplatform
-    
+
     aiplatform.init(project=project, location=location)
     models = aiplatform.Model.list()
-    
+
     print(f"Result: {len(list(models))} models returned")
     print("(These are custom models in your project, not Gemini)")
-    
+
 except ImportError:
     print("google-cloud-aiplatform not installed (that's OK)")
 except Exception as e:
@@ -121,4 +121,3 @@ All of these work for generate_content() even though they don't appear in list()
 """)
 
 print("=" * 70)
-

@@ -85,4 +85,3 @@ echo "📊 Latest commit:"
 git log -1 --oneline
 echo ""
 echo "🌐 Check CI/CD: https://github.com/nuttea/genai-app-python/actions"
-

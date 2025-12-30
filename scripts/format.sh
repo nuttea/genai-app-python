@@ -1,7 +1,7 @@
 #!/bin/bash
 # Simple script to format code with Black before commit
 # Designed to work with uv package manager
-# 
+#
 # Usage:
 #   ./format.sh          - Format all code (backend + frontend)
 #   ./format.sh backend  - Format only backend
@@ -61,4 +61,3 @@ esac
 echo ""
 echo "✅ All requested code formatted successfully!"
 echo "   You can now commit your changes."
-

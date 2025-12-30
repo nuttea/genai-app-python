@@ -47,4 +47,3 @@ Or use `/lint-commit-push` to do all steps at once.
 The user can also use:
 - Shell script: `./scripts/format-only.sh`
 - Make command: `make format-only`
-

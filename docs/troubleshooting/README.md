@@ -40,7 +40,7 @@ max_tokens = 65536  # Maximum (Gemini 2.5 Flash)
 ### 2. Server Error 500 - JSON Parsing
 **Symptoms:**
 - "Unterminated string" errors
-- "Expecting delimiter" errors  
+- "Expecting delimiter" errors
 - Truncated JSON responses
 
 **Solution:** → [TROUBLESHOOTING_MAX_TOKENS.md](./TROUBLESHOOTING_MAX_TOKENS.md)
@@ -95,4 +95,3 @@ max_tokens = 65536  # Maximum (Gemini 2.5 Flash)
 ---
 
 **Last Updated:** 2024-12-29
-
