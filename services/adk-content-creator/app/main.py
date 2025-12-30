@@ -111,11 +111,15 @@ async def info():
 
 
 if __name__ == "__main__":
-    import uvicorn
+    import asyncio
+    from hypercorn.asyncio import serve
+    from hypercorn.config import Config
 
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=settings.port,
-        reload=settings.debug,
-    )
+    config = Config()
+    config.bind = [f"0.0.0.0:{settings.port}"]
+    config.worker_class = "asyncio"
+
+    if settings.debug:
+        config.use_reloader = True
+
+    asyncio.run(serve(app, config))
