@@ -81,6 +81,7 @@ docker-compose.override.yml
 # Google Cloud
 *.json
 !package.json
+!package-lock.json
 !tsconfig.json
 !*-example.json
 service-account-*.json
