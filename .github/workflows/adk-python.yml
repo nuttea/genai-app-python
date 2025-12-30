@@ -116,7 +116,6 @@ jobs:
             --set-env-vars GOOGLE_CLOUD_LOCATION=global \
             --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True \
             --set-env-vars VERTEX_AI_LOCATION=us-central1 \
-            --set-env-vars PORT=8002 \
             --set-env-vars ENVIRONMENT=production \
             --set-env-vars DEFAULT_MODEL=gemini-2.5-flash \
             --set-env-vars DD_SITE=datadoghq.com \
