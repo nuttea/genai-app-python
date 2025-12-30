@@ -27,7 +27,6 @@ export function DatadogInit() {
       trackLongTasks: true,
       trackUserInteractions: true,
       defaultPrivacyLevel: 'allow',
-      forwardErrorsToLogs: true,
       allowedTracingUrls: [
         // Matches any subdomain of run.app (Cloud Run services)
         /^https:\/\/[^\/]+\.run\.app/,
