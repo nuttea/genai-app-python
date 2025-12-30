@@ -55,7 +55,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 }
 
@@ -65,15 +67,15 @@
     width: 8px;
     height: 8px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     @apply bg-gray-100;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     @apply bg-purple-500 rounded-full;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-purple-600;
   }
@@ -81,7 +83,7 @@
 
 /* Datadog brand gradient */
 .bg-datadog-gradient {
-  background: linear-gradient(135deg, #774AA4 0%, #632D91 100%);
+  background: linear-gradient(135deg, #774aa4 0%, #632d91 100%);
 }
 
 /* Loading spinner */
@@ -122,4 +124,3 @@
 .animate-slide-in-left {
   animation: slideInLeft 0.3s ease-out;
 }
-

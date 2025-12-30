@@ -9,7 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
-import { contentCreatorApi, SocialMediaRequest, SocialMediaResponse } from '@/lib/api/contentCreator';
+import {
+  contentCreatorApi,
+  SocialMediaRequest,
+  SocialMediaResponse,
+} from '@/lib/api/contentCreator';
 import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/hooks/useToast';
 import { Download, Copy, Sparkles, Share2, Check } from 'lucide-react';
@@ -40,7 +44,9 @@ export default function SocialMediaPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        const fileIds = results.map((r) => r.file_id).filter((id): id is string => id !== undefined);
+        const fileIds = results
+          .map((r) => r.file_id)
+          .filter((id): id is string => id !== undefined);
         setUploadedFileIds(fileIds);
         toast.success(`Uploaded ${fileIds.length} file(s) successfully`);
       } catch (err) {
@@ -274,7 +280,9 @@ export default function SocialMediaPage() {
                         <CardHeader>
                           <div className="flex items-center justify-between">
                             <CardTitle className="flex items-center text-base">
-                              <span className="text-2xl mr-2">{getPlatformEmoji(post.platform)}</span>
+                              <span className="text-2xl mr-2">
+                                {getPlatformEmoji(post.platform)}
+                              </span>
                               {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}
                             </CardTitle>
                             <Button
@@ -311,9 +319,9 @@ export default function SocialMediaPage() {
                             {/* Metadata */}
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span>
-                                {post.character_count} / {
-                                  availablePlatforms.find((p) => p.id === post.platform)?.limit
-                                } characters
+                                {post.character_count} /{' '}
+                                {availablePlatforms.find((p) => p.id === post.platform)?.limit}{' '}
+                                characters
                               </span>
                               <span className="text-green-600 font-medium">
                                 {Math.round(
@@ -332,9 +340,7 @@ export default function SocialMediaPage() {
 
                     {/* Engagement Tips */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <p className="text-sm font-medium text-green-900 mb-2">
-                        📈 Engagement Tips
-                      </p>
+                      <p className="text-sm font-medium text-green-900 mb-2">📈 Engagement Tips</p>
                       <ul className="text-xs text-green-800 space-y-1">
                         <li>• Post during peak hours for your audience</li>
                         <li>• Respond to comments within the first hour</li>
@@ -351,8 +357,8 @@ export default function SocialMediaPage() {
                         <Share2 className="w-12 h-12 mx-auto mb-4 text-purple-400" />
                         <p className="text-lg font-medium mb-2">No posts generated yet</p>
                         <p className="text-sm">
-                          Fill in the details and select platforms to create AI-powered social
-                          media content
+                          Fill in the details and select platforms to create AI-powered social media
+                          content
                         </p>
                       </div>
                     </CardContent>
@@ -366,4 +372,3 @@ export default function SocialMediaPage() {
     </div>
   );
 }
-

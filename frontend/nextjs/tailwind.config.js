@@ -75,14 +75,7 @@ module.exports = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: [
-          'Inter',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
-          'Roboto',
-          'sans-serif',
-        ],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['Fira Code', 'Courier New', 'monospace'],
       },
       keyframes: {
@@ -103,4 +96,3 @@ module.exports = {
   },
   plugins: [require('tailwindcss-animate')],
 };
-

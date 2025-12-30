@@ -15,7 +15,11 @@ interface FileUploadProps {
 
 export function FileUpload({
   onFilesSelected,
-  accept = [...FILE_UPLOAD.acceptedImageTypes, ...FILE_UPLOAD.acceptedVideoTypes, ...FILE_UPLOAD.acceptedDocTypes],
+  accept = [
+    ...FILE_UPLOAD.acceptedImageTypes,
+    ...FILE_UPLOAD.acceptedVideoTypes,
+    ...FILE_UPLOAD.acceptedDocTypes,
+  ],
   maxFiles = 10,
   maxSizeMB = FILE_UPLOAD.maxSizeMB,
   className,
@@ -202,4 +206,3 @@ export function FileUpload({
     </div>
   );
 }
-

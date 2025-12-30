@@ -8,15 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { voteExtractorApi } from '@/lib/api/voteExtractor';
 import { useToast } from '@/hooks/useToast';
-import { 
-  FileText, 
-  Download, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  FileText,
+  Download,
+  AlertCircle,
+  CheckCircle,
   XCircle,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -70,18 +70,18 @@ export default function VoteExtractorPage() {
   const [activeTab, setActiveTab] = useState<'summary' | 'votes' | 'ballots' | 'json'>('summary');
   const [showInstructions, setShowInstructions] = useState(false);
   const [showLLMConfig, setShowLLMConfig] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
     setExtractionResult(null); // Clear previous results
-    
+
     // Create preview URLs
-    const urls = selectedFiles.map(file => URL.createObjectURL(file));
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
-    
+
     toast.success(`${selectedFiles.length} file(s) selected`);
   };
 
@@ -97,7 +97,7 @@ export default function VoteExtractorPage() {
       setExtractionResult(result);
       setSelectedReportIdx(0);
       setActiveTab('summary');
-      
+
       if (result.success) {
         toast.success(`Successfully extracted ${result.reports_extracted} report(s)`);
       } else {
@@ -119,16 +119,16 @@ export default function VoteExtractorPage() {
 
     // Convert to CSV
     const headers = ['Number', 'Candidate/Party Name', 'Vote Count', 'Vote Count (Text)'];
-    const rows = report.vote_results.map(r => [
+    const rows = report.vote_results.map((r) => [
       r.number,
       r.candidate_name || r.party_name || 'N/A',
       r.vote_count,
-      r.vote_count_text || ''
+      r.vote_count_text || '',
     ]);
 
     const csv = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -138,7 +138,7 @@ export default function VoteExtractorPage() {
     a.download = `vote_results_${report.form_info?.form_type || 'data'}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     toast.success('CSV downloaded');
   };
 
@@ -151,7 +151,7 @@ export default function VoteExtractorPage() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     toast.success('JSON downloaded');
   };
 
@@ -162,7 +162,7 @@ export default function VoteExtractorPage() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Vote Extractor" />
-        
+
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Page Header */}
@@ -171,14 +171,14 @@ export default function VoteExtractorPage() {
                 🗳️ Thai Election Form Vote Extractor
               </h1>
               <p className="text-muted-foreground">
-                Extract structured data from Thai election documents (Form S.S. 5/18).
-                Upload multiple pages of the same report to get consolidated results.
+                Extract structured data from Thai election documents (Form S.S. 5/18). Upload
+                multiple pages of the same report to get consolidated results.
               </p>
             </div>
 
             {/* Instructions Collapsible */}
             <Card>
-              <CardHeader 
+              <CardHeader
                 className="cursor-pointer hover:bg-accent/50 transition-colors"
                 onClick={() => setShowInstructions(!showInstructions)}
               >
@@ -187,31 +187,54 @@ export default function VoteExtractorPage() {
                     <Info className="w-5 h-5 text-blue-500" />
                     <CardTitle className="text-lg">How to use</CardTitle>
                   </div>
-                  {showInstructions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  {showInstructions ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
                 </div>
               </CardHeader>
               {showInstructions && (
                 <CardContent className="prose prose-sm max-w-none">
                   <h3>Instructions:</h3>
                   <ol>
-                    <li><strong>Prepare your images</strong>: Scan or photograph election form pages (JPG or PNG format)</li>
-                    <li><strong>Upload files</strong>: Drag & drop or click to select all pages of the same report</li>
-                    <li><strong>Extract data</strong>: Click "Extract Vote Data" button</li>
-                    <li><strong>Review results</strong>: View extracted data in organized tabs</li>
+                    <li>
+                      <strong>Prepare your images</strong>: Scan or photograph election form pages
+                      (JPG or PNG format)
+                    </li>
+                    <li>
+                      <strong>Upload files</strong>: Drag & drop or click to select all pages of the
+                      same report
+                    </li>
+                    <li>
+                      <strong>Extract data</strong>: Click "Extract Vote Data" button
+                    </li>
+                    <li>
+                      <strong>Review results</strong>: View extracted data in organized tabs
+                    </li>
                   </ol>
-                  
+
                   <h3>Supported Formats:</h3>
                   <ul>
                     <li>Image types: JPG, JPEG, PNG</li>
                     <li>Multiple pages: Yes (will be consolidated into single report)</li>
                     <li>Form types: Constituency (candidates) and PartyList (parties)</li>
                   </ul>
-                  
+
                   <h3>What gets extracted:</h3>
                   <ul>
-                    <li><strong>Form Information</strong>: Date, Province, District, Polling Station, etc.</li>
-                    <li><strong>Ballot Statistics</strong>: Total ballots used, valid, void, and no-vote counts</li>
-                    <li><strong>Vote Results</strong>: Complete table of candidates/parties with vote counts</li>
+                    <li>
+                      <strong>Form Information</strong>: Date, Province, District, Polling Station,
+                      etc.
+                    </li>
+                    <li>
+                      <strong>Ballot Statistics</strong>: Total ballots used, valid, void, and
+                      no-vote counts
+                    </li>
+                    <li>
+                      <strong>Vote Results</strong>: Complete table of candidates/parties with vote
+                      counts
+                    </li>
                   </ul>
                 </CardContent>
               )}
@@ -226,16 +249,14 @@ export default function VoteExtractorPage() {
                 </p>
               </CardHeader>
               <CardContent>
-                <FileUpload
-                  onFilesSelected={handleFilesSelected}
-                  maxFiles={10}
-                />
-                
+                <FileUpload onFilesSelected={handleFilesSelected} maxFiles={10} />
+
                 {/* Preview uploaded images */}
                 {previewUrls.length > 0 && (
                   <div className="mt-6">
                     <h3 className="text-sm font-semibold mb-3">
-                      🖼️ Preview uploaded images ({files.length} file{files.length !== 1 ? 's' : ''})
+                      🖼️ Preview uploaded images ({files.length} file{files.length !== 1 ? 's' : ''}
+                      )
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {previewUrls.map((url, idx) => (
@@ -272,9 +293,7 @@ export default function VoteExtractorPage() {
                     Processing...
                   </>
                 ) : (
-                  <>
-                    🚀 Extract Vote Data
-                  </>
+                  <>🚀 Extract Vote Data</>
                 )}
               </Button>
             </div>
@@ -289,7 +308,8 @@ export default function VoteExtractorPage() {
                       <div className="flex items-center space-x-2 text-green-600">
                         <CheckCircle className="w-5 h-5" />
                         <span className="text-sm font-medium">
-                          {extractionResult.reports_extracted} report(s) from {extractionResult.pages_processed} page(s)
+                          {extractionResult.reports_extracted} report(s) from{' '}
+                          {extractionResult.pages_processed} page(s)
                         </span>
                       </div>
                     ) : (
@@ -323,7 +343,8 @@ export default function VoteExtractorPage() {
                           >
                             {extractionResult.data.map((report, idx) => (
                               <option key={idx} value={idx}>
-                                Report #{idx + 1} - {report.form_info?.district || 'Unknown'} Station {report.form_info?.polling_station_number || 'N/A'}
+                                Report #{idx + 1} - {report.form_info?.district || 'Unknown'}{' '}
+                                Station {report.form_info?.polling_station_number || 'N/A'}
                               </option>
                             ))}
                           </select>
@@ -359,9 +380,23 @@ export default function VoteExtractorPage() {
                           {/* Tab Content */}
                           <div className="mt-6">
                             {activeTab === 'summary' && <SummaryTab report={currentReport} />}
-                            {activeTab === 'votes' && <VoteResultsTab report={currentReport} onDownloadCSV={handleDownloadCSV} />}
-                            {activeTab === 'ballots' && <BallotStatisticsTab report={currentReport} />}
-                            {activeTab === 'json' && <RawJSONTab report={currentReport} allReports={extractionResult.data} reportIdx={selectedReportIdx} onDownload={handleDownloadJSON} />}
+                            {activeTab === 'votes' && (
+                              <VoteResultsTab
+                                report={currentReport}
+                                onDownloadCSV={handleDownloadCSV}
+                              />
+                            )}
+                            {activeTab === 'ballots' && (
+                              <BallotStatisticsTab report={currentReport} />
+                            )}
+                            {activeTab === 'json' && (
+                              <RawJSONTab
+                                report={currentReport}
+                                allReports={extractionResult.data}
+                                reportIdx={selectedReportIdx}
+                                onDownload={handleDownloadJSON}
+                              />
+                            )}
                           </div>
                         </>
                       )}
@@ -382,7 +417,7 @@ export default function VoteExtractorPage() {
 // Tab Components
 function SummaryTab({ report }: { report: ExtractionData }) {
   const form = report.form_info || {};
-  
+
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Form Information</h3>
@@ -399,10 +434,16 @@ function SummaryTab({ report }: { report: ExtractionData }) {
   );
 }
 
-function VoteResultsTab({ report, onDownloadCSV }: { report: ExtractionData; onDownloadCSV: (report: ExtractionData) => void }) {
+function VoteResultsTab({
+  report,
+  onDownloadCSV,
+}: {
+  report: ExtractionData;
+  onDownloadCSV: (report: ExtractionData) => void;
+}) {
   const results = report.vote_results || [];
   const formType = report.form_info?.form_type || '';
-  
+
   if (results.length === 0) {
     return <p className="text-muted-foreground text-center py-8">No vote results found</p>;
   }
@@ -448,7 +489,9 @@ function VoteResultsTab({ report, onDownloadCSV }: { report: ExtractionData; onD
                     <td className="border p-2">{result.party_name || 'N/A'}</td>
                   </>
                 )}
-                <td className="border p-2 text-right font-mono">{result.vote_count.toLocaleString()}</td>
+                <td className="border p-2 text-right font-mono">
+                  {result.vote_count.toLocaleString()}
+                </td>
                 <td className="border p-2">{result.vote_count_text || ''}</td>
               </tr>
             ))}
@@ -466,7 +509,7 @@ function VoteResultsTab({ report, onDownloadCSV }: { report: ExtractionData; onD
 
 function BallotStatisticsTab({ report }: { report: ExtractionData }) {
   const stats = report.ballot_statistics;
-  
+
   if (!stats) {
     return <p className="text-muted-foreground text-center py-8">No ballot statistics found</p>;
   }
@@ -477,22 +520,28 @@ function BallotStatisticsTab({ report }: { report: ExtractionData }) {
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Ballot Statistics</h3>
-      
+
       {(stats.ballots_allocated || stats.ballots_remaining) && (
         <>
           <h4 className="text-md font-medium mb-3">Ballot Allocation</h4>
           <div className="grid grid-cols-2 gap-4 mb-6">
             {stats.ballots_allocated && (
-              <MetricCard label="Ballots Allocated" value={stats.ballots_allocated.toLocaleString()} />
+              <MetricCard
+                label="Ballots Allocated"
+                value={stats.ballots_allocated.toLocaleString()}
+              />
             )}
             {stats.ballots_remaining && (
-              <MetricCard label="Ballots Remaining" value={stats.ballots_remaining.toLocaleString()} />
+              <MetricCard
+                label="Ballots Remaining"
+                value={stats.ballots_remaining.toLocaleString()}
+              />
             )}
           </div>
           <h4 className="text-md font-medium mb-3">Ballot Usage</h4>
         </>
       )}
-      
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <MetricCard label="Ballots Used" value={stats.ballots_used.toLocaleString()} />
         <MetricCard label="Valid Ballots" value={stats.good_ballots.toLocaleString()} />
@@ -519,14 +568,14 @@ function BallotStatisticsTab({ report }: { report: ExtractionData }) {
   );
 }
 
-function RawJSONTab({ 
-  report, 
-  allReports, 
-  reportIdx, 
-  onDownload 
-}: { 
-  report: ExtractionData; 
-  allReports: ExtractionData[]; 
+function RawJSONTab({
+  report,
+  allReports,
+  reportIdx,
+  onDownload,
+}: {
+  report: ExtractionData;
+  allReports: ExtractionData[];
   reportIdx: number;
   onDownload: (data: any, filename: string) => void;
 }) {
@@ -535,18 +584,18 @@ function RawJSONTab({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Complete Extracted Data (JSON)</h3>
         <div className="flex space-x-2">
-          <Button 
+          <Button
             onClick={() => onDownload(report, `vote_data_report_${reportIdx + 1}.json`)}
-            variant="outline" 
+            variant="outline"
             size="sm"
           >
             <Download className="w-4 h-4 mr-2" />
             This Report
           </Button>
           {allReports.length > 1 && (
-            <Button 
+            <Button
               onClick={() => onDownload(allReports, 'vote_data_all_reports.json')}
-              variant="outline" 
+              variant="outline"
               size="sm"
             >
               <Download className="w-4 h-4 mr-2" />
@@ -573,4 +622,3 @@ function MetricCard({ label, value }: { label: string; value: string }) {
     </Card>
   );
 }
-

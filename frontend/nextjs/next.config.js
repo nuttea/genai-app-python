@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  
+
   // Strict mode for React
   reactStrictMode: true,
-  
+
   // API Proxy for Cloud Run backends
   async rewrites() {
     return [
@@ -18,7 +18,7 @@ const nextConfig = {
       },
     ];
   },
-  
+
   // Image optimization
   images: {
     domains: ['storage.googleapis.com'],
@@ -29,20 +29,20 @@ const nextConfig = {
       },
     ],
   },
-  
+
   // Environment variables validation
   env: {
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Datadog GenAI Platform',
     NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
   },
-  
+
   // Experimental features
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000'],
     },
   },
-  
+
   // Headers for security
   async headers() {
     return [
@@ -68,4 +68,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-

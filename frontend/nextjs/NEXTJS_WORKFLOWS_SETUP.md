@@ -5,6 +5,7 @@ This document summarizes the GitHub Actions CI/CD workflows created for the Next
 ## 📦 Files Created
 
 ### 1. Production Dockerfile
+
 **File**: `frontend/nextjs/Dockerfile.cloudrun`
 
 - Multi-stage build for optimized image size
@@ -14,6 +15,7 @@ This document summarizes the GitHub Actions CI/CD workflows created for the Next
 - Datadog source code integration support
 
 ### 2. Health API Endpoint
+
 **File**: `frontend/nextjs/app/api/health/route.ts`
 
 - Returns service health status
@@ -21,31 +23,38 @@ This document summarizes the GitHub Actions CI/CD workflows created for the Next
 - Returns service info and timestamp
 
 ### 3. Development Workflow
+
 **File**: `.github/workflows/nextjs-frontend.yml`
 
 **Triggers**:
+
 - Push to `main`/`develop` branches
 - Pull requests
 - Manual dispatch
 
 **Jobs**:
+
 1. **Lint and Test**: ESLint, TypeScript type checking, Prettier formatting check, Build test
 2. **Deploy**: Build Docker image, push to GCR, deploy to Cloud Run (dev environment)
 
 **Environment**: `dev` (DD_ENV=dev)
 
 ### 4. Production Workflow
+
 **File**: `.github/workflows/nextjs-frontend-prod.yml`
 
 **Triggers**:
+
 - Push to `prod` branch
 
 **Jobs**:
+
 1. **Deploy**: Build Docker image with `prod-latest` tag, deploy to Cloud Run with `prod` revision tag (no-traffic)
 
 **Environment**: `prod` (DD_ENV=prod)
 
 ### 5. Updated Documentation
+
 **File**: `.github/workflows/README.md`
 
 - Added Next.js Frontend workflows to documentation
@@ -67,6 +76,7 @@ Push to main → Lint & Test → Build Docker → Deploy to Cloud Run (dev)
 ```
 
 **Deployment**:
+
 - **Service**: `genai-nextjs-frontend`
 - **Region**: `us-central1`
 - **Environment**: `dev`
@@ -82,6 +92,7 @@ Push to prod → Build Docker → Deploy with 'prod' tag (no-traffic)
 ```
 
 **Deployment**:
+
 - **Service**: `genai-nextjs-frontend`
 - **Region**: `us-central1`
 - **Environment**: `prod`
@@ -95,10 +106,12 @@ Push to prod → Build Docker → Deploy with 'prod' tag (no-traffic)
 The workflows automatically configure these environment variables:
 
 **Build-time**:
+
 - `DD_GIT_REPOSITORY_URL`: Source code repository URL
 - `DD_GIT_COMMIT_SHA`: Git commit SHA for tracking
 
 **Runtime**:
+
 - `VOTE_EXTRACTOR_API_URL`: Backend API URL (auto-detected)
 - `CONTENT_CREATOR_API_URL`: Content Creator API URL (auto-detected)
 - `NODE_ENV`: `production`
@@ -113,20 +126,24 @@ The workflows automatically configure these environment variables:
 Make sure these secrets are configured in GitHub:
 
 **GCP Authentication**:
+
 - `GCP_PROJECT_ID`
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT_EMAIL`
 
 **Datadog RUM**:
+
 - `DD_RUM_APPLICATION_ID`
 - `DD_RUM_CLIENT_TOKEN`
 
 **Notifications (Optional)**:
+
 - `SLACK_WEBHOOK_URL`
 
 ### Cloud Run Configuration
 
 **Development (main branch)**:
+
 ```bash
 --memory 1Gi
 --cpu 1
@@ -138,6 +155,7 @@ Make sure these secrets are configured in GitHub:
 ```
 
 **Production (prod branch)**:
+
 ```bash
 --memory 1Gi
 --cpu 1
@@ -189,6 +207,7 @@ Make sure these secrets are configured in GitHub:
 ### Manual Workflow Trigger
 
 Using GitHub CLI:
+
 ```bash
 # Development workflow
 gh workflow run nextjs-frontend.yml
@@ -198,6 +217,7 @@ gh workflow run nextjs-frontend-prod.yml
 ```
 
 Using GitHub UI:
+
 1. Go to **Actions** tab
 2. Select **Next.js Frontend CI/CD** (or Production)
 3. Click **Run workflow**
@@ -207,6 +227,7 @@ Using GitHub UI:
 ### GitHub Actions
 
 **View workflow runs**:
+
 ```bash
 # List recent runs
 gh run list --workflow=nextjs-frontend.yml
@@ -219,11 +240,13 @@ gh run watch
 ```
 
 **GitHub UI**:
+
 - https://github.com/YOUR_ORG/genai-app-python/actions/workflows/nextjs-frontend.yml
 
 ### Cloud Run
 
 **Check deployment**:
+
 ```bash
 # Get service URL
 gcloud run services describe genai-nextjs-frontend \
@@ -244,6 +267,7 @@ gcloud run services describe genai-nextjs-frontend \
 ### Datadog
 
 The frontend automatically reports to Datadog RUM:
+
 - Session Replay enabled
 - 100% sampling (dev and prod)
 - Traces enabled
@@ -257,12 +281,14 @@ The frontend automatically reports to Datadog RUM:
 The workflows include automated smoke tests:
 
 **Development**:
+
 ```bash
 curl -f https://genai-nextjs-frontend-dev.run.app/api/health
 curl -f https://genai-nextjs-frontend-dev.run.app/
 ```
 
 **Production**:
+
 ```bash
 curl -f https://genai-nextjs-frontend-prod-HASH.run.app/api/health
 curl -f https://genai-nextjs-frontend-prod-HASH.run.app/
@@ -293,11 +319,13 @@ curl http://localhost:3000/api/health
 ### Workflow Not Triggering
 
 **Check**:
+
 1. Changes are in `frontend/nextjs/**` path
 2. Branch is `main` or `develop` (or `prod` for production)
 3. Workflow file syntax is valid
 
 **Test**:
+
 ```bash
 # Validate YAML syntax
 yamllint .github/workflows/nextjs-frontend.yml
@@ -309,11 +337,13 @@ gh workflow view nextjs-frontend.yml
 ### Build Failures
 
 **Common issues**:
+
 1. **TypeScript errors**: Run `npm run type-check` locally
 2. **Linting errors**: Run `npm run lint` locally
 3. **Prettier errors**: Run `npx prettier --check .` locally
 
 **Fix locally first**:
+
 ```bash
 cd frontend/nextjs
 npm run lint
@@ -325,11 +355,13 @@ npm run build
 ### Deployment Failures
 
 **Check**:
+
 1. GCP secrets are configured correctly
 2. Service account has required permissions
 3. Backend services are deployed and accessible
 
 **Verify secrets**:
+
 ```bash
 # Check Secret Manager
 gcloud secrets versions access latest --secret=api-key
@@ -345,11 +377,13 @@ gcloud projects get-iam-policy $GCP_PROJECT_ID \
 If the workflow can't find backend URLs:
 
 **Check services exist**:
+
 ```bash
 gcloud run services list --region us-central1
 ```
 
 **Deploy backends first**:
+
 ```bash
 # Deploy FastAPI backend
 git push origin main  # Triggers fastapi-backend.yml
@@ -374,6 +408,7 @@ Add to your README:
    - Follow Workload Identity setup guide
 
 2. **Test Development Workflow**:
+
    ```bash
    # Make a small change
    echo "# Test" >> frontend/nextjs/README.md

@@ -11,17 +11,17 @@ import { FileUpload } from '@/components/shared/FileUpload';
 import { MarkdownPreview } from '@/components/shared/MarkdownPreview';
 import { contentCreatorApi } from '@/lib/api/contentCreator';
 import { useToast } from '@/hooks/useToast';
-import { 
-  Send, 
-  Bot, 
-  User, 
-  FileText, 
-  Upload, 
+import {
+  Send,
+  Bot,
+  User,
+  FileText,
+  Upload,
   Sparkles,
   Download,
   Copy,
   Check,
-  X
+  X,
 } from 'lucide-react';
 import { copyToClipboard, downloadBlob } from '@/lib/utils';
 
@@ -35,7 +35,7 @@ interface Message {
 }
 
 // Workflow states
-type WorkflowStep = 
+type WorkflowStep =
   | 'welcome'
   | 'choose_content_type'
   | 'blog_planning'
@@ -69,7 +69,7 @@ export default function InteractiveContentCreatorPage() {
   });
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [sessionId, setSessionId] = useState<string>(`session_${Date.now()}`);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
@@ -97,7 +97,11 @@ What would you like to work on today?`
     );
   }, []);
 
-  const addMessage = (role: 'user' | 'assistant' | 'system', content: string, streaming = false) => {
+  const addMessage = (
+    role: 'user' | 'assistant' | 'system',
+    content: string,
+    streaming = false
+  ) => {
     const newMessage: Message = {
       id: `msg_${Date.now()}_${Math.random()}`,
       role,
@@ -147,11 +151,11 @@ What would you like to work on today?`
 
   const callAgent = async (userMessage: string) => {
     setIsStreaming(true);
-    
+
     try {
       // Create a new message for streaming response
       const messageId = addMessage('assistant', '', true);
-      
+
       // Prepare ADK request
       const appName = 'content_creator_agent';
       const userId = 'user_nextjs';
@@ -192,14 +196,14 @@ What would you like to work on today?`
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           break;
         }
 
         // Decode the chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
-        
+
         // SSE events are separated by double newlines
         const events = buffer.split('\n\n');
         // Keep the last potentially incomplete event in the buffer
@@ -208,17 +212,17 @@ What would you like to work on today?`
         for (const event of events) {
           // Each event can have multiple lines
           const lines = event.split('\n');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const jsonStr = line.slice(6).trim();
-              
+
               // Skip empty data lines
               if (!jsonStr) continue;
-              
+
               try {
                 const data = JSON.parse(jsonStr);
-                
+
                 // ADK sends complete message content in each event
                 // We need to replace (not append) the message content
                 if (data.content?.parts) {
@@ -258,26 +262,26 @@ What would you like to work on today?`
   const handleFilesSelected = async (files: File[]) => {
     try {
       toast.loading(`Uploading ${files.length} file(s)...`);
-      
+
       const uploadPromises = files.map((file) => contentCreatorApi.uploadFile(file));
       const results = await Promise.all(uploadPromises);
-      
+
       const fileInfos = results.map((r) => ({
         filename: r.file.filename,
         text: r.file.extracted_text || undefined,
       }));
-      
+
       setWorkflow((prev: WorkflowState) => ({
         ...prev,
         uploadedFiles: [...prev.uploadedFiles, ...fileInfos],
       }));
 
       toast.success(`Uploaded ${fileInfos.length} file(s) successfully`);
-      
+
       // Notify agent about uploaded files
       const fileList = fileInfos.map((f) => f.filename).join(', ');
       await callAgent(`I've uploaded these files: ${fileList}. Please analyze them.`);
-      
+
       setShowFileUpload(false);
     } catch (error) {
       console.error('Upload error:', error);
@@ -328,7 +332,7 @@ What would you like to work on today?`
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header title="Interactive Content Creator" />
-        
+
         <main className="flex-1 overflow-hidden flex flex-col">
           {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -341,14 +345,14 @@ What would you like to work on today?`
                   onDownload={handleDownloadContent}
                 />
               ))}
-              
+
               {isStreaming && (
                 <div className="flex items-center space-x-2 text-muted-foreground">
                   <Bot className="w-5 h-5 animate-pulse" />
                   <span className="text-sm">Agent is thinking...</span>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -357,27 +361,15 @@ What would you like to work on today?`
           {!isStreaming && (
             <div className="border-t border-border bg-card p-3">
               <div className="max-w-4xl mx-auto flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction('blog')}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleQuickAction('blog')}>
                   <FileText className="w-4 h-4 mr-1" />
                   Blog Post
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction('video')}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleQuickAction('video')}>
                   <Sparkles className="w-4 h-4 mr-1" />
                   Video Script
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction('social')}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleQuickAction('social')}>
                   <Sparkles className="w-4 h-4 mr-1" />
                   Social Media
                 </Button>
@@ -389,19 +381,11 @@ What would you like to work on today?`
                   <Upload className="w-4 h-4 mr-1" />
                   Upload Files
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction('approve')}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleQuickAction('approve')}>
                   <Check className="w-4 h-4 mr-1" />
                   Approve
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleQuickAction('reject')}
-                >
+                <Button size="sm" variant="outline" onClick={() => handleQuickAction('reject')}>
                   <X className="w-4 h-4 mr-1" />
                   Revise
                 </Button>
@@ -417,18 +401,11 @@ What would you like to work on today?`
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold">Upload Files</h3>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setShowFileUpload(false)}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => setShowFileUpload(false)}>
                         Cancel
                       </Button>
                     </div>
-                    <FileUpload
-                      onFilesSelected={handleFilesSelected}
-                      maxFiles={5}
-                    />
+                    <FileUpload onFilesSelected={handleFilesSelected} maxFiles={5} />
                   </CardContent>
                 </Card>
               ) : (
@@ -473,13 +450,11 @@ interface ChatMessageProps {
 function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
-  
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`flex space-x-3 max-w-[85%] ${
-          isUser ? 'flex-row-reverse space-x-reverse' : ''
-        }`}
+        className={`flex space-x-3 max-w-[85%] ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}
       >
         {/* Avatar */}
         <div
@@ -487,8 +462,8 @@ function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
             isUser
               ? 'bg-purple-600 text-white'
               : isSystem
-              ? 'bg-yellow-100 text-yellow-600'
-              : 'bg-blue-100 text-blue-600'
+                ? 'bg-yellow-100 text-yellow-600'
+                : 'bg-blue-100 text-blue-600'
           }`}
         >
           {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
@@ -501,8 +476,8 @@ function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
               isUser
                 ? 'bg-purple-600 text-white'
                 : isSystem
-                ? 'bg-yellow-50 border border-yellow-200 text-yellow-900'
-                : 'bg-card border border-border'
+                  ? 'bg-yellow-50 border border-yellow-200 text-yellow-900'
+                  : 'bg-card border border-border'
             }`}
           >
             {message.streaming ? (
@@ -511,9 +486,11 @@ function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
                 <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
               </div>
             ) : message.content.includes('```') || message.content.includes('#') ? (
-              <div className={`prose prose-sm dark:prose-invert max-w-none ${
-                isUser ? 'prose-invert' : ''
-              } prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1.5 prose-code:text-sm prose-pre:my-4`}>
+              <div
+                className={`prose prose-sm dark:prose-invert max-w-none ${
+                  isUser ? 'prose-invert' : ''
+                } prose-headings:mt-6 prose-headings:mb-3 prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1.5 prose-code:text-sm prose-pre:my-4`}
+              >
                 <MarkdownPreview content={message.content} />
               </div>
             ) : (
@@ -524,20 +501,14 @@ function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
           {/* Actions */}
           {!isUser && !isSystem && !message.streaming && message.content.length > 100 && (
             <div className="flex space-x-2 mt-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onCopy?.(message.content)}
-              >
+              <Button size="sm" variant="ghost" onClick={() => onCopy?.(message.content)}>
                 <Copy className="w-4 h-4 mr-1" />
                 Copy
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() =>
-                  onDownload?.(message.content, `content_${Date.now()}.md`)
-                }
+                onClick={() => onDownload?.(message.content, `content_${Date.now()}.md`)}
               >
                 <Download className="w-4 h-4 mr-1" />
                 Download
@@ -554,4 +525,3 @@ function ChatMessage({ message, onCopy, onDownload }: ChatMessageProps) {
     </div>
   );
 }
-

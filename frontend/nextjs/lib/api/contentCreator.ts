@@ -160,15 +160,12 @@ export const contentCreatorApi = {
    * Helper: Create or get ADK session
    */
   _createSession: async (appName: string, userId: string, sessionId: string): Promise<any> => {
-    const response = await fetch(
-      `${API_BASE_URL}/apps/${appName}/users/${userId}/sessions`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      }
-    );
-    
+    const response = await fetch(`${API_BASE_URL}/apps/${appName}/users/${userId}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    });
+
     if (!response.ok) {
       // Session might already exist, try to get it
       const getResponse = await fetch(
@@ -179,7 +176,7 @@ export const contentCreatorApi = {
       }
       throw new Error(`Failed to create/get session: ${response.status}`);
     }
-    
+
     return await response.json();
   },
 
@@ -204,16 +201,18 @@ export const contentCreatorApi = {
       sessionId,
       newMessage: {
         role: 'user',
-        parts: [{
-          text: `Create a blog post with the following details:
+        parts: [
+          {
+            text: `Create a blog post with the following details:
 Title: ${request.title}
 Description: ${request.description}
 Style: ${request.style || 'professional'}
 Target Audience: ${request.target_audience || 'developers'}
-${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
-        }]
+${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`,
+          },
+        ],
       },
-      streaming: true // Enable token-level streaming
+      streaming: true, // Enable token-level streaming
     };
 
     return new Promise((resolve, reject) => {
@@ -242,14 +241,14 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
 
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               break;
             }
 
             // Decode the chunk
             buffer += decoder.decode(value, { stream: true });
-            
+
             // Process complete SSE messages
             const lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -258,13 +257,13 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
               if (line.startsWith('data: ')) {
                 try {
                   const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
-                  
+
                   // Extract text parts from the event
                   if (data.content?.parts) {
                     for (const part of data.content.parts) {
                       if (part.text) {
                         fullContent += part.text;
-                        
+
                         // Call streaming callback if provided
                         if (onStreamEvent) {
                           onStreamEvent(part.text);
@@ -317,15 +316,17 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
       sessionId,
       newMessage: {
         role: 'user',
-        parts: [{
-          text: `Create a 60-second video script with the following details:
+        parts: [
+          {
+            text: `Create a 60-second video script with the following details:
 Title: ${request.title}
 Description: ${request.description}
 Duration: ${request.duration || 60} seconds
-${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
-        }]
+${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`,
+          },
+        ],
       },
-      streaming: true
+      streaming: true,
     };
 
     return new Promise((resolve, reject) => {
@@ -353,7 +354,7 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
 
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               break;
             }
@@ -366,7 +367,7 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
               if (line.startsWith('data: ')) {
                 try {
                   const data = JSON.parse(line.slice(6));
-                  
+
                   if (data.content?.parts) {
                     for (const part of data.content.parts) {
                       if (part.text) {
@@ -420,14 +421,16 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
       sessionId,
       newMessage: {
         role: 'user',
-        parts: [{
-          text: `Generate social media posts with the following details:
+        parts: [
+          {
+            text: `Generate social media posts with the following details:
 Content: ${request.content}
 Platforms: ${request.platforms.join(', ')}
-${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
-        }]
+${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`,
+          },
+        ],
       },
-      streaming: true
+      streaming: true,
     };
 
     return new Promise((resolve, reject) => {
@@ -455,7 +458,7 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
 
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               break;
             }
@@ -468,7 +471,7 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
               if (line.startsWith('data: ')) {
                 try {
                   const data = JSON.parse(line.slice(6));
-                  
+
                   if (data.content?.parts) {
                     for (const part of data.content.parts) {
                       if (part.text) {
@@ -487,7 +490,7 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
           }
 
           resolve({
-            posts: request.platforms.map(platform => ({
+            posts: request.platforms.map((platform) => ({
               platform,
               content: fullContent,
               hashtags: [],
@@ -511,4 +514,3 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`
     return response.data;
   },
 };
-

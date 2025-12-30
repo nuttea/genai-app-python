@@ -106,9 +106,7 @@ export const voteExtractorApi = {
    * List available LLM models
    */
   listModels: async (): Promise<ModelInfo[]> => {
-    const response = await voteExtractorClient.get<ModelInfo[]>(
-      '/api/v1/vote-extraction/models'
-    );
+    const response = await voteExtractorClient.get<ModelInfo[]>('/api/v1/vote-extraction/models');
 
     return response.data;
   },
@@ -121,4 +119,3 @@ export const voteExtractorApi = {
     return response.data;
   },
 };
-

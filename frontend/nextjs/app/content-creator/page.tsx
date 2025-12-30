@@ -14,9 +14,7 @@ export default function ContentCreatorPage() {
           <div className="max-w-7xl mx-auto">
             {/* Hero Section */}
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Datadog Content Creator
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Datadog Content Creator</h1>
               <p className="text-muted-foreground text-lg">
                 Generate high-quality blog posts, video scripts, and social media content about
                 Datadog products using AI
@@ -35,7 +33,8 @@ export default function ContentCreatorPage() {
                     <h2 className="text-2xl font-bold">🆕 Interactive Mode (Recommended)</h2>
                   </div>
                   <p className="text-purple-100 mb-2">
-                    Chat with our AI agent that guides you through the complete content creation workflow
+                    Chat with our AI agent that guides you through the complete content creation
+                    workflow
                   </p>
                   <ul className="space-y-1 text-sm text-purple-100">
                     <li>✨ Multi-agent collaboration with auto-validation</li>
@@ -46,7 +45,12 @@ export default function ContentCreatorPage() {
                 </div>
                 <div className="text-white group-hover:translate-x-2 transition-transform">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </div>
               </div>
@@ -122,9 +126,7 @@ export default function ContentCreatorPage() {
 
             {/* Getting Started */}
             <div className="mt-8 bg-purple-50 border border-purple-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-purple-900 mb-2">
-                🚀 Getting Started
-              </h3>
+              <h3 className="text-lg font-semibold text-purple-900 mb-2">🚀 Getting Started</h3>
               <ol className="list-decimal list-inside space-y-2 text-purple-800">
                 <li>Choose a content type above (Blog Post, Video Script, or Social Media)</li>
                 <li>Provide your topic or upload reference materials</li>
@@ -208,4 +210,3 @@ function FeatureItem({ title, description }: FeatureItemProps) {
     </div>
   );
 }
-

@@ -118,4 +118,3 @@ export function isValidFileSize(file: File, maxSizeMB: number): boolean {
   const maxBytes = maxSizeMB * 1024 * 1024;
   return file.size <= maxBytes;
 }
-

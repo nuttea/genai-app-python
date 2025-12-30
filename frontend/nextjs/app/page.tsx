@@ -30,20 +30,8 @@ export default function HomePage() {
                 trend="+0%"
                 color="purple"
               />
-              <StatsCard
-                title="Blog Posts"
-                value="0"
-                icon={FileText}
-                trend="+0%"
-                color="blue"
-              />
-              <StatsCard
-                title="Video Scripts"
-                value="0"
-                icon={Video}
-                trend="+0%"
-                color="green"
-              />
+              <StatsCard title="Blog Posts" value="0" icon={FileText} trend="+0%" color="blue" />
+              <StatsCard title="Video Scripts" value="0" icon={Video} trend="+0%" color="green" />
               <StatsCard
                 title="Success Rate"
                 value="100%"
@@ -142,4 +130,3 @@ function QuickActionCard({
     </a>
   );
 }
-

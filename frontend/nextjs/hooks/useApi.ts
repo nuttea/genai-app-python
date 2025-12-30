@@ -18,9 +18,10 @@ export function useApi<T, P = any>() {
       setData(result);
       return result;
     } catch (err) {
-      const errorMessage = err instanceof AxiosError
-        ? err.response?.data?.message || err.message
-        : 'An unexpected error occurred';
+      const errorMessage =
+        err instanceof AxiosError
+          ? err.response?.data?.message || err.message
+          : 'An unexpected error occurred';
 
       setError(errorMessage);
       console.error('API Error:', err);
@@ -47,7 +48,7 @@ export function useFileUpload() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const upload = async <T,>(
+  const upload = async <T>(
     uploadFn: (file: File, onProgress?: (progress: number) => void) => Promise<T>,
     file: File
   ): Promise<T | null> => {
@@ -60,9 +61,8 @@ export function useFileUpload() {
       setProgress(100);
       return result;
     } catch (err) {
-      const errorMessage = err instanceof AxiosError
-        ? err.response?.data?.message || err.message
-        : 'Upload failed';
+      const errorMessage =
+        err instanceof AxiosError ? err.response?.data?.message || err.message : 'Upload failed';
 
       setError(errorMessage);
       console.error('Upload Error:', err);
@@ -80,4 +80,3 @@ export function useFileUpload() {
 
   return { progress, uploading, error, upload, reset };
 }
-

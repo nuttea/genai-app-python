@@ -70,4 +70,3 @@ export async function apiRequest<T>(
   const response = await client.request<T>(config);
   return response.data;
 }
-

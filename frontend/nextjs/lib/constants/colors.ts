@@ -59,4 +59,3 @@ export const fontSize = {
   '3xl': '1.875rem', // 30px
   '4xl': '2.25rem', // 36px
 } as const;
-

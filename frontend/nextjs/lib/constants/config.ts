@@ -10,13 +10,11 @@ export const APP_CONFIG = {
 
 export const API_CONFIG = {
   voteExtractor: {
-    baseUrl:
-      process.env.NEXT_PUBLIC_VOTE_EXTRACTOR_API || 'http://localhost:8000',
+    baseUrl: process.env.NEXT_PUBLIC_VOTE_EXTRACTOR_API || 'http://localhost:8000',
     timeout: 60000, // 60 seconds
   },
   contentCreator: {
-    baseUrl:
-      process.env.NEXT_PUBLIC_CONTENT_CREATOR_API || 'http://localhost:8002',
+    baseUrl: process.env.NEXT_PUBLIC_CONTENT_CREATOR_API || 'http://localhost:8002',
     timeout: 120000, // 120 seconds for LLM operations
   },
 } as const;
@@ -28,17 +26,10 @@ export const DATADOG_CONFIG = {
   service: process.env.NEXT_PUBLIC_DD_SERVICE || 'nextjs-frontend',
   env: process.env.NEXT_PUBLIC_DD_ENV || 'development',
   version: process.env.NEXT_PUBLIC_DD_VERSION || '1.0.0',
-  sessionReplayEnabled:
-    process.env.NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED === 'true',
-  sessionSampleRate: parseInt(
-    process.env.NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE || '100',
-    10
-  ),
+  sessionReplayEnabled: process.env.NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED === 'true',
+  sessionSampleRate: parseInt(process.env.NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE || '100', 10),
   traceEnabled: process.env.NEXT_PUBLIC_DD_TRACE_ENABLED === 'true',
-  traceSampleRate: parseInt(
-    process.env.NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE || '100',
-    10
-  ),
+  traceSampleRate: parseInt(process.env.NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE || '100', 10),
 } as const;
 
 export const ROUTES = {
@@ -59,4 +50,3 @@ export const FILE_UPLOAD = {
   acceptedVideoTypes: ['video/mp4', 'video/mov', 'video/avi', 'video/webm'],
   acceptedDocTypes: ['application/pdf', 'text/plain', 'text/markdown'],
 } as const;
-

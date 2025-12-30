@@ -78,13 +78,10 @@ export function Sidebar() {
 
           {/* Footer */}
           <div className="p-6 border-t border-purple-700">
-            <p className="text-xs text-purple-200">
-              © 2024 Datadog. All rights reserved.
-            </p>
+            <p className="text-xs text-purple-200">© 2024 Datadog. All rights reserved.</p>
           </div>
         </div>
       </aside>
     </>
   );
 }
-

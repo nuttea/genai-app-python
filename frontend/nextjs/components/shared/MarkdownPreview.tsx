@@ -67,4 +67,3 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
     </div>
   );
 }
-

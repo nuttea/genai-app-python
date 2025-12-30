@@ -9,7 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
-import { contentCreatorApi, VideoScriptRequest, VideoScriptResponse } from '@/lib/api/contentCreator';
+import {
+  contentCreatorApi,
+  VideoScriptRequest,
+  VideoScriptResponse,
+} from '@/lib/api/contentCreator';
 import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/hooks/useToast';
 import { Download, Copy, Sparkles, Play, Clock } from 'lucide-react';
@@ -34,7 +38,9 @@ export default function VideoScriptPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        const fileIds = results.map((r) => r.file_id).filter((id): id is string => id !== undefined);
+        const fileIds = results
+          .map((r) => r.file_id)
+          .filter((id): id is string => id !== undefined);
         setUploadedFileIds(fileIds);
         toast.success(`Uploaded ${fileIds.length} file(s) successfully`);
       } catch (err) {
@@ -320,8 +326,8 @@ export default function VideoScriptPage() {
                         <Play className="w-12 h-12 mx-auto mb-4 text-purple-400" />
                         <p className="text-lg font-medium mb-2">No script generated yet</p>
                         <p className="text-sm">
-                          Fill in the details and click "Generate Video Script" to create
-                          AI-powered short-form video content
+                          Fill in the details and click "Generate Video Script" to create AI-powered
+                          short-form video content
                         </p>
                       </div>
                     </CardContent>
@@ -335,4 +341,3 @@ export default function VideoScriptPage() {
     </div>
   );
 }
-

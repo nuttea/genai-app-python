@@ -148,6 +148,7 @@ The application uses Datadog's official color palette:
 To add a new GenAI service to the sidebar:
 
 1. **Add to sidebar**:
+
 ```typescript
 // components/layout/Sidebar.tsx
 const services = [
@@ -157,6 +158,7 @@ const services = [
 ```
 
 2. **Create page**:
+
 ```typescript
 // app/your-service/page.tsx
 export default function YourServicePage() {
@@ -165,6 +167,7 @@ export default function YourServicePage() {
 ```
 
 3. **Add API client** (if needed):
+
 ```typescript
 // lib/api/yourService.ts
 export const yourServiceApi = {
@@ -228,4 +231,3 @@ See the main project LICENSE file.
 **Status**: 🚧 In Development
 
 **Version**: 1.0.0
-

@@ -19,13 +19,6 @@ module.exports = [
     },
   },
   {
-    ignores: [
-      'node_modules/**',
-      '.next/**',
-      'out/**',
-      'public/**',
-      '*.config.js',
-    ],
+    ignores: ['node_modules/**', '.next/**', 'out/**', 'public/**', '*.config.js'],
   },
 ];
-

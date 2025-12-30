@@ -31,4 +31,3 @@ export function LoadingSpinner({ size = 'md', className, fullPage = false }: Loa
 
   return spinner;
 }
-

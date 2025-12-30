@@ -22,7 +22,9 @@ export default function BlogPostPage() {
   const [style, setStyle] = useState('professional');
   const [audience, setAudience] = useState('developers');
   const [files, setFiles] = useState<File[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{filename: string; extractedText?: string; gcsUri?: string}>>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Array<{ filename: string; extractedText?: string; gcsUri?: string }>
+  >([]);
   const [generatedPost, setGeneratedPost] = useState<BlogPostResponse | null>(null);
 
   const { loading, error, execute } = useApi<BlogPostResponse, BlogPostRequest>();
@@ -36,21 +38,24 @@ export default function BlogPostPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        
+
         // Extract file info from responses
         const fileInfos = results.map((r) => ({
           filename: r.file.filename,
           extractedText: r.file.extracted_text || undefined,
           gcsUri: r.file.gcs_uri || undefined,
         }));
-        
+
         setUploadedFiles(fileInfos);
         toast.success(`Uploaded ${fileInfos.length} file(s) successfully`);
-        
+
         // Log extracted text for debugging
         fileInfos.forEach((info) => {
           if (info.extractedText) {
-            console.log(`Extracted text from ${info.filename}:`, info.extractedText.substring(0, 100));
+            console.log(
+              `Extracted text from ${info.filename}:`,
+              info.extractedText.substring(0, 100)
+            );
           }
         });
       } catch (err) {
@@ -78,7 +83,7 @@ export default function BlogPostPage() {
         .filter((f) => f.extractedText)
         .map((f) => `\n\n---\nFrom ${f.filename}:\n${f.extractedText}`)
         .join('\n');
-      
+
       if (extractedTexts) {
         fullDescription += extractedTexts;
       }
@@ -244,19 +249,11 @@ export default function BlogPostPage() {
                         <div className="flex items-center justify-between">
                           <CardTitle>Generated Blog Post</CardTitle>
                           <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleCopyMarkdown}
-                            >
+                            <Button variant="outline" size="sm" onClick={handleCopyMarkdown}>
                               <Copy className="w-4 h-4 mr-2" />
                               Copy
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleDownloadMarkdown}
-                            >
+                            <Button variant="outline" size="sm" onClick={handleDownloadMarkdown}>
                               <Download className="w-4 h-4 mr-2" />
                               Download
                             </Button>
@@ -269,18 +266,14 @@ export default function BlogPostPage() {
                           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                             <span>📖 {generatedPost.estimated_read_time} min read</span>
                             {generatedPost.tags && generatedPost.tags.length > 0 && (
-                              <span>
-                                🏷️ {generatedPost.tags.join(', ')}
-                              </span>
+                              <span>🏷️ {generatedPost.tags.join(', ')}</span>
                             )}
                           </div>
 
                           {/* Summary */}
                           {generatedPost.summary && (
                             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                              <p className="text-sm font-medium text-purple-900 mb-1">
-                                Summary
-                              </p>
+                              <p className="text-sm font-medium text-purple-900 mb-1">Summary</p>
                               <p className="text-sm text-purple-800">{generatedPost.summary}</p>
                             </div>
                           )}
@@ -315,4 +308,3 @@ export default function BlogPostPage() {
     </div>
   );
 }
-
