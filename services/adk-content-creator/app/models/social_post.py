@@ -8,9 +8,7 @@ class LinkedInPost(BaseModel):
 
     content: str = Field(description="Post content (max 3000 chars)")
     hashtags: list[str] = Field(default=[], description="Suggested hashtags")
-    image_suggestion: str = Field(
-        default="", description="Suggested image or graphic"
-    )
+    image_suggestion: str = Field(default="", description="Suggested image or graphic")
 
 
 class TwitterThread(BaseModel):
@@ -43,4 +41,3 @@ class SocialMediaResponse(BaseModel):
     social_id: str = Field(description="Unique ID")
     social_posts: SocialMediaPosts
     product_mentioned: str = Field(description="Datadog product mentioned")
-

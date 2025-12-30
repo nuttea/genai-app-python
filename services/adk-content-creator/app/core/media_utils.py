@@ -107,4 +107,3 @@ def get_mime_type(filename: str) -> Optional[str]:
     """Get MIME type for a filename."""
     ext = Path(filename).suffix.lower()
     return MIME_TYPES.get(ext)
-

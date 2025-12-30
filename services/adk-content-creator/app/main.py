@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.api.v1.endpoints import upload, generate
 
 # Configure logging
 logging.basicConfig(
@@ -52,6 +53,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(upload.router, prefix="/api/v1")
+app.include_router(generate.router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -114,4 +119,3 @@ if __name__ == "__main__":
         port=settings.port,
         reload=settings.debug,
     )
-

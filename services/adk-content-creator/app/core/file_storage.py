@@ -1,166 +1,133 @@
-"""File storage utilities for Cloud Storage."""
+"""
+Google Cloud Storage utility for file uploads.
 
-import logging
-import os
-from typing import Optional
-from uuid import uuid4
+Handles uploading user files to GCS for later processing by Gemini.
+"""
 
 from google.cloud import storage
+from typing import Dict, Optional
+import logging
+from pathlib import Path
+import os
 
-from app.config import get_settings
+from app.config import settings
 
 logger = logging.getLogger(__name__)
-settings = get_settings()
 
 
 class FileStorageService:
-    """Service for handling file uploads to Cloud Storage."""
+    """Service for managing file uploads to Google Cloud Storage."""
 
     def __init__(self):
-        """Initialize storage client."""
-        self.client = None
-        self.bucket = None
-        if settings.cloud_storage_bucket:
-            try:
-                self.client = storage.Client(project=settings.google_cloud_project)
-                self.bucket = self.client.bucket(settings.cloud_storage_bucket)
-                logger.info(f"Initialized Cloud Storage: {settings.cloud_storage_bucket}")
-            except Exception as e:
-                logger.warning(f"Could not initialize Cloud Storage: {e}")
+        self.client = storage.Client(project=settings.google_cloud_project)
+        self.bucket_name = settings.gcs_bucket_name
+        logger.info(f"FileStorageService initialized with bucket: {self.bucket_name}")
 
     async def upload_file(
-        self, file_content: bytes, filename: str, content_type: str
-    ) -> Optional[str]:
+        self,
+        file_content: bytes,
+        filename: str,
+        content_type: str,
+        metadata: Optional[Dict[str, str]] = None,
+    ) -> str:
         """
-        Upload a file to Cloud Storage.
+        Upload a file to Google Cloud Storage.
 
         Args:
             file_content: File content as bytes
-            filename: Original filename
+            filename: Destination filename
             content_type: MIME type
+            metadata: Optional metadata dict
 
         Returns:
-            GCS URL of uploaded file, or None if upload failed
+            GCS URI (gs://bucket/path)
         """
-        if not self.bucket:
-            logger.warning("Cloud Storage not configured, saving locally")
-            # Fallback to local storage
-            local_path = f"uploads/{uuid4()}_{filename}"
-            os.makedirs("uploads", exist_ok=True)
-            with open(local_path, "wb") as f:
-                f.write(file_content)
-            return local_path
-
         try:
-            # Generate unique filename
-            unique_filename = f"{uuid4()}_{filename}"
-            blob = self.bucket.blob(unique_filename)
+            bucket = self.client.bucket(self.bucket_name)
+            blob = bucket.blob(filename)
 
-            # Upload file
+            # Set content type
+            blob.content_type = content_type
+
+            # Set metadata
+            if metadata:
+                blob.metadata = metadata
+
+            # Upload
             blob.upload_from_string(file_content, content_type=content_type)
 
-            # Make public (optional, configure based on needs)
-            # blob.make_public()
-
-            gcs_url = f"gs://{settings.cloud_storage_bucket}/{unique_filename}"
-            logger.info(f"Uploaded file to: {gcs_url}")
-            return gcs_url
+            gcs_uri = f"gs://{self.bucket_name}/{filename}"
+            logger.info(f"File uploaded to GCS: {gcs_uri}")
+            return gcs_uri
 
         except Exception as e:
-            logger.error(f"Failed to upload file: {e}")
-            return None
+            logger.error(f"Error uploading to GCS: {e}", exc_info=True)
+            raise
 
-    async def download_file(self, gcs_url: str) -> Optional[bytes]:
+    async def download_to_local(self, gcs_uri: str, local_path: str) -> str:
         """
-        Download a file from Cloud Storage.
+        Download a file from GCS to local filesystem.
+
+        Used for passing files to Gemini's file API.
 
         Args:
-            gcs_url: GCS URL (gs://bucket/path)
+            gcs_uri: GCS URI (gs://bucket/path)
+            local_path: Local destination path
 
         Returns:
-            File content as bytes, or None if download failed
+            Local file path
         """
-        if not gcs_url.startswith("gs://"):
-            # Try local file
-            try:
-                with open(gcs_url, "rb") as f:
-                    return f.read()
-            except Exception as e:
-                logger.error(f"Failed to read local file: {e}")
-                return None
-
-        if not self.bucket:
-            logger.error("Cloud Storage not configured")
-            return None
-
         try:
-            # Parse GCS URL
-            parts = gcs_url.replace("gs://", "").split("/", 1)
-            if len(parts) != 2:
-                logger.error(f"Invalid GCS URL: {gcs_url}")
-                return None
+            # Parse GCS URI
+            if not gcs_uri.startswith("gs://"):
+                raise ValueError(f"Invalid GCS URI: {gcs_uri}")
 
-            bucket_name, blob_name = parts
+            parts = gcs_uri[5:].split("/", 1)
+            bucket_name = parts[0]
+            blob_name = parts[1] if len(parts) > 1 else ""
+
+            # Download
             bucket = self.client.bucket(bucket_name)
             blob = bucket.blob(blob_name)
 
-            # Download file
-            content = blob.download_as_bytes()
-            logger.info(f"Downloaded file from: {gcs_url}")
-            return content
+            # Create parent directories
+            Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+
+            blob.download_to_filename(local_path)
+
+            logger.info(f"Downloaded {gcs_uri} to {local_path}")
+            return local_path
 
         except Exception as e:
-            logger.error(f"Failed to download file: {e}")
-            return None
+            logger.error(f"Error downloading from GCS: {e}", exc_info=True)
+            raise
 
-    async def delete_file(self, gcs_url: str) -> bool:
+    async def delete_file(self, gcs_uri: str) -> bool:
         """
         Delete a file from Cloud Storage.
 
         Args:
-            gcs_url: GCS URL (gs://bucket/path)
+            gcs_uri: GCS URL (gs://bucket/path)
 
         Returns:
             True if deleted successfully, False otherwise
         """
-        if not gcs_url.startswith("gs://"):
-            # Try local file
-            try:
-                os.remove(gcs_url)
-                return True
-            except Exception as e:
-                logger.error(f"Failed to delete local file: {e}")
-                return False
-
-        if not self.bucket:
+        if not gcs_uri.startswith("gs://"):
+            logger.error(f"Invalid GCS URI: {gcs_uri}")
             return False
 
         try:
-            parts = gcs_url.replace("gs://", "").split("/", 1)
-            if len(parts) != 2:
-                return False
+            parts = gcs_uri[5:].split("/", 1)
+            bucket_name = parts[0]
+            blob_name = parts[1] if len(parts) > 1 else ""
 
-            bucket_name, blob_name = parts
             bucket = self.client.bucket(bucket_name)
             blob = bucket.blob(blob_name)
             blob.delete()
 
-            logger.info(f"Deleted file: {gcs_url}")
+            logger.info(f"Deleted file: {gcs_uri}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to delete file: {e}")
+            logger.error(f"Failed to delete file: {e}", exc_info=True)
             return False
-
-
-# Singleton instance
-_storage_service: Optional[FileStorageService] = None
-
-
-def get_storage_service() -> FileStorageService:
-    """Get the global storage service instance."""
-    global _storage_service
-    if _storage_service is None:
-        _storage_service = FileStorageService()
-    return _storage_service
-

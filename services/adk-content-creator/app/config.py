@@ -27,20 +27,14 @@ class Settings(BaseSettings):
     environment: str = Field(default="development", description="Environment (dev/prod)")
 
     # Google Cloud Configuration
-    google_cloud_project: str = Field(
-        ..., description="Google Cloud project ID (REQUIRED)"
-    )
-    vertex_ai_location: str = Field(
-        default="us-central1", description="Vertex AI region"
-    )
+    google_cloud_project: str = Field(..., description="Google Cloud project ID (REQUIRED)")
+    vertex_ai_location: str = Field(default="us-central1", description="Vertex AI region")
 
     # Cloud Storage Configuration
     cloud_storage_bucket: Optional[str] = Field(
         default=None, description="GCS bucket for file uploads"
     )
-    upload_max_size_mb: int = Field(
-        default=500, description="Max upload size in MB"
-    )
+    upload_max_size_mb: int = Field(default=500, description="Max upload size in MB")
 
     # LLM Configuration
     default_model: str = Field(
@@ -55,9 +49,7 @@ class Settings(BaseSettings):
     )
 
     # Video Processing Configuration
-    video_frame_interval: int = Field(
-        default=2, description="Extract 1 frame every N seconds"
-    )
+    video_frame_interval: int = Field(default=2, description="Extract 1 frame every N seconds")
     max_video_duration: int = Field(
         default=600, description="Max video duration in seconds (10 min)"
     )
@@ -69,9 +61,7 @@ class Settings(BaseSettings):
     default_tone: str = Field(
         default="professional", description="Default tone (casual/professional/technical)"
     )
-    default_audience: str = Field(
-        default="developers", description="Default target audience"
-    )
+    default_audience: str = Field(default="developers", description="Default target audience")
 
     # API Configuration
     api_key: Optional[SecretStr] = Field(
@@ -93,4 +83,3 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
-
