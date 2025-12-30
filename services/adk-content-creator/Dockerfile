@@ -20,8 +20,8 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml ./
 
-# Install dependencies
-RUN uv sync --system
+# Install dependencies (uv will create a virtual environment)
+RUN uv sync
 
 # Copy application code
 COPY app/ ./app/

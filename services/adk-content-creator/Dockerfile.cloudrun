@@ -22,7 +22,7 @@ WORKDIR /app
 COPY pyproject.toml ./
 
 # Install dependencies
-RUN uv sync --system --no-deps
+RUN uv sync
 
 # Production stage
 FROM python:3.11-slim
