@@ -19,7 +19,7 @@ services:
       - FASTAPI_HOST=0.0.0.0
       - FASTAPI_PORT=8000
       - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000,http://localhost:8501}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000,http://localhost:8501,http://localhost:8002}
       - DEFAULT_MODEL=${DEFAULT_MODEL:-gemini-pro}
       - DEFAULT_TEMPERATURE=${DEFAULT_TEMPERATURE:-0.7}
       - DEFAULT_MAX_TOKENS=${DEFAULT_MAX_TOKENS:-1024}
@@ -133,7 +133,7 @@ services:
         "0.0.0.0:8002",
         "--reload",
         "--worker-class",
-        "asyncio",
+        "trio",
       ]
     environment:
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
@@ -180,20 +180,57 @@ services:
     networks:
       - genai-network
 
-  # Next.js Frontend (Future)
-  # nextjs-frontend:
-  #   build:
-  #     context: ./frontend/nextjs
-  #     dockerfile: Dockerfile
-  #   container_name: genai-nextjs-frontend
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - NEXT_PUBLIC_API_URL=http://fastapi-backend:8000
-  #   depends_on:
-  #     - fastapi-backend
-  #   networks:
-  #     - genai-network
+  # Next.js Frontend - Modern UI for GenAI Services
+  nextjs-frontend:
+    build:
+      context: ./frontend/nextjs
+      dockerfile: Dockerfile
+    container_name: genai-nextjs-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Application Info
+      - NEXT_PUBLIC_APP_NAME=Datadog GenAI Platform
+      - NEXT_PUBLIC_APP_VERSION=1.0.0
+      # API URLs (Client-side - publicly accessible)
+      - NEXT_PUBLIC_VOTE_EXTRACTOR_API=http://localhost:8000
+      - NEXT_PUBLIC_CONTENT_CREATOR_API=http://localhost:8002
+      # API URLs (Server-side - internal routing)
+      - VOTE_EXTRACTOR_API_URL=http://fastapi-backend:8000
+      - CONTENT_CREATOR_API_URL=http://content-creator:8002
+      # Datadog RUM (optional)
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
+      - NEXT_PUBLIC_DD_SITE=${DD_SITE:-datadoghq.com}
+      - NEXT_PUBLIC_DD_SERVICE=nextjs-frontend
+      - NEXT_PUBLIC_DD_ENV=${DD_ENV:-development}
+      - NEXT_PUBLIC_DD_VERSION=1.0.0
+      - NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED=true
+      - NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE=100
+      - NEXT_PUBLIC_DD_TRACE_ENABLED=true
+      - NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100
+      # Node Environment
+      - NODE_ENV=development
+    volumes:
+      # Mount code for development (hot reload)
+      - ./frontend/nextjs:/app:ro
+      # Mount node_modules as a volume (for performance)
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      fastapi-backend:
+        condition: service_healthy
+      content-creator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - genai-network
 
 networks:
   genai-network:

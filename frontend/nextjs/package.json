@@ -29,7 +29,8 @@
     "@radix-ui/react-select": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.0",
-    "@datadog/browser-rum": "^5.23.0"
+    "@datadog/browser-rum": "^5.23.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

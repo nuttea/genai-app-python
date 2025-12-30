@@ -172,14 +172,17 @@ docker-build-frontend: ## Build Streamlit frontend image
 docker-build-content-creator: ## Build Content Creator image
 	$(DOCKER_COMPOSE) build content-creator
 
+docker-build-nextjs: ## Build Next.js frontend image
+	$(DOCKER_COMPOSE) build nextjs-frontend
+
 docker-up: ## Start all services with Docker Compose
 	$(DOCKER_COMPOSE) up -d
 
 docker-up-backend: ## Start only backend services (FastAPI + Content Creator)
 	$(DOCKER_COMPOSE) up -d fastapi-backend content-creator
 
-docker-up-full: ## Start all services including Content Creator
-	$(DOCKER_COMPOSE) up -d fastapi-backend streamlit-frontend content-creator
+docker-up-full: ## Start all services including Next.js
+	$(DOCKER_COMPOSE) up -d fastapi-backend streamlit-frontend content-creator nextjs-frontend
 
 docker-down: ## Stop all services
 	$(DOCKER_COMPOSE) down
@@ -196,11 +199,17 @@ docker-logs-frontend: ## View Streamlit frontend logs
 docker-logs-content-creator: ## View Content Creator logs
 	$(DOCKER_COMPOSE) logs -f content-creator
 
+docker-logs-nextjs: ## View Next.js frontend logs
+	$(DOCKER_COMPOSE) logs -f nextjs-frontend
+
 docker-restart: ## Restart all services
 	$(DOCKER_COMPOSE) restart
 
 docker-restart-content-creator: ## Restart Content Creator service
 	$(DOCKER_COMPOSE) restart content-creator
+
+docker-restart-nextjs: ## Restart Next.js frontend service
+	$(DOCKER_COMPOSE) restart nextjs-frontend
 
 docker-clean: ## Remove all containers, networks, and volumes
 	$(DOCKER_COMPOSE) down -v --remove-orphans
@@ -214,11 +223,14 @@ docker-shell-frontend: ## Open shell in Streamlit frontend container
 docker-shell-content-creator: ## Open shell in Content Creator container
 	$(DOCKER_COMPOSE) exec content-creator /bin/bash
 
+docker-shell-nextjs: ## Open shell in Next.js frontend container
+	$(DOCKER_COMPOSE) exec nextjs-frontend /bin/sh
+
 docker-ps: ## Show running containers
 	$(DOCKER_COMPOSE) ps
 
 docker-stats: ## Show container resource usage
-	docker stats genai-fastapi-backend genai-streamlit-frontend genai-content-creator
+	docker stats genai-fastapi-backend genai-streamlit-frontend genai-content-creator genai-nextjs-frontend
 
 # Cleanup
 clean: ## Clean up cache and temporary files
