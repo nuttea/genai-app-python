@@ -213,10 +213,12 @@ services:
       - NODE_ENV=development
     volumes:
       # Mount code for development (hot reload)
-      - ./frontend/nextjs:/app:ro
-      # Mount node_modules as a volume (for performance)
-      - /app/node_modules
-      - /app/.next
+      # Note: Removed :ro to allow Next.js to write .next build directory
+      - ./frontend/nextjs:/app
+      # Exclude node_modules from mount (use container's version)
+      - nextjs-node-modules:/app/node_modules
+      # Exclude .next from mount (build artifacts)
+      - nextjs-build:/app/.next
     depends_on:
       fastapi-backend:
         condition: service_healthy
@@ -235,3 +237,9 @@ services:
 networks:
   genai-network:
     driver: bridge
+
+volumes:
+  nextjs-node-modules:
+    driver: local
+  nextjs-build:
+    driver: local
