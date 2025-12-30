@@ -32,11 +32,18 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy Datadog serverless-init binary
+COPY --from=datadog/serverless-init:1 /datadog-init /app/datadog-init
 
 # Copy Python environment from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Install Datadog tracer to specific directory for serverless-init
+RUN pip install --no-cache-dir --target /dd_tracer/python/ ddtrace
 
 # Set working directory
 WORKDIR /app
@@ -50,18 +57,29 @@ COPY main_adk.py ./
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PORT=8002
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8002 \
+    DD_LOGS_ENABLED=true \
+    DD_LOGS_INJECTION=true \
+    DD_SOURCE=python \
+    DD_TRACE_SAMPLE_RATE=1.0 \
+    DD_TRACE_ENABLED=1 \
+    DD_PROFILING_ENABLED=true \
+    PATH=/usr/local/bin:$PATH
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8002/health')"
+    CMD curl -f http://localhost:8002/health || exit 1
 
 # Expose port
 EXPOSE 8002
 
-# Run with hypercorn (supports HTTP/2 for Cloud Run)
+# IMPORTANT: Use serverless-init as ENTRYPOINT for Cloud Run APM
+ENTRYPOINT ["/app/datadog-init"]
+
+# Run with hypercorn wrapped in ddtrace-run for automatic instrumentation
 # Hypercorn supports h2c (HTTP/2 Cleartext) by default for Cloud Run
 # Using full ADK with get_fast_api_app()
-CMD ["hypercorn", "main_adk:app", "--bind", "0.0.0.0:8002", "--worker-class", "asyncio"]
+CMD ["/dd_tracer/python/bin/ddtrace-run", "hypercorn", "main_adk:app", "--bind", "0.0.0.0:8002", "--worker-class", "asyncio"]
 
