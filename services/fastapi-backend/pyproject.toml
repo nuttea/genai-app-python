@@ -48,7 +48,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-select = ["E", "F", "I", "N", "W", "B", "C4", "UP"]
+select = ["E", "F", "N", "W", "B", "C4", "UP"]  # Removed "I" to avoid conflict with isort
 ignore = [
     "E501",   # Line too long (handled by Black for code, strings are okay)
     "UP007",  # Use X | Y for type annotations (not critical for Python 3.11)
