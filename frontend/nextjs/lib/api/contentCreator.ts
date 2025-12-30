@@ -1,11 +1,8 @@
 import { contentCreatorClient } from './client';
+import { API_CONFIG } from '@/lib/constants/config';
 
-// API Base URL for SSE streaming (Next.js will replace at build time)
-const getApiBaseUrl = (): string => {
-  if (typeof window === 'undefined') return 'http://localhost:8002';
-  return (process.env.NEXT_PUBLIC_CONTENT_CREATOR_API_URL as string) || 'http://localhost:8002';
-};
-const API_BASE_URL = getApiBaseUrl();
+// Use the API_CONFIG which properly handles environment variables
+const API_BASE_URL = API_CONFIG.contentCreator.baseUrl;
 
 /**
  * Content Creator API types
