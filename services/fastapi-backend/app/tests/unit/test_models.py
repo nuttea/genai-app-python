@@ -3,13 +3,9 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.vote_extraction import (
-    BallotStatistics,
-    ElectionFormData,
-    FormInfo,
-    VoteExtractionResponse,
-    VoteResult,
-)
+from app.models.vote_extraction import (BallotStatistics, ElectionFormData,
+                                        FormInfo, VoteExtractionResponse,
+                                        VoteResult)
 
 
 class TestFormInfo:

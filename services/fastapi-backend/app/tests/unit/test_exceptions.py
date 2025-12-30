@@ -2,15 +2,10 @@
 
 import pytest
 
-from app.core.exceptions import (
-    ConfigurationException,
-    ExtractionException,
-    GenAIException,
-    RateLimitException,
-    TimeoutException,
-    ValidationException,
-    VertexAIException,
-)
+from app.core.exceptions import (ConfigurationException, ExtractionException,
+                                 GenAIException, RateLimitException,
+                                 TimeoutException, ValidationException,
+                                 VertexAIException)
 
 
 class TestCustomExceptions:

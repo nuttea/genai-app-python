@@ -1,12 +1,8 @@
 """Tests for application constants."""
 
-from app.core.constants import (
-    GEMINI_API_TIMEOUT,
-    MAX_FILE_SIZE_MB,
-    MAX_PROMPT_LENGTH,
-    MAX_TOTAL_SIZE_MB,
-    SCHEMA_HASH_LENGTH,
-)
+from app.core.constants import (GEMINI_API_TIMEOUT, MAX_FILE_SIZE_MB,
+                                MAX_PROMPT_LENGTH, MAX_TOTAL_SIZE_MB,
+                                SCHEMA_HASH_LENGTH)
 
 
 class TestConstants:
