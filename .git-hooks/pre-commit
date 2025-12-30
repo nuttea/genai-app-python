@@ -1,8 +1,9 @@
 #!/bin/bash
 # Pre-commit hook to format code with Black before committing
+# Uses uv for dependency management
 
 # Run the format script
-./format.sh
+./scripts/format.sh
 
 if [ $? -ne 0 ]; then
     echo ""
