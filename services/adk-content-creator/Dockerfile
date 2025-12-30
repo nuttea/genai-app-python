@@ -20,8 +20,8 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml README.md ./
 
-# Install dependencies (uv will create a virtual environment)
-RUN uv sync
+# Install dependencies using pip (simpler for Docker)
+RUN uv pip install --system -e .
 
 # Copy application code
 COPY app/ ./app/
