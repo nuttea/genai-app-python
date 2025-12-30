@@ -18,8 +18,9 @@ WORKDIR /app
 # Copy dependency files
 COPY pyproject.toml README.md ./
 
-# Install dependencies into system Python (not venv)
-RUN uv sync --system
+# Install dependencies into system Python using uv pip
+# uv pip install installs into the current Python environment (system Python in this case)
+RUN uv pip install .
 
 # Production stage
 FROM python:3.11-slim
