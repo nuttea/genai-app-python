@@ -20,13 +20,17 @@ export const API_CONFIG = {
 } as const;
 
 export const DATADOG_CONFIG = {
-  applicationId: process.env.NEXT_PUBLIC_DD_APPLICATION_ID || '',
-  clientToken: process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN || '',
+  applicationId:
+    process.env.NEXT_PUBLIC_DD_APPLICATION_ID || 'c93d9c73-1492-43c7-9bf5-85c26b8cba38',
+  clientToken:
+    process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN || 'pub61674ae290f180cee960cbac314bb8bf',
   site: process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com',
-  service: process.env.NEXT_PUBLIC_DD_SERVICE || 'nextjs-frontend',
-  env: process.env.NEXT_PUBLIC_DD_ENV || 'development',
+  service: process.env.NEXT_PUBLIC_DD_SERVICE || 'genai-nextjs',
+  env: process.env.NEXT_PUBLIC_DD_ENV || 'prod',
   version: process.env.NEXT_PUBLIC_DD_VERSION || '1.0.0',
-  sessionReplayEnabled: process.env.NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED === 'true',
+  sessionReplayEnabled:
+    process.env.NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED === 'true' ||
+    process.env.NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED === undefined,
   sessionSampleRate: parseInt(process.env.NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE || '100', 10),
   traceEnabled: process.env.NEXT_PUBLIC_DD_TRACE_ENABLED === 'true',
   traceSampleRate: parseInt(process.env.NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE || '100', 10),

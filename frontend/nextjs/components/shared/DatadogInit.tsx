@@ -23,10 +23,16 @@ export function DatadogInit() {
       sessionReplaySampleRate: DATADOG_CONFIG.sessionReplayEnabled
         ? DATADOG_CONFIG.sessionSampleRate
         : 0,
-      trackUserInteractions: true,
       trackResources: true,
       trackLongTasks: true,
-      defaultPrivacyLevel: 'mask-user-input',
+      trackUserInteractions: true,
+      trackBfcacheViews: true,
+      defaultPrivacyLevel: 'allow',
+      forwardErrorsToLogs: true,
+      allowedTracingUrls: [
+        // Matches any subdomain of run.app (Cloud Run services)
+        /^https:\/\/[^\/]+\.run\.app/,
+      ],
     });
 
     // Start session replay if enabled

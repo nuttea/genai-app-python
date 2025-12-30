@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { datadogRum } from '@datadog/browser-rum';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,22 @@ interface WorkflowState {
   finalContent?: string;
 }
 
+/**
+ * Get Datadog RUM session ID for ADK session tracking
+ * Falls back to timestamp-based ID if Datadog RUM is not initialized
+ */
+function getDatadogSessionId(): string {
+  try {
+    const internalContext = datadogRum.getInternalContext();
+    if (internalContext?.session_id) {
+      return `dd_${internalContext.session_id}`;
+    }
+  } catch (error) {
+    console.warn('Datadog RUM not initialized, using fallback session ID');
+  }
+  return `session_${Date.now()}`;
+}
+
 export default function InteractiveContentCreatorPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -68,7 +85,7 @@ export default function InteractiveContentCreatorPage() {
     uploadedFiles: [],
   });
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [sessionId, setSessionId] = useState<string>(`session_${Date.now()}`);
+  const [sessionId, setSessionId] = useState<string>(getDatadogSessionId());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
@@ -77,6 +94,18 @@ export default function InteractiveContentCreatorPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Initialize Datadog RUM session ID
+  useEffect(() => {
+    // Wait a bit for Datadog RUM to initialize, then get the session ID
+    const timer = setTimeout(() => {
+      const ddSessionId = getDatadogSessionId();
+      setSessionId(ddSessionId);
+      console.log('ADK Session ID linked to Datadog RUM:', ddSessionId);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Initialize with welcome message
   useEffect(() => {
