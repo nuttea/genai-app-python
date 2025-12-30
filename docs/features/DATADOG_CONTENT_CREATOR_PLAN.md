@@ -192,24 +192,26 @@ genai-app-python/
 
 ---
 
-## 🛠️ Technology Stack (Updated)
+## 🛠️ Technology Stack (SIMPLIFIED)
 
 ### Core Framework
 - **Google ADK** - Agent orchestration
 - **Python 3.11+** - Runtime
 - **uv** - Dependency management
 
-### AI/LLM
-- **Vertex AI (Gemini 2.5 Flash)** - Content generation
-- **Vertex AI Multimodal** - Image/video analysis
+### AI/LLM (All-in-One! ✨)
+- **Google Vertex AI** - Gemini 2.5 Flash with native multimodal
+  - ✅ Video processing (no ffmpeg needed!)
+  - ✅ Image analysis (no OpenCV needed!)
+  - ✅ Audio transcription (no Speech-to-Text API needed!)
+  - ✅ Temporal understanding of videos
 - **google-genai** - Python SDK
-- **Speech-to-Text API** - 🆕 Video transcription
 
 ### Media Processing
-- **ffmpeg-python** - 🆕 Video processing
-- **Pillow (PIL)** - 🆕 Image processing
-- **opencv-python** - 🆕 Frame extraction
-- **google-cloud-speech** - 🆕 Transcription
+- ❌ **~~ffmpeg~~** - Not needed! Gemini handles video natively
+- ❌ **~~OpenCV~~** - Not needed! Gemini handles images natively
+- ❌ **~~Speech-to-Text API~~** - Not needed! Gemini transcribes audio
+- ✅ **Cloud Storage** - Only for file uploads
 
 ### Content Tools
 - **markdown** - Markdown processing
