@@ -108,17 +108,18 @@ Comprehensive documentation for deep dives:
   - Configuration guide
   - Best practices
 
-- **[features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md)** 🆕
-  - ADK Agent for automated blog writing
-  - Generate blog posts from Datadog data
-  - Architecture and implementation plan
-  - 8-week phased approach
+- **[features/DATADOG_CONTENT_CREATOR_PLAN.md](features/DATADOG_CONTENT_CREATOR_PLAN.md)** 🆕
+  - ADK Agent for content creation
+  - Generate blog posts + video scripts from various inputs
+  - Accept text, markdown, video demos
+  - Create YouTube Shorts/TikTok/Reels scripts
+  - Architecture and 7-week implementation plan
 
-- **[features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md)** 🆕
-  - Quick reference for Datadog Blogger
-  - Usage examples
+- **[features/DATADOG_CONTENT_CREATOR_QUICKREF.md](features/DATADOG_CONTENT_CREATOR_QUICKREF.md)** 🆕
+  - Quick reference for Content Creator
+  - Usage examples and workflows
+  - Video script structure
   - Cost estimates
-  - Getting started
 
 ### Troubleshooting
 - **[troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)**
@@ -234,8 +235,8 @@ Comprehensive documentation for deep dives:
 
 ### Features & Usage
 - [features/vote-extractor.md](features/vote-extractor.md) - Vote extraction
-- [features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md) 🆕 - Datadog Blogger plan
-- [features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md) 🆕 - Datadog Blogger quickref
+- [features/DATADOG_CONTENT_CREATOR_PLAN.md](features/DATADOG_CONTENT_CREATOR_PLAN.md) 🆕 - Content Creator plan
+- [features/DATADOG_CONTENT_CREATOR_QUICKREF.md](features/DATADOG_CONTENT_CREATOR_QUICKREF.md) 🆕 - Content Creator quickref
 - [reference/features.md](reference/features.md) - All features
 
 ### Reference & Configuration
@@ -272,10 +273,10 @@ docs/
 │   └── LLMOBS_NEXT_STEPS.md                # LLMObs roadmap
 │
 ├── features/
-│   ├── vote-extractor.md                   # Vote extraction guide (30 min)
-│   ├── LLM_CONFIGURATION.md                # LLM config guide
-│   ├── DATADOG_BLOGGER_ADK_PLAN.md         # 🆕 Datadog Blogger implementation plan
-│   └── DATADOG_BLOGGER_QUICKREF.md         # 🆕 Datadog Blogger quick reference
+│   ├── vote-extractor.md                      # Vote extraction guide (30 min)
+│   ├── LLM_CONFIGURATION.md                   # LLM config guide
+│   ├── DATADOG_CONTENT_CREATOR_PLAN.md        # 🆕 Content Creator implementation plan
+│   └── DATADOG_CONTENT_CREATOR_QUICKREF.md    # 🆕 Content Creator quick reference
 │
 ├── troubleshooting/
 │   ├── README.md                           # Troubleshooting index
@@ -397,9 +398,9 @@ scripts/tests/
 ### Vote Extraction
 - [features/vote-extractor.md](features/vote-extractor.md)
 
-### Datadog Blogger (ADK Agent)
-- [features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md) 🆕
-- [features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md) 🆕
+### Datadog Content Creator (ADK Agent)
+- [features/DATADOG_CONTENT_CREATOR_PLAN.md](features/DATADOG_CONTENT_CREATOR_PLAN.md) 🆕
+- [features/DATADOG_CONTENT_CREATOR_QUICKREF.md](features/DATADOG_CONTENT_CREATOR_QUICKREF.md) 🆕
 
 ### Environment Variables
 - [reference/environment-variables.md](reference/environment-variables.md)
