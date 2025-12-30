@@ -108,6 +108,18 @@ Comprehensive documentation for deep dives:
   - Configuration guide
   - Best practices
 
+- **[features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md)** 🆕
+  - ADK Agent for automated blog writing
+  - Generate blog posts from Datadog data
+  - Architecture and implementation plan
+  - 8-week phased approach
+
+- **[features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md)** 🆕
+  - Quick reference for Datadog Blogger
+  - Usage examples
+  - Cost estimates
+  - Getting started
+
 ### Troubleshooting
 - **[troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)**
   - JSON parsing errors (Unterminated string)
@@ -222,6 +234,8 @@ Comprehensive documentation for deep dives:
 
 ### Features & Usage
 - [features/vote-extractor.md](features/vote-extractor.md) - Vote extraction
+- [features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md) 🆕 - Datadog Blogger plan
+- [features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md) 🆕 - Datadog Blogger quickref
 - [reference/features.md](reference/features.md) - All features
 
 ### Reference & Configuration
@@ -259,7 +273,9 @@ docs/
 │
 ├── features/
 │   ├── vote-extractor.md                   # Vote extraction guide (30 min)
-│   └── LLM_CONFIGURATION.md                # LLM config guide
+│   ├── LLM_CONFIGURATION.md                # LLM config guide
+│   ├── DATADOG_BLOGGER_ADK_PLAN.md         # 🆕 Datadog Blogger implementation plan
+│   └── DATADOG_BLOGGER_QUICKREF.md         # 🆕 Datadog Blogger quick reference
 │
 ├── troubleshooting/
 │   ├── README.md                           # Troubleshooting index
@@ -380,6 +396,10 @@ scripts/tests/
 
 ### Vote Extraction
 - [features/vote-extractor.md](features/vote-extractor.md)
+
+### Datadog Blogger (ADK Agent)
+- [features/DATADOG_BLOGGER_ADK_PLAN.md](features/DATADOG_BLOGGER_ADK_PLAN.md) 🆕
+- [features/DATADOG_BLOGGER_QUICKREF.md](features/DATADOG_BLOGGER_QUICKREF.md) 🆕
 
 ### Environment Variables
 - [reference/environment-variables.md](reference/environment-variables.md)

@@ -85,6 +85,8 @@ scripts/tests/
 - **[Authentication](./docs/security/AUTHENTICATION.md)** - GCP auth
 - **[Datadog](./docs/monitoring/DATADOG_SETUP.md)** - Full observability
 - **[Vote Extractor](./docs/features/vote-extractor.md)** - Feature guide
+- **[Datadog Blogger ADK Plan](./docs/features/DATADOG_BLOGGER_ADK_PLAN.md)** 🆕 - ADK Agent implementation
+- **[Datadog Blogger Quickref](./docs/features/DATADOG_BLOGGER_QUICKREF.md)** 🆕 - Quick reference
 
 ### 🔧 Troubleshooting
 - **[MAX_TOKENS](./docs/troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)** - JSON parsing errors
