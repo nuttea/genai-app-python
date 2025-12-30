@@ -86,7 +86,7 @@ jobs:
             --set-env-vars DD_TRACE_ENABLED=true \
             --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
             --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
-            --set-secrets DD_API_KEY=datadog-api-key:latest
+            --set-secrets DD_API_KEY=dd-api-key:latest
 
       - name: Get Production URL
         id: get-prod-url
