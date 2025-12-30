@@ -24,8 +24,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = []
-include = []
+only-include = ["app.py", "pages"]
 
 [build-system]
 requires = ["hatchling"]
