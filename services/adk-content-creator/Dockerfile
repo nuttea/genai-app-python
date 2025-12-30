@@ -2,12 +2,8 @@
 FROM python:3.11-slim
 
 # Install system dependencies
+# Note: ffmpeg/OpenCV not needed - Gemini 2.5 Flash handles multimodal natively
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

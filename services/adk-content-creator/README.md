@@ -4,9 +4,10 @@ An intelligent ADK (Agent Development Kit) agent that creates high-quality blog 
 
 ## 🎯 What It Does
 
-Transforms various inputs into professional marketing and educational content:
+Transforms various inputs into professional marketing and educational content using **Gemini 2.5 Flash's native multimodal capabilities**:
 
-- **Inputs**: Text, Markdown, Video demos, Screenshots
+- **Inputs**: Text, Markdown, Video demos (direct!), Screenshots
+  - ✨ **No preprocessing needed** - Gemini processes videos and images natively
 - **Outputs**: 
   - 📄 Blog posts (SEO-optimized)
   - 🎥 60-second video scripts (YouTube Shorts, TikTok, Reels)

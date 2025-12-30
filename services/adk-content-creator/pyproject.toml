@@ -20,10 +20,11 @@ dependencies = [
     "google-cloud-speech>=2.27.0",
     "google-cloud-storage>=2.18.0",
     
-    # Media Processing
-    "pillow>=10.4.0",
-    "opencv-python>=4.10.0",
-    "ffmpeg-python>=0.2.0",
+    # Media Processing (Optional - Gemini handles multimodal natively)
+    # Only needed for advanced preprocessing if required later
+    # "pillow>=10.4.0",
+    # "opencv-python>=4.10.0",
+    # "ffmpeg-python>=0.2.0",
     
     # Content Tools
     "markdown>=3.7",
