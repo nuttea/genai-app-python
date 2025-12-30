@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { copyToClipboard, downloadBlob } from '@/lib/utils';
+import { API_CONFIG } from '@/lib/constants/config';
 
 // Message types
 interface Message {
@@ -193,7 +194,7 @@ What would you like to work on today?`
       await contentCreatorApi._createSession(appName, userId, sessionId);
 
       // Call /run_sse with streaming
-      const apiUrl = 'http://localhost:8002'; // TODO: Use env var
+      const apiUrl = API_CONFIG.contentCreator.baseUrl;
       const response = await fetch(`${apiUrl}/run_sse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
