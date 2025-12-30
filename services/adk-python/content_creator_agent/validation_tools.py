@@ -6,6 +6,7 @@ Following ADK blog-writer sample pattern.
 """
 
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def validate_blog_outline(outline: str) -> dict:
         }
 
 
-def validate_blog_post(blog_post: str, outline: str | None = None) -> dict:
+def validate_blog_post(blog_post: str, outline: Optional[str] = None) -> dict:
     """
     Validate a blog post for completeness and quality.
 
