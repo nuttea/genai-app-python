@@ -110,6 +110,8 @@ jobs:
           build-args: |
             DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
             DD_GIT_COMMIT_SHA=${{ github.sha }}
+            NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }}
+            NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
