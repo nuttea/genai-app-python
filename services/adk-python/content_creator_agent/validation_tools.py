@@ -6,7 +6,6 @@ Following ADK blog-writer sample pattern.
 """
 
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -56,23 +55,22 @@ def validate_blog_outline(outline: str) -> dict:
                 "message": "Outline is well-structured and complete",
                 "feedback": "Good outline with clear sections!",
             }
-        else:
-            return {
-                "valid": False,
-                "message": "Outline needs improvements",
-                "feedback": f"Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
-                "issues": issues,
-            }
+        return {
+            "valid": False,
+            "message": "Outline needs improvements",
+            "feedback": "Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
+            "issues": issues,
+        }
 
     except Exception as e:
         logger.error(f"Error validating outline: {e}")
         return {
             "valid": False,
-            "message": f"Validation error: {str(e)}",
+            "message": f"Validation error: {e!s}",
         }
 
 
-def validate_blog_post(blog_post: str, outline: Optional[str] = None) -> dict:
+def validate_blog_post(blog_post: str, outline: str | None = None) -> dict:
     """
     Validate a blog post for completeness and quality.
 
@@ -134,20 +132,19 @@ def validate_blog_post(blog_post: str, outline: Optional[str] = None) -> dict:
                 "feedback": "Excellent blog post with good technical depth!",
                 "word_count": len(blog_post.split()),
             }
-        else:
-            return {
-                "valid": False,
-                "message": "Blog post needs improvements",
-                "feedback": f"Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
-                "issues": issues,
-                "word_count": len(blog_post.split()),
-            }
+        return {
+            "valid": False,
+            "message": "Blog post needs improvements",
+            "feedback": "Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
+            "issues": issues,
+            "word_count": len(blog_post.split()),
+        }
 
     except Exception as e:
         logger.error(f"Error validating blog post: {e}")
         return {
             "valid": False,
-            "message": f"Validation error: {str(e)}",
+            "message": f"Validation error: {e!s}",
         }
 
 
@@ -191,17 +188,16 @@ def validate_video_script(script: str) -> dict:
                 "message": "Video script is well-structured",
                 "feedback": "Great script with clear timing and visuals!",
             }
-        else:
-            return {
-                "valid": False,
-                "message": "Video script needs improvements",
-                "feedback": f"Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
-                "issues": issues,
-            }
+        return {
+            "valid": False,
+            "message": "Video script needs improvements",
+            "feedback": "Issues found:\n" + "\n".join(f"- {issue}" for issue in issues),
+            "issues": issues,
+        }
 
     except Exception as e:
         logger.error(f"Error validating video script: {e}")
         return {
             "valid": False,
-            "message": f"Validation error: {str(e)}",
+            "message": f"Validation error: {e!s}",
         }

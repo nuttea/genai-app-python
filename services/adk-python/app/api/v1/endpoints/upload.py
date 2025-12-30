@@ -6,8 +6,6 @@ using ADK Artifacts (InMemoryArtifactService).
 """
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, status, Request
-from fastapi.responses import JSONResponse
-from typing import List, Optional
 import logging
 from pathlib import Path
 import uuid
@@ -108,7 +106,7 @@ async def upload_single_file(
             try:
                 extracted_text = content.decode("utf-8")
                 logger.info(
-                    f"Extracted text from {file.filename}: {len(extracted_text)} characters"
+                    f"Extracted text from {file.filename}: {len(extracted_text)} characters",
                 )
             except UnicodeDecodeError:
                 logger.warning(f"Failed to decode {file.filename} as UTF-8, will store as artifact")
@@ -118,19 +116,19 @@ async def upload_single_file(
             # For images, videos, PDFs: Store as ADK Artifact
             # Create a Part object with the file content
             artifact_part = genai_types.Part(
-                inline_data=genai_types.Blob(mime_type=content_type, data=content)
+                inline_data=genai_types.Blob(mime_type=content_type, data=content),
             )
 
             # Save artifact using InMemoryArtifactService
             # Use unique filename as artifact ID
             artifact_filename = unique_filename
             artifact_service.save(
-                filename=artifact_filename, artifact=artifact_part, namespace="session"
+                filename=artifact_filename, artifact=artifact_part, namespace="session",
             )
 
             logger.info(
                 f"File stored as ADK Artifact: {file.filename} -> {artifact_filename} "
-                f"({len(content)} bytes, {content_type})"
+                f"({len(content)} bytes, {content_type})",
             )
 
         # Build response
@@ -147,7 +145,7 @@ async def upload_single_file(
         logger.info(
             f"File processed successfully: {file.filename} "
             f"({'text extracted' if extracted_text else f'artifact: {artifact_filename}'}, "
-            f"{file_size} bytes)"
+            f"{file_size} bytes)",
         )
 
         return UploadResponse(
@@ -162,7 +160,7 @@ async def upload_single_file(
         logger.error(f"Error uploading file: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload file: {str(e)}",
+            detail=f"Failed to upload file: {e!s}",
         )
     finally:
         await file.close()
@@ -170,7 +168,7 @@ async def upload_single_file(
 
 @router.post("/batch", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_batch(
-    files: List[UploadFile] = File(..., description="Multiple files to upload (max 10 files)")
+    files: list[UploadFile] = File(..., description="Multiple files to upload (max 10 files)"),
 ) -> UploadResponse:
     """
     Upload multiple files at once.
@@ -198,7 +196,7 @@ async def upload_batch(
             uploaded_files.append(result.file)
         except Exception as e:
             logger.error(f"Error uploading file {file.filename}: {e}")
-            errors.append(f"{file.filename}: {str(e)}")
+            errors.append(f"{file.filename}: {e!s}")
 
     if not uploaded_files and errors:
         raise HTTPException(
@@ -218,24 +216,22 @@ async def upload_batch(
     )
 
 
-def _determine_file_type(content_type: str, filename: str = "") -> Optional[str]:
+def _determine_file_type(content_type: str, filename: str = "") -> str | None:
     """Determine file type category from content type or filename extension."""
     # Try content type first
     if content_type in SUPPORTED_VIDEO_TYPES:
         return "video"
-    elif content_type in SUPPORTED_IMAGE_TYPES:
+    if content_type in SUPPORTED_IMAGE_TYPES:
         return "image"
-    elif content_type in SUPPORTED_DOCUMENT_TYPES:
+    if content_type in SUPPORTED_DOCUMENT_TYPES:
         # For octet-stream, try to determine from filename
         if content_type == "application/octet-stream" and filename:
             ext = Path(filename).suffix.lower()
-            if ext in {".txt", ".md", ".markdown"}:
+            if ext in {".txt", ".md", ".markdown"} or ext in {".pdf"}:
                 return "document"
-            elif ext in {".pdf"}:
-                return "document"
-            elif ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+            if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
                 return "image"
-            elif ext in {".mp4", ".mov", ".avi", ".webm"}:
+            if ext in {".mp4", ".mov", ".avi", ".webm"}:
                 return "video"
         else:
             return "document"
@@ -245,9 +241,9 @@ def _determine_file_type(content_type: str, filename: str = "") -> Optional[str]
         ext = Path(filename).suffix.lower()
         if ext in {".txt", ".md", ".markdown", ".pdf"}:
             return "document"
-        elif ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+        if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
             return "image"
-        elif ext in {".mp4", ".mov", ".avi", ".webm"}:
+        if ext in {".mp4", ".mov", ".avi", ".webm"}:
             return "video"
 
     return None
@@ -260,12 +256,12 @@ def _validate_file_size(file_size: int, file_type: str) -> None:
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Video file too large. Max size: {MAX_VIDEO_SIZE / (1024**3):.1f}GB",
         )
-    elif file_type == "image" and file_size > MAX_IMAGE_SIZE:
+    if file_type == "image" and file_size > MAX_IMAGE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Image file too large. Max size: {MAX_IMAGE_SIZE / (1024**2):.1f}MB",
         )
-    elif file_type == "document" and file_size > MAX_DOCUMENT_SIZE:
+    if file_type == "document" and file_size > MAX_DOCUMENT_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Document file too large. Max size: {MAX_DOCUMENT_SIZE / (1024**2):.1f}MB",

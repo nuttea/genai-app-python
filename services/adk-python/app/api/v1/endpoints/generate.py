@@ -6,8 +6,6 @@ using Gemini's multimodal capabilities.
 """
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
-from typing import List, Optional
 import logging
 from ddtrace import tracer
 
@@ -70,7 +68,6 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
 
         # Generate unique post ID
         import uuid
-        from datetime import datetime
 
         post_id = f"post_{uuid.uuid4().hex[:12]}"
 
@@ -123,12 +120,12 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
         logger.error(f"Error generating blog post: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate blog post: {str(e)}",
+            detail=f"Failed to generate blog post: {e!s}",
         )
 
 
 @router.post(
-    "/video-script", response_model=VideoScriptResponse, status_code=status.HTTP_201_CREATED
+    "/video-script", response_model=VideoScriptResponse, status_code=status.HTTP_201_CREATED,
 )
 @tracer.wrap(name="api.generate_video_script", service="adk-content-creator")
 async def generate_video_script(request: ContentGenerationRequest) -> VideoScriptResponse:
@@ -167,7 +164,7 @@ async def generate_video_script(request: ContentGenerationRequest) -> VideoScrip
 
         # Parse script
         title, description, scenes, total_duration = _parse_video_script(
-            script_content, request.title
+            script_content, request.title,
         )
 
         logger.info(f"Video script generated: {len(scenes)} scenes, {total_duration}s")
@@ -184,12 +181,12 @@ async def generate_video_script(request: ContentGenerationRequest) -> VideoScrip
         logger.error(f"Error generating video script: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate video script: {str(e)}",
+            detail=f"Failed to generate video script: {e!s}",
         )
 
 
 @router.post(
-    "/social-media", response_model=SocialMediaResponse, status_code=status.HTTP_201_CREATED
+    "/social-media", response_model=SocialMediaResponse, status_code=status.HTTP_201_CREATED,
 )
 @tracer.wrap(name="api.generate_social_media", service="adk-content-creator")
 async def generate_social_media(request: ContentGenerationRequest) -> SocialMediaResponse:
@@ -239,7 +236,7 @@ async def generate_social_media(request: ContentGenerationRequest) -> SocialMedi
         logger.error(f"Error generating social media posts: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate social media posts: {str(e)}",
+            detail=f"Failed to generate social media posts: {e!s}",
         )
 
 
@@ -366,7 +363,7 @@ Format:
     return prompt
 
 
-def _parse_blog_content(content: str, requested_title: Optional[str]) -> tuple:
+def _parse_blog_content(content: str, requested_title: str | None) -> tuple:
     """Parse generated blog content into structured components."""
     lines = content.split("\n")
 
@@ -404,7 +401,7 @@ def _parse_blog_content(content: str, requested_title: Optional[str]) -> tuple:
     return title, summary, main_content, tags
 
 
-def _parse_video_script(content: str, requested_title: Optional[str]) -> tuple:
+def _parse_video_script(content: str, requested_title: str | None) -> tuple:
     """Parse video script into scenes."""
     from app.models.video_script import SceneDescription
 
@@ -475,7 +472,7 @@ def _parse_video_script(content: str, requested_title: Optional[str]) -> tuple:
     return title, description, scene_objects, total_duration
 
 
-def _parse_social_media_content(content: str) -> List[dict]:
+def _parse_social_media_content(content: str) -> list[dict]:
     """Parse social media posts for different platforms."""
     posts = []
 
@@ -487,21 +484,21 @@ def _parse_social_media_content(content: str) -> List[dict]:
         if "## LinkedIn" in line:
             if current_platform and current_content:
                 posts.append(
-                    {"platform": current_platform, "content": "\n".join(current_content).strip()}
+                    {"platform": current_platform, "content": "\n".join(current_content).strip()},
                 )
             current_platform = "linkedin"
             current_content = []
         elif "## Twitter" in line or "## X" in line:
             if current_platform and current_content:
                 posts.append(
-                    {"platform": current_platform, "content": "\n".join(current_content).strip()}
+                    {"platform": current_platform, "content": "\n".join(current_content).strip()},
                 )
             current_platform = "twitter"
             current_content = []
         elif "## Instagram" in line:
             if current_platform and current_content:
                 posts.append(
-                    {"platform": current_platform, "content": "\n".join(current_content).strip()}
+                    {"platform": current_platform, "content": "\n".join(current_content).strip()},
                 )
             current_platform = "instagram"
             current_content = []

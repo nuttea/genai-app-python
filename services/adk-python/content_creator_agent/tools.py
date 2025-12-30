@@ -5,9 +5,7 @@ Functions that agents can use to perform actions.
 """
 
 import logging
-import os
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ def save_content_to_file(content: str, filename: str, output_dir: str = "output"
 
         return {
             "status": "success",
-            "message": f"Content saved successfully",
+            "message": "Content saved successfully",
             "file_path": str(file_path.absolute()),
             "size_bytes": len(content.encode("utf-8")),
         }
@@ -53,7 +51,7 @@ def save_content_to_file(content: str, filename: str, output_dir: str = "output"
         logger.error(f"Error saving content: {e}")
         return {
             "status": "error",
-            "message": f"Failed to save content: {str(e)}",
+            "message": f"Failed to save content: {e!s}",
         }
 
 
@@ -98,7 +96,7 @@ def analyze_media_file(file_path: str) -> dict:
             file_type = "document"
             # For text files, we can actually read them
             if file_ext in [".txt", ".md"]:
-                with open(file_path_obj, "r", encoding="utf-8") as f:
+                with open(file_path_obj, encoding="utf-8") as f:
                     content = f.read()
                     analysis = (
                         f"Document contains {len(content)} characters. Preview: {content[:500]}..."
@@ -129,5 +127,5 @@ def analyze_media_file(file_path: str) -> dict:
         logger.error(f"Error analyzing file: {e}")
         return {
             "status": "error",
-            "message": f"Failed to analyze file: {str(e)}",
+            "message": f"Failed to analyze file: {e!s}",
         }

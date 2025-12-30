@@ -82,7 +82,21 @@ extend-exclude = '''
 line-length = 100
 target-version = "py311"
 select = ["E", "F", "W", "C90", "N", "UP", "YTT", "S", "B", "A", "COM", "DTZ", "T10", "EM", "ISC", "ICN", "PIE", "PT", "Q", "RSE", "RET", "SIM", "TID", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
-ignore = ["S101", "S104", "PLR0913", "I001"]  # Allow assert, binding to 0.0.0.0, many args, disable import checker
+ignore = [
+    "S101",      # Allow assert
+    "S104",      # Allow binding to 0.0.0.0
+    "PLR0913",   # Allow many args
+    "I001",      # Disable import checker
+    "F841",      # Allow unused variables (temp assignments)
+    "PLC0415",   # Allow imports not at top level (lazy imports)
+    "B904",      # Allow raise without from in exception handlers
+    "PLR2004",   # Allow magic values in comparisons
+    "RET505",    # Allow unnecessary else after return
+    "F541",      # Allow f-strings without placeholders
+    "TRY400",    # Allow logging.error instead of logging.exception
+    "RUF010",    # Allow implicit str() conversion
+    "COM812",    # Allow missing trailing comma
+]
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]

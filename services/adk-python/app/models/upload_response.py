@@ -3,7 +3,6 @@ Upload API Response Models
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 
 class FileInfo(BaseModel):
@@ -12,14 +11,14 @@ class FileInfo(BaseModel):
     filename: str = Field(..., description="Original filename")
     content_type: str = Field(..., description="MIME type of the file")
     size_bytes: int = Field(..., description="File size in bytes")
-    gcs_uri: Optional[str] = Field(
-        None, description="Artifact URI (artifact://<id> for ADK artifacts)"
+    gcs_uri: str | None = Field(
+        None, description="Artifact URI (artifact://<id> for ADK artifacts)",
     )
     file_type: str = Field(..., description="File type category (video, image, document)")
-    extracted_text: Optional[str] = Field(
-        None, description="Extracted text content (for text/markdown files)"
+    extracted_text: str | None = Field(
+        None, description="Extracted text content (for text/markdown files)",
     )
-    artifact_id: Optional[str] = Field(None, description="ADK Artifact ID for binary files")
+    artifact_id: str | None = Field(None, description="ADK Artifact ID for binary files")
 
 
 class UploadResponse(BaseModel):
@@ -27,7 +26,7 @@ class UploadResponse(BaseModel):
 
     success: bool = Field(..., description="Whether upload was successful")
     message: str = Field(..., description="Success or error message")
-    file: Optional[FileInfo] = Field(None, description="Single uploaded file info")
-    files: Optional[List[FileInfo]] = Field(
-        None, description="Multiple uploaded files info (for batch uploads)"
+    file: FileInfo | None = Field(None, description="Single uploaded file info")
+    files: list[FileInfo] | None = Field(
+        None, description="Multiple uploaded files info (for batch uploads)",
     )

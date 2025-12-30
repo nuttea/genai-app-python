@@ -3,7 +3,6 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 class MediaValidator:
     """Validator for media files."""
 
-    def validate_file(self, file_path: str, content_type: str, file_size: int) -> Tuple[bool, str]:
+    def validate_file(self, file_path: str, content_type: str, file_size: int) -> tuple[bool, str]:
         """
         Validate a media file.
 
@@ -31,7 +30,7 @@ class MediaValidator:
             return False, "Missing content type"
 
         logger.info(
-            f"Media file validated: {file_path} ({content_type}, {file_size / (1024**2):.1f}MB)"
+            f"Media file validated: {file_path} ({content_type}, {file_size / (1024**2):.1f}MB)",
         )
         return True, "Valid"
 
@@ -131,7 +130,7 @@ MIME_TYPES = {
 }
 
 
-def get_mime_type(filename: str) -> Optional[str]:
+def get_mime_type(filename: str) -> str | None:
     """Get MIME type for a filename."""
     ext = Path(filename).suffix.lower()
     return MIME_TYPES.get(ext)

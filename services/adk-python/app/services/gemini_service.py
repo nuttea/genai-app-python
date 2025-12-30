@@ -9,12 +9,10 @@ from google import genai
 from google.genai import types
 from ddtrace import tracer
 from ddtrace.llmobs import LLMObs
-from ddtrace.llmobs.decorators import llm
 import logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, Dict, Any, List
-from pathlib import Path
+from typing import Any
 
 from app.config import get_settings
 
@@ -88,7 +86,7 @@ class GeminiService:
     async def analyze_video(
         self,
         video_uri: str,
-        prompt: Optional[str] = None,
+        prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 8192,
     ) -> str:
@@ -150,7 +148,7 @@ class GeminiService:
     async def analyze_image(
         self,
         image_uri: str,
-        prompt: Optional[str] = None,
+        prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 4096,
     ) -> str:
@@ -210,10 +208,10 @@ class GeminiService:
     async def generate_content(
         self,
         prompt: str,
-        media_uris: Optional[List[str]] = None,
+        media_uris: list[str] | None = None,
         temperature: float = 0.7,
         max_tokens: int = 16384,
-        response_schema: Optional[Dict[str, Any]] = None,
+        response_schema: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate content with Gemini.
@@ -275,7 +273,7 @@ class GeminiService:
                 """Run synchronous Gemini call in thread pool."""
                 client = self._get_client()
                 response = client.models.generate_content(
-                    model=self.model, contents=contents, config=config
+                    model=self.model, contents=contents, config=config,
                 )
                 return response.text
 

@@ -5,10 +5,8 @@ Handles uploading user files to GCS for later processing by Gemini.
 """
 
 from google.cloud import storage
-from typing import Dict, Optional
 import logging
 from pathlib import Path
-import os
 
 from app.config import get_settings
 
@@ -30,7 +28,7 @@ class FileStorageService:
         file_content: bytes,
         filename: str,
         content_type: str,
-        metadata: Optional[Dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """
         Upload a file to Google Cloud Storage.

@@ -36,7 +36,7 @@ if DD_API_KEY:
             env=DD_ENV,
             service=DD_SERVICE,
         )
-        logger.info(f"Datadog LLM Observability enabled: ml_app=adk-python-content-creator")
+        logger.info("Datadog LLM Observability enabled: ml_app=adk-python-content-creator")
     except Exception as e:
         logger.warning(f"Failed to enable Datadog LLM Observability: {e}")
 
@@ -47,7 +47,7 @@ AGENTS_DIR = str(BASE_DIR)  # Parent directory containing agents/
 # For session storage, use SQLite URI format
 SESSION_SERVICE_URI = os.getenv("SESSION_SERVICE_URI", f"sqlite:///{BASE_DIR}/sessions.db")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8501").split(
-    ","
+    ",",
 )
 SERVE_WEB_INTERFACE = os.getenv("SERVE_WEB_INTERFACE", "true").lower() == "true"
 

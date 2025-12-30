@@ -6,7 +6,6 @@ following the ADK Artifacts pattern.
 """
 
 import logging
-from typing import Dict, Optional
 from google.genai import types as genai_types
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class InMemoryArtifactService:
 
     def __init__(self):
         """Initialize the in-memory artifact store."""
-        self._artifacts: Dict[str, genai_types.Part] = {}
+        self._artifacts: dict[str, genai_types.Part] = {}
         logger.info("Initialized InMemoryArtifactService")
 
     def save(self, filename: str, artifact: genai_types.Part, namespace: str = "session") -> None:
@@ -38,7 +37,7 @@ class InMemoryArtifactService:
         self._artifacts[key] = artifact
         logger.info(f"Saved artifact: {key} ({len(artifact.inline_data.data)} bytes)")
 
-    def load(self, filename: str, namespace: str = "session") -> Optional[genai_types.Part]:
+    def load(self, filename: str, namespace: str = "session") -> genai_types.Part | None:
         """
         Load an artifact.
 
@@ -89,7 +88,7 @@ class InMemoryArtifactService:
         prefix = f"{namespace}:"
         return [key.replace(prefix, "") for key in self._artifacts.keys() if key.startswith(prefix)]
 
-    def clear(self, namespace: Optional[str] = None) -> None:
+    def clear(self, namespace: str | None = None) -> None:
         """
         Clear all artifacts, optionally filtered by namespace.
 

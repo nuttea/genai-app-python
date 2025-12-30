@@ -41,14 +41,14 @@ if settings.dd_llmobs_enabled and settings.dd_api_key:
         logger.info(
             f"Datadog LLM Observability enabled with auto-instrumentation: "
             f"ml_app={settings.dd_llmobs_ml_app}, site={settings.dd_site}, "
-            f"agentless={settings.dd_llmobs_agentless}"
+            f"agentless={settings.dd_llmobs_agentless}",
         )
     except Exception as e:
         logger.warning(f"Failed to enable Datadog LLM Observability: {e}")
 else:
     logger.info(
         f"Datadog LLM Observability disabled: enabled={settings.dd_llmobs_enabled}, "
-        f"api_key_present={bool(settings.dd_api_key)}"
+        f"api_key_present={bool(settings.dd_api_key)}",
     )
 
 # Initialize ADK Artifact Service (InMemory for development)
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Google Cloud Project: {settings.google_cloud_project}")
     logger.info(f"Artifact Service: {type(artifact_service).__name__}")
     logger.info(
-        "Note: ADK agents available in /agents directory for future `adk run`/`adk web` usage"
+        "Note: ADK agents available in /agents directory for future `adk run`/`adk web` usage",
     )
 
     yield
