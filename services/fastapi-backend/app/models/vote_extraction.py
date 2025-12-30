@@ -1,6 +1,5 @@
 """Pydantic models for vote extraction."""
 
-
 from pydantic import BaseModel, Field
 
 
@@ -34,9 +33,7 @@ class VoteResult(BaseModel):
     """Individual vote result for a candidate or party."""
 
     number: int = Field(..., description="Candidate/Party Number")
-    candidate_name: str | None = Field(
-        None, description="Candidate Name (for Constituency forms)"
-    )
+    candidate_name: str | None = Field(None, description="Candidate Name (for Constituency forms)")
     party_name: str | None = Field(
         None, description="Party Name (for both Constituency and PartyList)"
     )
