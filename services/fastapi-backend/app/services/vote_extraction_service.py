@@ -127,7 +127,7 @@ class VoteExtractionService:
 
     def __init__(self):
         """Initialize the vote extraction service."""
-        self._client: Optional[genai.Client] = None
+        self._client: genai.Client | None = None
         self._llmobs_enabled = False
         self._initialize_llmobs()
 
@@ -176,7 +176,7 @@ class VoteExtractionService:
         image_files: list[bytes],
         image_filenames: list[str],
         llm_config: Optional["LLMConfig"] = None,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Extract vote data from multiple document pages using Gemini.
 
@@ -346,7 +346,7 @@ class VoteExtractionService:
     async def validate_extraction(
         self,
         data: ElectionFormData,
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Validate extracted vote data for consistency.
 

@@ -21,7 +21,7 @@ Run in terminal or via Cursor:
 - `make format-only` or `./format-only.sh`
 - `make quick-push` or `./quick-push.sh`
 
-**Requires**: Poetry, Black, Ruff installed
+**Requires**: uv, Black, Ruff installed
 
 ---
 
@@ -260,16 +260,16 @@ If you prefer manual control, use these commands:
 
 ```bash
 # 1. Format backend
-cd services/fastapi-backend && poetry run black app/ && cd ../..
+cd services/fastapi-backend && uv run black app/ && cd ../..
 
 # 2. Format frontend
-cd frontend/streamlit && poetry run black . && cd ../..
+cd frontend/streamlit && uv run black . && cd ../..
 
 # 3. Lint backend (optional)
-cd services/fastapi-backend && poetry run ruff check --fix app/ && cd ../..
+cd services/fastapi-backend && uv run ruff check --fix app/ && cd ../..
 
 # 4. Lint frontend (optional)
-cd frontend/streamlit && poetry run ruff check --fix . && cd ../..
+cd frontend/streamlit && uv run ruff check --fix . && cd ../..
 
 # 5. Commit and push
 git add -A
@@ -303,9 +303,9 @@ All scripts are executable and can be run directly or via `make`.
 
 ## 🔧 Troubleshooting
 
-### "poetry: command not found"
+### "uv: command not found"
 
-If you get this error, the scripts are trying to use Poetry in a shell that doesn't have it loaded.
+If you get this error, the scripts are trying to use uv in a shell that doesn't have it loaded.
 
 **Solution**: Run commands in your interactive terminal (not via Cursor's shell).
 
@@ -323,7 +323,7 @@ The scripts format code locally, but if CI/CD still fails:
 2. See `FIX_CI_FORMATTING.md` for troubleshooting
 3. Verify formatting in your terminal:
    ```bash
-   cd services/fastapi-backend && poetry run black --check app/
+   cd services/fastapi-backend && uv run black --check app/
    ```
 
 ---

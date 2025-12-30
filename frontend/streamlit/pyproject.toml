@@ -1,28 +1,35 @@
-[tool.poetry]
+[project]
 name = "streamlit-frontend"
 version = "0.1.0"
 description = "Streamlit frontend for GenAI application"
-authors = ["Nuttee <nuttea@gmail.com>"]
+authors = [
+    {name = "Nuttee", email = "nuttea@gmail.com"}
+]
 readme = "README.md"
-package-mode = false
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit>=1.31.1",
+    "httpx>=0.26.0",
+    "requests>=2.31.0",
+    "Pillow>=10.2.0",
+    "pandas>=2.1.4",
+    "python-dotenv>=1.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-streamlit = "^1.31.1"
-httpx = "^0.26.0"
-requests = "^2.31.0"
-Pillow = "^10.2.0"
-pandas = "^2.1.4"
-python-dotenv = "^1.0.0"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "black>=24.1.1",
+    "ruff>=0.1.14",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-black = "^24.1.1"
-ruff = "^0.1.14"
+[tool.hatch.build.targets.wheel]
+packages = []
+include = []
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 100

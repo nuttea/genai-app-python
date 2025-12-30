@@ -36,25 +36,23 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: pip install uv
 
-      - name: Cache Poetry dependencies
+      - name: Cache uv dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
-            poetry-${{ runner.os }}-
+            uv-${{ runner.os }}-
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: uv sync --no-dev
 
       - name: Run tests with coverage
         run: |
-          poetry run pytest --cov=app --cov-report=xml --cov-report=term-missing
+          uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -78,19 +76,17 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: pip install uv
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: uv sync --no-dev
 
       - name: Run Black (check only)
-        run: poetry run black --check app/
+        run: uv run black --check app/
 
       - name: Run Ruff
-        run: poetry run ruff check app/
+        run: uv run ruff check app/
 
       # Disabled temporarily - Mypy requires extensive type annotations
       # - name: Run Mypy

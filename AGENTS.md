@@ -6,7 +6,7 @@ This is a production-ready GenAI application platform for Thai election vote ext
 
 ## Core Technologies
 
-- **Backend**: FastAPI (Python 3.11+) with Poetry
+- **Backend**: FastAPI (Python 3.11+) with uv
 - **Frontend**: Streamlit with Datadog RUM
 - **LLM**: Google Vertex AI / Gemini 2.5 Flash
 - **Infrastructure**: Google Cloud Run (serverless)
@@ -29,7 +29,7 @@ This is a production-ready GenAI application platform for Thai election vote ext
 - **⚠️ CRITICAL**: Always run Black formatter before committing (see Pre-Commit Process below)
 - Use **Pydantic** for data validation and settings
 - **Async/await** for I/O operations
-- **Poetry** for dependency management (no pip install directly)
+- **uv** for dependency management (fast Python package installer)
 - **Structured logging** with JSON format for Datadog
 
 ### FastAPI Backend
@@ -79,7 +79,7 @@ services/fastapi-backend/
 │   ├── config.py             # Settings (environment-based)
 │   └── main.py               # FastAPI app initialization
 ├── tests/                    # Pytest tests
-├── pyproject.toml            # Poetry dependencies
+├── pyproject.toml            # uv dependencies (PEP 621)
 └── Dockerfile.cloudrun       # Production Dockerfile
 ```
 
@@ -88,7 +88,7 @@ services/fastapi-backend/
 frontend/streamlit/
 ├── app.py                    # Main Streamlit app
 ├── pages/                    # Multi-page app pages
-├── pyproject.toml            # Poetry dependencies
+├── pyproject.toml            # uv dependencies (PEP 621)
 └── Dockerfile                # Production Dockerfile
 ```
 

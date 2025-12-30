@@ -15,22 +15,22 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # Installation
-install: ## Install all dependencies with Poetry
+install: ## Install all dependencies with uv
 	@echo "Installing backend dependencies..."
-	cd services/fastapi-backend && poetry install --no-root
+	cd services/fastapi-backend && uv sync --no-dev
 	@echo "Installing frontend dependencies..."
-	cd frontend/streamlit && poetry install --no-root
+	cd frontend/streamlit && uv sync --no-dev
 	@echo "✅ All dependencies installed"
 
 install-backend: ## Install backend dependencies only
-	cd services/fastapi-backend && poetry install --no-root
+	cd services/fastapi-backend && uv sync --no-dev
 
 install-frontend: ## Install frontend dependencies only
-	cd frontend/streamlit && poetry install --no-root
+	cd frontend/streamlit && uv sync --no-dev
 
 dev-install: ## Install development dependencies and git hooks
-	cd services/fastapi-backend && poetry install
-	cd frontend/streamlit && poetry install
+	cd services/fastapi-backend && uv sync
+	cd frontend/streamlit && uv sync
 	@make install-hooks
 
 install-hooks: ## Install git hooks (pre-commit formatter)
@@ -47,13 +47,13 @@ install-pip: ## Install with pip (legacy)
 
 # Development
 run-fastapi: ## Run FastAPI backend locally
-	cd services/fastapi-backend && poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd services/fastapi-backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 run-fastapi-prod: ## Run FastAPI backend in production mode
-	cd services/fastapi-backend && poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+	cd services/fastapi-backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
 run-streamlit: ## Run Streamlit frontend locally
-	cd frontend/streamlit && poetry run streamlit run app.py
+	cd frontend/streamlit && uv run streamlit run app.py
 
 run-all: ## Run both FastAPI and Streamlit locally
 	@echo "Starting FastAPI backend and Streamlit frontend..."
@@ -70,63 +70,63 @@ test-watch: ## Run tests in watch mode
 	cd services/fastapi-backend && pytest-watch
 
 # Code Quality
-lint: ## Run linters on backend (manual: cd services/fastapi-backend && poetry run ruff check app/)
+lint: ## Run linters on backend (manual: cd services/fastapi-backend && uv run ruff check app/)
 	@echo "🔍 To lint backend, run:"
-	@echo "   cd services/fastapi-backend && poetry run ruff check app/"
+	@echo "   cd services/fastapi-backend && uv run ruff check app/"
 
-lint-frontend: ## Run linters on frontend (manual: cd frontend/streamlit && poetry run ruff check .)
+lint-frontend: ## Run linters on frontend (manual: cd frontend/streamlit && uv run ruff check .)
 	@echo "🔍 To lint frontend, run:"
-	@echo "   cd frontend/streamlit && poetry run ruff check ."
+	@echo "   cd frontend/streamlit && uv run ruff check ."
 
 lint-all: ## Run linters on all code (see PRE-COMMIT-CHECKLIST.md)
 	@echo "🔍 To lint all code, run:"
 	@echo ""
 	@echo "Backend:"
-	@echo "  cd services/fastapi-backend && poetry run ruff check app/"
+	@echo "  cd services/fastapi-backend && uv run ruff check app/"
 	@echo ""
 	@echo "Frontend:"
-	@echo "  cd frontend/streamlit && poetry run ruff check ."
+	@echo "  cd frontend/streamlit && uv run ruff check ."
 	@echo ""
 	@echo "See PRE-COMMIT-CHECKLIST.md for more details"
 
-lint-fix: ## Fix linting issues in backend (manual: cd services/fastapi-backend && poetry run ruff check --fix app/)
+lint-fix: ## Fix linting issues in backend (manual: cd services/fastapi-backend && uv run ruff check --fix app/)
 	@echo "🔧 To fix backend linting issues, run:"
-	@echo "   cd services/fastapi-backend && poetry run ruff check --fix app/"
+	@echo "   cd services/fastapi-backend && uv run ruff check --fix app/"
 
 lint-fix-all: ## Fix linting issues in all code
 	@echo "🔧 To fix linting issues, run:"
 	@echo ""
 	@echo "Backend:"
-	@echo "  cd services/fastapi-backend && poetry run ruff check --fix app/"
+	@echo "  cd services/fastapi-backend && uv run ruff check --fix app/"
 	@echo ""
 	@echo "Frontend:"
-	@echo "  cd frontend/streamlit && poetry run ruff check --fix ."
+	@echo "  cd frontend/streamlit && uv run ruff check --fix ."
 
 format: ## Format backend code with black
-	@./format.sh backend
+	@./scripts/format.sh backend
 
 format-frontend: ## Format frontend code with black
-	@./format.sh frontend
+	@./scripts/format.sh frontend
 
 format-all: ## Format all code with black (RUN THIS BEFORE COMMIT!)
-	@./format.sh
+	@./scripts/format.sh
 
-format-check: ## Check backend formatting (manual: cd services/fastapi-backend && poetry run black --check app/)
+format-check: ## Check backend formatting (manual: cd services/fastapi-backend && uv run black --check app/)
 	@echo "🔍 To check backend formatting, run:"
-	@echo "   cd services/fastapi-backend && poetry run black --check app/"
+	@echo "   cd services/fastapi-backend && uv run black --check app/"
 
 format-check-all: ## Check all code formatting
 	@echo "🔍 To check formatting, run:"
 	@echo ""
 	@echo "Backend:"
-	@echo "  cd services/fastapi-backend && poetry run black --check app/"
+	@echo "  cd services/fastapi-backend && uv run black --check app/"
 	@echo ""
 	@echo "Frontend:"
-	@echo "  cd frontend/streamlit && poetry run black --check ."
+	@echo "  cd frontend/streamlit && uv run black --check ."
 
-typecheck: ## Run type checking on backend (manual: cd services/fastapi-backend && poetry run mypy app/)
+typecheck: ## Run type checking on backend (manual: cd services/fastapi-backend && uv run mypy app/)
 	@echo "🔍 To run type checking, run:"
-	@echo "   cd services/fastapi-backend && poetry run mypy app/"
+	@echo "   cd services/fastapi-backend && uv run mypy app/"
 
 check-all: ## Show all code quality check commands
 	@echo "🔍 Code Quality Checks"

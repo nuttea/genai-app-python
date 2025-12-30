@@ -2,7 +2,6 @@
 
 import logging
 from collections.abc import AsyncGenerator
-from typing import Optional
 
 from app.models.requests import Message
 from app.services.vertex_ai import vertex_ai_service
@@ -21,12 +20,12 @@ class GenAIService:
     async def generate_text(
         self,
         prompt: str,
-        model: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
-        stop_sequences: Optional[list[str]] = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
+        stop_sequences: list[str] | None = None,
     ) -> dict:
         """Generate text from a prompt."""
         return await self.vertex_service.generate_content(
@@ -42,11 +41,11 @@ class GenAIService:
     async def generate_text_stream(
         self,
         prompt: str,
-        model: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream generated text from a prompt."""
         async for chunk in self.vertex_service.generate_content_stream(
@@ -62,11 +61,11 @@ class GenAIService:
     async def chat_completion(
         self,
         messages: list[Message],
-        model: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
     ) -> dict:
         """Generate a chat completion."""
         # Convert Pydantic models to dicts

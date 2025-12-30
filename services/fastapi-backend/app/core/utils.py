@@ -29,7 +29,7 @@ def with_timeout(seconds: float):
         async def wrapper(*args, **kwargs) -> T:
             try:
                 return await asyncio.wait_for(func(*args, **kwargs), timeout=seconds)
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 raise TimeoutError(f"{func.__name__} timed out after {seconds}s") from e
 
         return wrapper
@@ -53,5 +53,5 @@ async def run_with_timeout(coro: Awaitable[T], timeout: float) -> T:
     """
     try:
         return await asyncio.wait_for(coro, timeout=timeout)
-    except asyncio.TimeoutError as e:
+    except TimeoutError as e:
         raise TimeoutError(f"Operation timed out after {timeout}s") from e

@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import time
-from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -30,8 +29,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/vote-extraction", tags=["vote-extraction"])
 
 # Cache for dynamically fetched models
-_models_cache: Optional[list[dict]] = None
-_cache_timestamp: Optional[float] = None
+_models_cache: list[dict] | None = None
+_cache_timestamp: float | None = None
 CACHE_TTL = 3600  # 1 hour cache
 
 
@@ -40,10 +39,10 @@ async def _validate_and_read_files(
 ) -> tuple[list[bytes], list[str]]:
     """
     Validate and read uploaded files.
-    
+
     Returns:
         Tuple of (image_files, image_filenames)
-        
+
     Raises:
         HTTPException for validation errors
     """
@@ -161,10 +160,10 @@ async def _parse_extraction_results(
 ) -> tuple[list[ElectionFormData], list[str]]:
     """
     Parse and validate extraction results.
-    
+
     Returns:
         Tuple of (extracted_reports, validation_warnings)
-        
+
     Raises:
         HTTPException if no valid reports could be extracted
     """
@@ -195,9 +194,7 @@ async def _parse_extraction_results(
                 extra={
                     "report_index": idx + 1,
                     "report_data_keys": (
-                        list(report_data.keys())
-                        if isinstance(report_data, dict)
-                        else "not_dict"
+                        list(report_data.keys()) if isinstance(report_data, dict) else "not_dict"
                     ),
                     "vote_results_count": (
                         len(report_data.get("vote_results", []))
@@ -210,9 +207,7 @@ async def _parse_extraction_results(
             extracted_data = ElectionFormData(**report_data)
 
             # Validate consistency
-            is_valid, error_msg = await vote_extraction_service.validate_extraction(
-                extracted_data
-            )
+            is_valid, error_msg = await vote_extraction_service.validate_extraction(extracted_data)
             if not is_valid:
                 logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
                 validation_warnings.append(f"Report {idx + 1}: {error_msg}")

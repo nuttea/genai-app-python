@@ -12,13 +12,23 @@ echo ""
 # Format backend
 echo "  📦 Formatting backend..."
 cd services/fastapi-backend
-poetry run black app/
+uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+if [ -d .venv ]; then
+    .venv/bin/black app/ || uv run black app/
+else
+    uv run black app/
+fi
 cd ../..
 
 # Format frontend
 echo "  📦 Formatting frontend..."
 cd frontend/streamlit
-poetry run black .
+uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+if [ -d .venv ]; then
+    .venv/bin/black . || uv run black .
+else
+    uv run black .
+fi
 cd ../..
 
 echo "✅ Formatting complete!"
@@ -30,13 +40,23 @@ echo ""
 # Lint backend
 echo "  🔍 Linting backend..."
 cd services/fastapi-backend
-poetry run ruff check --fix app/ || echo "  ⚠️  Some linting issues remain"
+uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+if [ -d .venv ]; then
+    .venv/bin/ruff check --fix app/ || uv run ruff check --fix app/ || echo "  ⚠️  Some linting issues remain"
+else
+    uv run ruff check --fix app/ || echo "  ⚠️  Some linting issues remain"
+fi
 cd ../..
 
 # Lint frontend
 echo "  🔍 Linting frontend..."
 cd frontend/streamlit
-poetry run ruff check --fix . || echo "  ⚠️  Some linting issues remain"
+uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+if [ -d .venv ]; then
+    .venv/bin/ruff check --fix . || uv run ruff check --fix . || echo "  ⚠️  Some linting issues remain"
+else
+    uv run ruff check --fix . || echo "  ⚠️  Some linting issues remain"
+fi
 cd ../..
 
 echo "✅ Linting complete!"

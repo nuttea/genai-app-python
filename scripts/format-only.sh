@@ -13,7 +13,7 @@ echo ""
 # Format backend
 echo "📦 Formatting backend..."
 cd services/fastapi-backend
-poetry run black app/
+uv run black app/
 cd ../..
 echo "✅ Backend formatted!"
 echo ""
@@ -21,7 +21,7 @@ echo ""
 # Format frontend
 echo "📦 Formatting frontend..."
 cd frontend/streamlit
-poetry run black .
+uv run black .
 cd ../..
 echo "✅ Frontend formatted!"
 echo ""

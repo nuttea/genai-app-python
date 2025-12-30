@@ -3,7 +3,6 @@
 import logging
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Optional
 
 import vertexai
 from vertexai.generative_models import ChatSession, GenerativeModel
@@ -20,8 +19,8 @@ class VertexAIService:
     def __init__(self) -> None:
         """Initialize Vertex AI service."""
         self._initialized = False
-        self._model: Optional[GenerativeModel] = None
-        self._chat: Optional[ChatSession] = None
+        self._model: GenerativeModel | None = None
+        self._chat: ChatSession | None = None
 
     def initialize(self) -> None:
         """Initialize Vertex AI connection."""
@@ -50,7 +49,7 @@ class VertexAIService:
             logger.critical(f"Unexpected error initializing Vertex AI: {e}", exc_info=True)
             raise VertexAIException(f"Vertex AI initialization failed: {e}") from e
 
-    def get_model(self, model_name: Optional[str] = None) -> GenerativeModel:
+    def get_model(self, model_name: str | None = None) -> GenerativeModel:
         """Get a generative model instance."""
         if not self._initialized:
             self.initialize()
@@ -61,12 +60,12 @@ class VertexAIService:
     async def generate_content(
         self,
         prompt: str,
-        model_name: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
-        stop_sequences: Optional[list[str]] = None,
+        model_name: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
+        stop_sequences: list[str] | None = None,
     ) -> dict:
         """Generate content from a prompt.
 
@@ -119,11 +118,11 @@ class VertexAIService:
     async def generate_content_stream(
         self,
         prompt: str,
-        model_name: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
+        model_name: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream generated content from a prompt."""
         model = self.get_model(model_name)
@@ -155,11 +154,11 @@ class VertexAIService:
     async def chat_completion(
         self,
         messages: list[dict],
-        model_name: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        top_k: Optional[int] = None,
+        model_name: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
+        top_k: int | None = None,
     ) -> dict:
         """Generate a chat completion."""
         model = self.get_model(model_name)

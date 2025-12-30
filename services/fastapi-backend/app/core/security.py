@@ -1,7 +1,6 @@
 """Security utilities."""
 
 import logging
-from typing import Optional
 
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
-async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> str:
+async def verify_api_key(api_key: str | None = Security(api_key_header)) -> str:
     """
     Verify API key if configured.
 
@@ -59,7 +58,7 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
     return "no-key-required"
 
 
-async def optional_api_key(api_key: Optional[str] = Security(api_key_header)) -> Optional[str]:
+async def optional_api_key(api_key: str | None = Security(api_key_header)) -> str | None:
     """
     Optional API key verification for endpoints that support both authenticated and unauthenticated access.
 

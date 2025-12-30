@@ -1,6 +1,6 @@
 #!/bin/bash
 # Simple script to format code with Black before commit
-# Designed to work with scfw/poetry setup
+# Designed to work with uv package manager
 # 
 # Usage:
 #   ./format.sh          - Format all code (backend + frontend)
@@ -14,7 +14,12 @@ TARGET="${1:-all}"
 format_backend() {
     echo "📦 Formatting backend..."
     cd services/fastapi-backend
-    scfw run poetry run black app/
+    uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+    if [ -d .venv ]; then
+        .venv/bin/black app/ || uv run black app/
+    else
+        uv run black app/
+    fi
     echo "✅ Backend formatted"
     cd ../..
 }
@@ -22,7 +27,12 @@ format_backend() {
 format_frontend() {
     echo "📦 Formatting frontend..."
     cd frontend/streamlit
-    scfw run poetry run black .
+    uv sync --all-extras --no-install-project >/dev/null 2>&1 || true
+    if [ -d .venv ]; then
+        .venv/bin/black . || uv run black .
+    else
+        uv run black .
+    fi
     echo "✅ Frontend formatted"
     cd ../..
 }

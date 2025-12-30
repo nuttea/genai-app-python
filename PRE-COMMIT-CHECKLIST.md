@@ -9,14 +9,14 @@ Run these commands from the project root:
 ###Backend
 ```bash
 cd services/fastapi-backend
-poetry run black app/
+uv run black app/
 cd ../..
 ```
 
 ### Frontend
 ```bash
 cd frontend/streamlit
-poetry run black .
+uv run black .
 cd ../..
 ```
 
@@ -32,12 +32,12 @@ Check for code quality issues:
 ```bash
 # Backend
 cd services/fastapi-backend
-poetry run ruff check app/
+uv run ruff check app/
 cd ../..
 
 # Frontend
 cd frontend/streamlit
-poetry run ruff check .
+uv run ruff check .
 cd ../..
 ```
 
@@ -46,12 +46,12 @@ Auto-fix linting issues:
 ```bash
 # Backend
 cd services/fastapi-backend
-poetry run ruff check --fix app/
+uv run ruff check --fix app/
 cd ../..
 
 # Frontend
 cd frontend/streamlit
-poetry run ruff check --fix .
+uv run ruff check --fix .
 cd ../..
 ```
 
@@ -60,10 +60,10 @@ cd ../..
 Before each commit:
 ```bash
 # 1. Format backend
-cd services/fastapi-backend && poetry run black app/ && cd ../..
+cd services/fastapi-backend && uv run black app/ && cd ../..
 
 # 2. Format frontend  
-cd frontend/streamlit && poetry run black . && cd ../..
+cd frontend/streamlit && uv run black . && cd ../..
 
 # 3. Git add and commit
 git add -A
@@ -74,7 +74,7 @@ git push
 ## ⚡ One-Liner (Copy & Paste)
 
 ```bash
-cd services/fastapi-backend && poetry run black app/ && cd ../.. && cd frontend/streamlit && poetry run black . && cd ../.. && echo "✅ Formatting complete!"
+cd services/fastapi-backend && uv run black app/ && cd ../.. && cd frontend/streamlit && uv run black . && cd ../.. && echo "✅ Formatting complete!"
 ```
 
 ## 🚫 Skip Formatting (Not Recommended)
@@ -94,7 +94,7 @@ Black is configured in each service's `pyproject.toml`:
 
 - Set up a shell alias for quick formatting:
   ```bash
-  alias format-code='cd services/fastapi-backend && poetry run black app/ && cd ../.. && cd frontend/streamlit && poetry run black . && cd ../..'
+  alias format-code='cd services/fastapi-backend && uv run black app/ && cd ../.. && cd frontend/streamlit && uv run black . && cd ../..'
   ```
 
 - Or use VS Code's "Format on Save" feature with the Black extension

@@ -9,8 +9,8 @@ echo ""
 # Format backend
 echo "📦 Formatting backend..."
 cd services/fastapi-backend
-if command -v poetry &> /dev/null; then
-    poetry run black app/
+if command -v uv &> /dev/null; then
+    uv run black app/
 else
     python3 -m black app/
 fi
@@ -20,8 +20,8 @@ echo "✅ Backend formatted"
 # Format frontend
 echo "📦 Formatting frontend..."
 cd frontend/streamlit
-if command -v poetry &> /dev/null; then
-    poetry run black .
+if command -v uv &> /dev/null; then
+    uv run black .
 else
     python3 -m black .
 fi

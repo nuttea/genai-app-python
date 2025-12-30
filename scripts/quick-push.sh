@@ -5,8 +5,8 @@
 set -e
 
 echo "🎨 Formatting code with Black..."
-cd services/fastapi-backend && poetry run black app/ && cd ../..
-cd frontend/streamlit && poetry run black . && cd ../..
+cd services/fastapi-backend && uv run black app/ && cd ../..
+cd frontend/streamlit && uv run black . && cd ../..
 echo "✅ Formatted!"
 echo ""
 
