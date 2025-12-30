@@ -104,6 +104,7 @@ jobs:
           context: frontend/nextjs
           file: frontend/nextjs/Dockerfile.cloudrun
           push: true
+          no-cache: true  # Force fresh build to ensure env vars are properly embedded
           tags: |
             gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
             gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
@@ -112,8 +113,6 @@ jobs:
             DD_GIT_COMMIT_SHA=${{ github.sha }}
             NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }}
             NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
         run: |
