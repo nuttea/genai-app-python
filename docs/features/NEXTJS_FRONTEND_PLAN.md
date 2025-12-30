@@ -1,56 +1,125 @@
-# 🎨 Next.js Frontend - Modern GenAI Application Hub
+# 🎨 Next.js Frontend - Modern UI for GenAI Services
 
 ## Overview
 
-A modern, production-ready Next.js web application that serves as a unified hub for multiple GenAI prototype services, featuring Datadog's brand colors and a scalable sidebar architecture.
+A new **Next.js frontend application** that provides a modern, unified interface for all GenAI services in the platform. This is a separate service from the existing Streamlit frontend, designed for production use with Datadog branding and extensible architecture.
 
 **Key Features**:
-- ✨ Modern UI with Datadog color theme
+- ✨ Modern, responsive UI with Datadog color theme
 - 🎯 Sidebar navigation for multiple GenAI services
-- 🔌 Routes to backend APIs on Cloud Run
-- 📱 Responsive design (mobile, tablet, desktop)
-- ⚡ Server-side rendering (SSR) with Next.js 14+
-- 🎨 Tailwind CSS + shadcn/ui components
-- 🔐 Authentication ready (optional)
+- 🔌 Routes to Cloud Run backend APIs
+- 📱 Mobile-friendly design
+- 🚀 Server-side rendering (SSR) with Next.js
+- 🎨 Component-based architecture for easy extension
 
 ---
 
 ## 🏗️ Architecture
 
-### High-Level Design
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Next.js Frontend                          │
-│                   (Cloud Run Service)                        │
-│                                                               │
-│  ┌────────────────┐  ┌──────────────────────────┐          │
-│  │  Sidebar Nav   │  │   Main Content Area       │          │
-│  │                │  │                            │          │
-│  │  📊 Dashboard  │  │  🗳️ Vote Extractor        │          │
-│  │  🗳️ Votes      │  │  📝 Content Creator       │          │
-│  │  📝 Content    │  │  🤖 [Future Services]     │          │
-│  │  ➕ Add New    │  │                            │          │
-│  └────────────────┘  └──────────────────────────┘          │
-│                                                               │
-└───────────────────────────┬───────────────────────────────────┘
-                            │
-                            ▼
-        ┌───────────────────────────────────────────┐
-        │      API Layer (Client-Side Fetch)        │
-        └───────────────────────────┬───────────────┘
-                                    │
-        ┌───────────────────────────┴───────────────────────┐
-        │                                                     │
-        ▼                                                     ▼
-┌──────────────────┐                             ┌──────────────────┐
-│  Vote Extractor  │                             │ Content Creator  │
-│    Backend API   │                             │   Backend API    │
-│  (Cloud Run)     │                             │  (Cloud Run)     │
-│                  │                             │                  │
-│ /api/v1/extract  │                             │ /api/v1/generate │
-│ /api/v1/models   │                             │ /api/v1/upload   │
-└──────────────────┘                             └──────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     Next.js Frontend (Port 3000)                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────┐     │
+│  │                 Sidebar Navigation                      │     │
+│  │  - 🏠 Home / Dashboard                                 │     │
+│  │  - 🗳️  Vote Extractor (existing)                       │     │
+│  │  - 📝 Content Creator (new)                            │     │
+│  │  - 🤖 [Future GenAI Services]                          │     │
+│  └───────────────────────────────────────────────────────┘     │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────┐     │
+│  │              Main Content Area                         │     │
+│  │  - Dynamic routing based on selected service          │     │
+│  │  - File uploads                                        │     │
+│  │  - Real-time generation status                         │     │
+│  │  - Content preview and download                        │     │
+│  └───────────────────────────────────────────────────────┘     │
+│                                                                   │
+└──────────────────────┬────────────────────────────────────────┘
+                       │
+                       │ HTTP/2 (Cloud Run)
+                       ▼
+    ┌──────────────────────────────────────────────────┐
+    │           Backend Services (Cloud Run)            │
+    ├──────────────────────────────────────────────────┤
+    │  • Vote Extractor API (Port 8000)                │
+    │  • Content Creator API (Port 8002)               │
+    │  • [Future Services]                             │
+    └──────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎨 Datadog Design System
+
+### Color Palette
+
+```typescript
+// Primary Datadog Colors
+export const colors = {
+  // Purple (Primary Brand)
+  purple: {
+    50: '#F5F3FF',
+    100: '#EDE9FE',
+    200: '#DDD6FE',
+    300: '#C4B5FD',
+    400: '#A78BFA',
+    500: '#774AA4',  // Datadog Purple
+    600: '#632D91',
+    700: '#4F217A',
+    800: '#3B1663',
+    900: '#270B4C',
+  },
+  
+  // Accent Colors
+  green: '#27AE60',    // Success
+  orange: '#F39C12',   // Warning
+  red: '#E74C3C',      // Error
+  blue: '#3498DB',     // Info
+  
+  // Neutrals
+  gray: {
+    50: '#F9FAFB',
+    100: '#F3F4F6',
+    200: '#E5E7EB',
+    300: '#D1D5DB',
+    400: '#9CA3AF',
+    500: '#6B7280',
+    600: '#4B5563',
+    700: '#374151',
+    800: '#1F2937',
+    900: '#111827',
+  },
+  
+  // Background
+  background: '#FAFAFA',
+  surface: '#FFFFFF',
+  border: '#E5E7EB',
+};
+```
+
+### Typography
+
+```typescript
+// Fonts
+export const fonts = {
+  sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+  mono: "'Fira Code', 'Courier New', monospace",
+};
+
+// Font Sizes
+export const fontSize = {
+  xs: '0.75rem',    // 12px
+  sm: '0.875rem',   // 14px
+  base: '1rem',     // 16px
+  lg: '1.125rem',   // 18px
+  xl: '1.25rem',    // 20px
+  '2xl': '1.5rem',  // 24px
+  '3xl': '1.875rem', // 30px
+  '4xl': '2.25rem',  // 36px
+};
 ```
 
 ---
@@ -58,512 +127,467 @@ A modern, production-ready Next.js web application that serves as a unified hub 
 ## 📁 Project Structure
 
 ```
-genai-app-python/
-├── frontend/
-│   └── nextjs-web/                    # 🆕 NEW NEXT.JS APP
-│       ├── app/                       # Next.js 14 App Router
-│       │   ├── layout.tsx            # Root layout with sidebar
-│       │   ├── page.tsx              # Dashboard home
-│       │   ├── votes/                # Vote Extractor pages
-│       │   │   ├── page.tsx          # Main vote extraction
-│       │   │   └── history/
-│       │   │       └── page.tsx      # Extraction history
-│       │   ├── content/              # Content Creator pages
-│       │   │   ├── page.tsx          # Content generation
-│       │   │   ├── blog/
-│       │   │   │   └── page.tsx      # Blog post creator
-│       │   │   ├── video/
-│       │   │   │   └── page.tsx      # Video script creator
-│       │   │   └── social/
-│       │   │       └── page.tsx      # Social media posts
-│       │   └── api/                  # API routes (optional proxy)
-│       │       └── [...proxy].ts     # Proxy to Cloud Run
-│       │
-│       ├── components/               # React components
-│       │   ├── layout/
-│       │   │   ├── Sidebar.tsx       # Main sidebar navigation
-│       │   │   ├── Header.tsx        # Top header
-│       │   │   └── Footer.tsx        # Footer
-│       │   ├── ui/                   # shadcn/ui components
-│       │   │   ├── button.tsx
-│       │   │   ├── card.tsx
-│       │   │   ├── input.tsx
-│       │   │   └── ...
-│       │   ├── votes/
-│       │   │   ├── FileUploader.tsx
-│       │   │   ├── ExtractionForm.tsx
-│       │   │   └── ResultsDisplay.tsx
-│       │   └── content/
-│       │       ├── ContentTypeSelector.tsx
-│       │       ├── BlogEditor.tsx
-│       │       └── VideoScriptEditor.tsx
-│       │
-│       ├── lib/                      # Utilities
-│       │   ├── api/
-│       │   │   ├── votes.ts          # Vote API client
-│       │   │   └── content.ts        # Content API client
-│       │   ├── theme.ts              # Datadog color theme
-│       │   └── utils.ts              # Helper functions
-│       │
-│       ├── public/                   # Static assets
-│       │   ├── logo.svg
-│       │   └── icons/
-│       │
-│       ├── styles/
-│       │   └── globals.css           # Global styles (Tailwind)
-│       │
-│       ├── .env.local                # Environment variables
-│       ├── .env.production           # Production env vars
-│       ├── next.config.js            # Next.js configuration
-│       ├── tailwind.config.ts        # Tailwind + Datadog theme
-│       ├── tsconfig.json             # TypeScript config
-│       ├── package.json              # Dependencies
-│       ├── Dockerfile                # Docker for Cloud Run
-│       └── README.md
+frontend/nextjs/
+├── app/                          # Next.js 14 App Router
+│   ├── layout.tsx               # Root layout with sidebar
+│   ├── page.tsx                 # Home / Dashboard page
+│   ├── vote-extractor/          # Vote Extractor service
+│   │   └── page.tsx
+│   ├── content-creator/         # Content Creator service
+│   │   ├── page.tsx             # Main page
+│   │   ├── blog-post/           # Blog post generation
+│   │   ├── video-script/        # Video script generation
+│   │   └── social-media/        # Social media posts
+│   └── api/                     # API routes (proxy to Cloud Run)
+│       ├── vote-extractor/
+│       └── content-creator/
 │
-└── services/
-    ├── fastapi-backend/              # Vote Extractor API
-    └── adk-content-creator/          # Content Creator API
+├── components/                   # React components
+│   ├── layout/
+│   │   ├── Sidebar.tsx          # Navigation sidebar
+│   │   ├── Header.tsx           # Top header
+│   │   └── Footer.tsx           # Footer
+│   ├── ui/                      # Reusable UI components
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   ├── Input.tsx
+│   │   ├── Select.tsx
+│   │   ├── FileUpload.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   └── Toast.tsx
+│   ├── services/                # Service-specific components
+│   │   ├── VoteExtractor/
+│   │   └── ContentCreator/
+│   └── shared/                  # Shared components
+│       ├── CodeBlock.tsx
+│       └── MarkdownPreview.tsx
+│
+├── lib/                         # Utilities and helpers
+│   ├── api/                     # API client functions
+│   │   ├── voteExtractor.ts
+│   │   └── contentCreator.ts
+│   ├── utils/                   # Helper functions
+│   │   ├── formatting.ts
+│   │   └── validation.ts
+│   └── constants/               # Constants
+│       ├── colors.ts
+│       └── config.ts
+│
+├── styles/
+│   ├── globals.css              # Global styles
+│   └── datadog-theme.css        # Datadog theme
+│
+├── public/
+│   ├── logo.svg                 # Datadog logo
+│   └── icons/                   # Service icons
+│
+├── types/                       # TypeScript types
+│   ├── api.ts
+│   └── components.ts
+│
+├── hooks/                       # Custom React hooks
+│   ├── useApi.ts
+│   └── useToast.ts
+│
+├── next.config.js               # Next.js configuration
+├── tailwind.config.js           # Tailwind CSS config
+├── tsconfig.json                # TypeScript config
+├── package.json
+├── Dockerfile                   # Docker for local dev
+├── Dockerfile.cloudrun          # Docker for Cloud Run
+└── README.md
 ```
 
 ---
 
-## 🎨 Datadog Color Theme
+## 🎯 Implementation Phases
 
-### Primary Colors
+### Phase 1: Project Setup (Week 1)
 
-```typescript
-// lib/theme.ts
-export const datadogTheme = {
-  colors: {
-    // Primary Datadog Purple
-    primary: {
-      50: '#F5F3FF',
-      100: '#EDE9FE',
-      200: '#DDD6FE',
-      300: '#C4B5FD',
-      400: '#A78BFA',
-      500: '#8B5CF6',  // Main Datadog purple
-      600: '#7C3AED',
-      700: '#6D28D9',
-      800: '#5B21B6',
-      900: '#4C1D95',
-    },
-    
-    // Datadog Pink/Magenta
-    secondary: {
-      500: '#D946EF',
-      600: '#C026D3',
-      700: '#A21CAF',
-    },
-    
-    // Success (Green)
-    success: {
-      500: '#10B981',
-      600: '#059669',
-    },
-    
-    // Warning (Orange)
-    warning: {
-      500: '#F59E0B',
-      600: '#D97706',
-    },
-    
-    // Error (Red)
-    error: {
-      500: '#EF4444',
-      600: '#DC2626',
-    },
-    
-    // Neutral (Grays)
-    neutral: {
-      50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
-      300: '#D1D5DB',
-      400: '#9CA3AF',
-      500: '#6B7280',
-      600: '#4B5563',
-      700: '#374151',
-      800: '#1F2937',
-      900: '#111827',
-    },
-  },
-}
+#### ✅ Tasks
+- [ ] Initialize Next.js 14 project with TypeScript
+- [ ] Set up Tailwind CSS with Datadog theme
+- [ ] Configure ESLint, Prettier
+- [ ] Set up shadcn/ui components
+- [ ] Create Docker setup
+- [ ] Configure environment variables
+
+```bash
+# Initialize project
+npx create-next-app@latest frontend/nextjs \
+  --typescript \
+  --tailwind \
+  --app \
+  --src-dir
+
+# Install dependencies
+cd frontend/nextjs
+npm install @radix-ui/react-* class-variance-authority clsx tailwind-merge
+npm install axios swr react-hot-toast lucide-react
+npm install -D @types/node
 ```
 
-### Tailwind Configuration
-
-```typescript
-// tailwind.config.ts
-import type { Config } from 'tailwindcss'
-import { datadogTheme } from './lib/theme'
-
-const config: Config = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  theme: {
-    extend: {
-      colors: {
-        ...datadogTheme.colors,
-        border: 'hsl(var(--border))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
-    },
-  },
-  plugins: [require('tailwindcss-animate')],
-}
-```
+#### Files to Create
+1. `next.config.js` - API proxy to Cloud Run
+2. `tailwind.config.js` - Datadog theme
+3. `lib/constants/colors.ts` - Color palette
+4. `app/layout.tsx` - Root layout
+5. `Dockerfile` - Local development
+6. `Dockerfile.cloudrun` - Production build
 
 ---
 
-## 🧩 Key Components
+### Phase 2: Core UI Components (Week 1-2)
 
-### 1. Sidebar Navigation
+#### ✅ Sidebar Navigation
 
 ```typescript
 // components/layout/Sidebar.tsx
+import { Home, FileText, Video, Users, Settings } from 'lucide-react';
+
+const services = [
+  { name: 'Dashboard', icon: Home, href: '/' },
+  { name: 'Vote Extractor', icon: FileText, href: '/vote-extractor' },
+  { name: 'Content Creator', icon: Video, href: '/content-creator' },
+  // Add more services here
+];
+
 export function Sidebar() {
-  const services = [
-    {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      href: '/',
-      description: 'Overview of all services'
-    },
-    {
-      name: 'Vote Extractor',
-      icon: FileText,
-      href: '/votes',
-      description: 'Extract election vote data from PDFs'
-    },
-    {
-      name: 'Content Creator',
-      icon: Sparkles,
-      href: '/content',
-      description: 'Generate blog posts & video scripts'
-    },
-    {
-      name: 'Add New Service',
-      icon: Plus,
-      href: '/services/new',
-      description: 'Add a new GenAI prototype'
-    },
-  ]
-  
   return (
-    <aside className="w-64 bg-neutral-900 text-white border-r border-neutral-800">
-      {/* Logo */}
-      <div className="p-6 border-b border-neutral-800">
-        <h1 className="text-2xl font-bold text-primary-500">
-          GenAI Hub
-        </h1>
-        <p className="text-sm text-neutral-400 mt-1">
-          Datadog Prototypes
-        </p>
+    <aside className="w-64 bg-purple-600 text-white">
+      <div className="p-6">
+        <img src="/logo.svg" alt="Datadog" className="h-8" />
+        <h1 className="mt-4 text-xl font-bold">GenAI Platform</h1>
       </div>
       
-      {/* Navigation */}
-      <nav className="p-4 space-y-2">
+      <nav className="mt-8">
         {services.map((service) => (
-          <Link
-            key={service.href}
-            href={service.href}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg
-                       hover:bg-primary-600 transition-colors"
-          >
-            <service.icon className="w-5 h-5" />
-            <div>
-              <div className="font-medium">{service.name}</div>
-              <div className="text-xs text-neutral-400">
-                {service.description}
-              </div>
+          <Link key={service.name} href={service.href}>
+            <div className="flex items-center px-6 py-3 hover:bg-purple-700">
+              <service.icon className="w-5 h-5 mr-3" />
+              {service.name}
             </div>
           </Link>
         ))}
       </nav>
     </aside>
-  )
+  );
 }
 ```
 
-### 2. API Client
+#### ✅ Reusable UI Components
+
+Create using shadcn/ui:
+```bash
+npx shadcn-ui@latest add button
+npx shadcn-ui@latest add card
+npx shadcn-ui@latest add input
+npx shadcn-ui@latest add select
+npx shadcn-ui@latest add toast
+```
+
+#### Files to Create
+1. `components/layout/Sidebar.tsx`
+2. `components/layout/Header.tsx`
+3. `components/ui/*` (shadcn/ui components)
+4. `components/shared/FileUpload.tsx`
+5. `components/shared/LoadingSpinner.tsx`
+
+---
+
+### Phase 3: API Integration (Week 2)
+
+#### ✅ API Client Setup
 
 ```typescript
-// lib/api/content.ts
-export class ContentAPI {
-  private baseURL: string
+// lib/api/contentCreator.ts
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_CONTENT_CREATOR_API || 'http://localhost:8002';
+
+export const contentCreatorApi = {
+  // Upload file
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post(`${API_BASE_URL}/api/v1/upload/file`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    
+    return response.data;
+  },
   
-  constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_CONTENT_API_URL || 
-                   'http://localhost:8002'
-  }
+  // Generate blog post
+  generateBlogPost: async (request: BlogPostRequest) => {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/generate/blog-post`, request);
+    return response.data;
+  },
   
-  async generateBlogPost(request: BlogPostRequest): Promise<BlogPost> {
-    const response = await fetch(`${this.baseURL}/api/v1/generate/blog-post`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Failed to generate blog post: ${response.statusText}`)
-    }
-    
-    return response.json()
-  }
+  // Generate video script
+  generateVideoScript: async (request: VideoScriptRequest) => {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/generate/video-script`, request);
+    return response.data;
+  },
   
-  async uploadFile(file: File): Promise<UploadResponse> {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    const response = await fetch(`${this.baseURL}/api/v1/upload/file`, {
-      method: 'POST',
-      body: formData,
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Failed to upload file: ${response.statusText}`)
-    }
-    
-    return response.json()
-  }
+  // Generate social media posts
+  generateSocialMedia: async (request: SocialMediaRequest) => {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/generate/social-media`, request);
+    return response.data;
+  },
+};
+```
+
+#### ✅ API Routes (Proxy)
+
+```typescript
+// app/api/content-creator/[...path]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+const API_BASE_URL = process.env.CONTENT_CREATOR_API_URL || 'http://localhost:8002';
+
+export async function POST(request: NextRequest) {
+  const path = request.nextUrl.pathname.replace('/api/content-creator/', '');
+  const body = await request.json();
+  
+  const response = await fetch(`${API_BASE_URL}/api/v1/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  
+  const data = await response.json();
+  return NextResponse.json(data);
 }
-
-export const contentAPI = new ContentAPI()
 ```
 
+#### Files to Create
+1. `lib/api/voteExtractor.ts`
+2. `lib/api/contentCreator.ts`
+3. `app/api/content-creator/[...path]/route.ts`
+4. `app/api/vote-extractor/[...path]/route.ts`
+5. `hooks/useApi.ts`
+
 ---
 
-## 📋 Implementation Phases
+### Phase 4: Content Creator Pages (Week 3)
 
-### Phase 1: Foundation (Week 1)
+#### ✅ Main Content Creator Page
 
-#### 1.1 Project Setup
-- [ ] Create Next.js 14 project with TypeScript
-- [ ] Configure Tailwind CSS with Datadog theme
-- [ ] Install shadcn/ui components
-- [ ] Set up project structure
-- [ ] Configure Docker for Cloud Run
-
-**Commands:**
-```bash
-# Create Next.js project
-npx create-next-app@latest frontend/nextjs-web \
-  --typescript \
-  --tailwind \
-  --app \
-  --src-dir=false \
-  --import-alias="@/*"
-
-# Install dependencies
-cd frontend/nextjs-web
-npm install @radix-ui/react-* class-variance-authority clsx tailwind-merge
-npm install lucide-react  # Icons
-npm install @tanstack/react-query  # Data fetching
-npm install zustand  # State management
-
-# Install shadcn/ui
-npx shadcn-ui@latest init
+```typescript
+// app/content-creator/page.tsx
+export default function ContentCreatorPage() {
+  return (
+    <div className="max-w-7xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-8">Datadog Content Creator</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <ServiceCard
+          title="Blog Post"
+          description="Generate professional blog posts"
+          icon={FileText}
+          href="/content-creator/blog-post"
+        />
+        
+        <ServiceCard
+          title="Video Script"
+          description="Create 60s video scripts"
+          icon={Video}
+          href="/content-creator/video-script"
+        />
+        
+        <ServiceCard
+          title="Social Media"
+          description="Generate platform-specific posts"
+          icon={Share2}
+          href="/content-creator/social-media"
+        />
+      </div>
+    </div>
+  );
+}
 ```
 
-#### 1.2 Datadog Theme Configuration
-- [ ] Create theme configuration file
-- [ ] Configure Tailwind with Datadog colors
-- [ ] Set up custom fonts (Inter, JetBrains Mono)
-- [ ] Create global CSS with theme variables
+#### ✅ Blog Post Generation Page
 
-#### 1.3 Layout Components
-- [ ] Create Sidebar component
-- [ ] Create Header component
-- [ ] Create Footer component
-- [ ] Create root layout with sidebar
+```typescript
+// app/content-creator/blog-post/page.tsx
+'use client';
 
-### Phase 2: Dashboard & Navigation (Week 2)
+import { useState } from 'react';
+import { FileUpload } from '@/components/shared/FileUpload';
+import { contentCreatorApi } from '@/lib/api/contentCreator';
 
-#### 2.1 Dashboard Page
-- [ ] Create dashboard home page
-- [ ] Add service cards/overview
-- [ ] Add recent activity feed
-- [ ] Add quick actions
-
-#### 2.2 Navigation System
-- [ ] Implement sidebar navigation
-- [ ] Add active state indicators
-- [ ] Add breadcrumbs
-- [ ] Add mobile responsive menu
-
-#### 2.3 Service Management
-- [ ] Create "Add New Service" page
-- [ ] Service card template
-- [ ] Service configuration form
-
-### Phase 3: Vote Extractor Integration (Week 3)
-
-#### 3.1 Vote Extractor Pages
-- [ ] Main extraction page (`/votes`)
-- [ ] File upload interface
-- [ ] LLM configuration panel
-- [ ] Results display component
-
-#### 3.2 API Integration
-- [ ] Create Vote Extractor API client
-- [ ] Implement file upload
-- [ ] Implement vote extraction
-- [ ] Handle loading/error states
-
-#### 3.3 Features
-- [ ] Extraction history
-- [ ] Download results (JSON, CSV)
-- [ ] Real-time extraction progress
-
-### Phase 4: Content Creator Integration (Week 4)
-
-#### 4.1 Content Creator Pages
-- [ ] Main content page (`/content`)
-- [ ] Blog post generator (`/content/blog`)
-- [ ] Video script generator (`/content/video`)
-- [ ] Social media generator (`/content/social`)
-
-#### 4.2 API Integration
-- [ ] Create Content Creator API client
-- [ ] Implement file uploads
-- [ ] Implement content generation
-- [ ] Handle multimodal inputs
-
-#### 4.3 Content Editor
-- [ ] Markdown editor for blog posts
-- [ ] Rich text editor
-- [ ] Preview mode
-- [ ] Export options (MD, HTML, PDF)
-
-### Phase 5: Advanced Features (Week 5)
-
-#### 5.1 User Experience
-- [ ] Loading skeletons
-- [ ] Toast notifications
-- [ ] Keyboard shortcuts
-- [ ] Dark mode support
-
-#### 5.2 Performance
-- [ ] Image optimization
-- [ ] Code splitting
-- [ ] Server-side rendering
-- [ ] Caching strategies
-
-#### 5.3 Error Handling
-- [ ] Global error boundary
-- [ ] API error handling
-- [ ] Retry logic
-- [ ] Fallback UI
-
-### Phase 6: Testing & Quality (Week 6)
-
-#### 6.1 Testing
-- [ ] Unit tests (Vitest)
-- [ ] Component tests (React Testing Library)
-- [ ] E2E tests (Playwright)
-- [ ] API integration tests
-
-#### 6.2 Code Quality
-- [ ] ESLint configuration
-- [ ] Prettier setup
-- [ ] Type checking (TypeScript strict mode)
-- [ ] Pre-commit hooks
-
-### Phase 7: Deployment (Week 7)
-
-#### 7.1 Docker Configuration
-- [ ] Create Dockerfile for Next.js
-- [ ] Multi-stage build optimization
-- [ ] Environment variable management
-
-#### 7.2 Cloud Run Deployment
-- [ ] Deploy to Cloud Run
-- [ ] Configure custom domain
-- [ ] Set up HTTPS
-- [ ] Configure CORS
-
-#### 7.3 CI/CD
-- [ ] GitHub Actions workflow
-- [ ] Automated testing
-- [ ] Automated deployment
-- [ ] Rollback strategy
-
----
-
-## 🔧 Tech Stack
-
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| **Framework** | Next.js 14 | React framework with SSR |
-| **Language** | TypeScript | Type safety |
-| **Styling** | Tailwind CSS | Utility-first CSS |
-| **Components** | shadcn/ui | Accessible UI components |
-| **Icons** | Lucide React | Modern icon library |
-| **State** | Zustand | Lightweight state management |
-| **Data Fetching** | TanStack Query | Server state management |
-| **Forms** | React Hook Form | Form handling |
-| **Validation** | Zod | Schema validation |
-| **Testing** | Vitest + Playwright | Unit & E2E testing |
-| **Deployment** | Docker + Cloud Run | Containerized deployment |
-
----
-
-## 🌐 Environment Variables
-
-```bash
-# .env.local (development)
-NEXT_PUBLIC_VOTE_API_URL=http://localhost:8000
-NEXT_PUBLIC_CONTENT_API_URL=http://localhost:8002
-NEXT_PUBLIC_APP_ENV=development
-
-# .env.production
-NEXT_PUBLIC_VOTE_API_URL=https://vote-extractor-xxx.run.app
-NEXT_PUBLIC_CONTENT_API_URL=https://content-creator-xxx.run.app
-NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_DATADOG_RUM_APP_ID=xxx
-NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN=xxx
+export default function BlogPostPage() {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [generatedPost, setGeneratedPost] = useState(null);
+  const [loading, setLoading] = useState(false);
+  
+  const handleGenerate = async () => {
+    setLoading(true);
+    try {
+      const result = await contentCreatorApi.generateBlogPost({
+        title,
+        description,
+        style: 'professional',
+        target_audience: 'DevOps engineers',
+      });
+      setGeneratedPost(result);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="max-w-4xl mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-6">Generate Blog Post</h1>
+      
+      <div className="space-y-6">
+        <Input
+          label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter blog post title"
+        />
+        
+        <Textarea
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe what you want to write about..."
+          rows={6}
+        />
+        
+        <FileUpload
+          accept="video/*,image/*"
+          onUpload={(files) => console.log('Uploaded:', files)}
+        />
+        
+        <Button
+          onClick={handleGenerate}
+          loading={loading}
+          className="w-full"
+        >
+          Generate Blog Post
+        </Button>
+        
+        {generatedPost && (
+          <Card className="mt-8">
+            <MarkdownPreview content={generatedPost.content} />
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
 ```
 
+#### Files to Create
+1. `app/content-creator/page.tsx`
+2. `app/content-creator/blog-post/page.tsx`
+3. `app/content-creator/video-script/page.tsx`
+4. `app/content-creator/social-media/page.tsx`
+5. `components/services/ContentCreator/BlogPostForm.tsx`
+
 ---
 
-## 📦 Docker Configuration
+### Phase 5: Dashboard & Analytics (Week 4)
+
+#### ✅ Dashboard
+
+```typescript
+// app/page.tsx
+export default function DashboardPage() {
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-8">GenAI Platform Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatsCard
+          title="Total Generations"
+          value="1,234"
+          icon={FileText}
+          trend="+12%"
+        />
+        
+        <StatsCard
+          title="Blog Posts"
+          value="456"
+          icon={FileText}
+          trend="+8%"
+        />
+        
+        <StatsCard
+          title="Video Scripts"
+          value="789"
+          icon={Video}
+          trend="+15%"
+        />
+        
+        <StatsCard
+          title="Success Rate"
+          value="98.5%"
+          icon={CheckCircle}
+          trend="+2%"
+        />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentGenerations />
+        <PopularServices />
+      </div>
+    </div>
+  );
+}
+```
+
+#### Files to Create
+1. `app/page.tsx` (Dashboard)
+2. `components/dashboard/StatsCard.tsx`
+3. `components/dashboard/RecentGenerations.tsx`
+4. `components/dashboard/PopularServices.tsx`
+
+---
+
+### Phase 6: Deployment & CI/CD (Week 4)
+
+#### ✅ Docker Configuration
 
 ```dockerfile
-# Dockerfile
+# Dockerfile.cloudrun
 FROM node:20-alpine AS base
 
-# Install dependencies
+# Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Build application
+# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Build Next.js
 RUN npm run build
 
 # Production image
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy built application
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
@@ -572,124 +596,301 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
 ```
 
+#### ✅ GitHub Actions
+
+```yaml
+# .github/workflows/nextjs-frontend.yml
+name: Next.js Frontend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/nextjs/**'
+  pull_request:
+    paths:
+      - 'frontend/nextjs/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/nextjs/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend/nextjs
+        run: npm ci
+      
+      - name: Lint
+        working-directory: frontend/nextjs
+        run: npm run lint
+      
+      - name: Build
+        working-directory: frontend/nextjs
+        run: npm run build
+      
+      - name: Deploy to Cloud Run
+        if: github.ref == 'refs/heads/main'
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: nextjs-frontend
+          region: us-central1
+          source: ./frontend/nextjs
+```
+
+#### Files to Create
+1. `Dockerfile`
+2. `Dockerfile.cloudrun`
+3. `.github/workflows/nextjs-frontend.yml`
+4. `next.config.js` (API rewrites)
+5. `.env.example`
+
 ---
 
-## 🚀 Getting Started
+## 🎨 UI/UX Features
+
+### Sidebar Navigation
+- **Collapsible**: Can collapse to icons only
+- **Active state**: Highlights current service
+- **Keyboard shortcuts**: Quick navigation
+- **Search**: Find services quickly
+
+### File Upload
+- **Drag and drop**: Easy file uploads
+- **Multi-file**: Upload multiple files
+- **Progress**: Real-time upload progress
+- **Preview**: Show thumbnails for images/videos
+
+### Content Generation
+- **Real-time status**: Show generation progress
+- **Live preview**: See content as it generates
+- **Edit mode**: Edit generated content
+- **Export options**: Download in multiple formats
+
+### Responsive Design
+- **Mobile**: Touch-friendly interface
+- **Tablet**: Optimized for iPad
+- **Desktop**: Full features with sidebar
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# .env.local
+NEXT_PUBLIC_APP_NAME="Datadog GenAI Platform"
+NEXT_PUBLIC_APP_VERSION="1.0.0"
+
+# API URLs (Cloud Run)
+NEXT_PUBLIC_VOTE_EXTRACTOR_API=https://vote-extractor-xxx.run.app
+NEXT_PUBLIC_CONTENT_CREATOR_API=https://content-creator-xxx.run.app
+
+# Server-side API URLs (internal)
+VOTE_EXTRACTOR_API_URL=http://vote-extractor:8000
+CONTENT_CREATOR_API_URL=http://content-creator:8002
+
+# Datadog RUM
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token
+NEXT_PUBLIC_DD_SITE=datadoghq.com
+NEXT_PUBLIC_DD_SERVICE=nextjs-frontend
+NEXT_PUBLIC_DD_ENV=production
+```
+
+### Next.js Config
+
+```javascript
+// next.config.js
+module.exports = {
+  output: 'standalone',
+  
+  // API Proxy
+  async rewrites() {
+    return [
+      {
+        source: '/api/vote-extractor/:path*',
+        destination: `${process.env.VOTE_EXTRACTOR_API_URL}/api/:path*`,
+      },
+      {
+        source: '/api/content-creator/:path*',
+        destination: `${process.env.CONTENT_CREATOR_API_URL}/api/v1/:path*`,
+      },
+    ];
+  },
+  
+  // Image optimization
+  images: {
+    domains: ['storage.googleapis.com'],
+  },
+};
+```
+
+---
+
+## 📊 Technology Stack
+
+| Category | Technology | Purpose |
+|----------|-----------|---------|
+| **Framework** | Next.js 14 | React framework with SSR |
+| **Language** | TypeScript | Type safety |
+| **Styling** | Tailwind CSS | Utility-first CSS |
+| **UI Components** | shadcn/ui | Accessible components |
+| **Icons** | Lucide React | Modern icons |
+| **HTTP Client** | Axios | API requests |
+| **State Management** | SWR | Data fetching |
+| **Forms** | React Hook Form | Form handling |
+| **Validation** | Zod | Schema validation |
+| **Toast Notifications** | react-hot-toast | User feedback |
+| **Code Highlighting** | Prism.js | Syntax highlighting |
+| **Markdown** | react-markdown | Markdown preview |
+
+---
+
+## 🚀 Deployment
 
 ### Local Development
 
 ```bash
-# Navigate to Next.js app
-cd frontend/nextjs-web
-
 # Install dependencies
+cd frontend/nextjs
 npm install
 
-# Start development server
+# Run development server
 npm run dev
 
 # Open http://localhost:3000
 ```
 
-### Build for Production
+### Docker Compose
 
-```bash
-# Build
-npm run build
-
-# Start production server
-npm start
+```yaml
+# docker-compose.yml
+services:
+  nextjs-frontend:
+    build:
+      context: ./frontend/nextjs
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VOTE_EXTRACTOR_API_URL=http://fastapi-backend:8000
+      - CONTENT_CREATOR_API_URL=http://content-creator:8002
+    depends_on:
+      - fastapi-backend
+      - content-creator
 ```
 
-### Docker Build
+### Cloud Run
 
 ```bash
-# Build image
-docker build -t nextjs-frontend .
-
-# Run container
-docker run -p 3000:3000 nextjs-frontend
+# Deploy to Cloud Run
+gcloud run deploy nextjs-frontend \
+  --source ./frontend/nextjs \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --set-env-vars VOTE_EXTRACTOR_API_URL=https://vote-extractor-xxx.run.app,CONTENT_CREATOR_API_URL=https://content-creator-xxx.run.app
 ```
 
 ---
 
-## 📊 Success Metrics
+## 📈 Future Enhancements
 
-| Metric | Target | Notes |
-|--------|--------|-------|
-| **Page Load Time** | < 2s | First contentful paint |
-| **Time to Interactive** | < 3s | Fully interactive |
-| **Lighthouse Score** | > 90 | Performance, accessibility |
-| **Core Web Vitals** | All green | LCP, FID, CLS |
-| **Bundle Size** | < 500KB | Initial JS bundle |
+### Phase 7: Advanced Features
+- [ ] User authentication (Firebase Auth)
+- [ ] Usage analytics dashboard
+- [ ] Generation history
+- [ ] Favorites/bookmarks
+- [ ] Team collaboration
+- [ ] API key management
 
----
+### Phase 8: Performance
+- [ ] Edge caching with Vercel/Cloudflare
+- [ ] Image optimization
+- [ ] Code splitting
+- [ ] Lazy loading
 
-## 🎯 Key Features
-
-### Sidebar Navigation
-- ✅ Collapsible/expandable
-- ✅ Active state indicators
-- ✅ Icons + descriptions
-- ✅ Mobile responsive
-- ✅ "Add New Service" button
-
-### Dashboard
-- ✅ Service overview cards
-- ✅ Recent activity
-- ✅ Quick actions
-- ✅ Usage statistics
-
-### Responsive Design
-- ✅ Desktop (1920px+)
-- ✅ Laptop (1280px)
-- ✅ Tablet (768px)
-- ✅ Mobile (375px)
-
-### Accessibility
-- ✅ WCAG 2.1 AA compliant
-- ✅ Keyboard navigation
-- ✅ Screen reader support
-- ✅ Focus indicators
+### Phase 9: Additional Services
+- [ ] Document analyzer
+- [ ] Image generator
+- [ ] Code assistant
+- [ ] Translation service
 
 ---
 
-## 🔗 Integration Points
+## 📝 Implementation Checklist
 
-### Vote Extractor API
-- `POST /api/v1/extract/votes` - Extract votes from PDFs
-- `GET /api/v1/models` - List available models
-- `GET /health` - Health check
+### Week 1: Setup
+- [ ] Initialize Next.js project
+- [ ] Configure Tailwind with Datadog theme
+- [ ] Set up shadcn/ui components
+- [ ] Create sidebar navigation
+- [ ] Implement basic layout
 
-### Content Creator API
-- `POST /api/v1/upload/file` - Upload media files
-- `POST /api/v1/generate/blog-post` - Generate blog post
-- `POST /api/v1/generate/video-script` - Generate video script
-- `POST /api/v1/generate/social-media` - Generate social posts
+### Week 2: API Integration
+- [ ] Create API client functions
+- [ ] Set up API routes (proxy)
+- [ ] Implement file upload
+- [ ] Add error handling
+
+### Week 3: Content Creator UI
+- [ ] Blog post generation page
+- [ ] Video script generation page
+- [ ] Social media posts page
+- [ ] Content preview components
+
+### Week 4: Dashboard & Deployment
+- [ ] Build dashboard
+- [ ] Add analytics
+- [ ] Configure Docker
+- [ ] Set up CI/CD
+- [ ] Deploy to Cloud Run
 
 ---
 
-## 📝 Next Steps
+## 🎯 Success Metrics
 
-1. ✅ Update implementation plan
-2. ⏳ Create Next.js project structure
-3. ⏳ Implement Datadog theme
-4. ⏳ Build sidebar navigation
-5. ⏳ Create dashboard page
-6. ⏳ Integrate with Vote Extractor API
-7. ⏳ Integrate with Content Creator API
-8. ⏳ Deploy to Cloud Run
+| Metric | Target |
+|--------|--------|
+| **Page Load Time** | < 2s |
+| **Time to Interactive** | < 3s |
+| **Lighthouse Score** | > 90 |
+| **Mobile Responsive** | 100% |
+| **API Response Time** | < 500ms |
+| **User Satisfaction** | > 4.5/5 |
 
 ---
 
-**Status**: 📋 **Plan Complete - Ready for Implementation**
+## 📚 Resources
 
-**Timeline**: 7 weeks (can be accelerated)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Datadog Design System](https://www.datadoghq.com/design-system/)
+- [Lucide Icons](https://lucide.dev/)
 
-**Priority**: Phase 1-3 (Foundation + Vote Extractor) = MVP
+---
+
+**Status**: 📝 **Plan Complete - Ready for Implementation**
+
+**Timeline**: 4 weeks
+
+**Team**: 1-2 frontend developers
+
+**Dependencies**: Backend APIs (Vote Extractor, Content Creator)
 
