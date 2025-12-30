@@ -100,7 +100,9 @@ def analyze_media_file(file_path: str) -> dict:
             if file_ext in [".txt", ".md"]:
                 with open(file_path_obj, "r", encoding="utf-8") as f:
                     content = f.read()
-                    analysis = f"Document contains {len(content)} characters. Preview: {content[:500]}..."
+                    analysis = (
+                        f"Document contains {len(content)} characters. Preview: {content[:500]}..."
+                    )
             else:
                 analysis = "PDF file detected. In production, this would extract text content."
 
@@ -129,4 +131,3 @@ def analyze_media_file(file_path: str) -> dict:
             "status": "error",
             "message": f"Failed to analyze file: {str(e)}",
         }
-

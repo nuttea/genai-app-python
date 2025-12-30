@@ -11,9 +11,7 @@ logger = logging.getLogger(__name__)
 class MediaValidator:
     """Validator for media files."""
 
-    def validate_file(
-        self, file_path: str, content_type: str, file_size: int
-    ) -> Tuple[bool, str]:
+    def validate_file(self, file_path: str, content_type: str, file_size: int) -> Tuple[bool, str]:
         """
         Validate a media file.
 

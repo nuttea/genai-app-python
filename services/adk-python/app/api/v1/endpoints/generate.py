@@ -71,28 +71,28 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
         # Generate unique post ID
         import uuid
         from datetime import datetime
-        
+
         post_id = f"post_{uuid.uuid4().hex[:12]}"
-        
+
         # Calculate word count and reading time
         word_count = len(content.split())
         reading_time = max(1, word_count // 200)  # ~200 words per minute
-        
+
         # Convert markdown to HTML (simple conversion)
         html_content = content.replace("\n## ", "\n<h2>").replace("</h2>", "</h2>\n")
         html_content = html_content.replace("\n# ", "\n<h1>").replace("</h1>", "</h1>\n")
         html_content = html_content.replace("\n\n", "</p>\n<p>")
         html_content = f"<div>{html_content}</div>"
-        
+
         # Build SEO metadata
         from app.models.blog_post import SEOMetadata, BlogPost
-        
+
         seo_metadata = SEOMetadata(
             title_tag=title[:60],
             meta_description=summary[:160] if summary else title[:160],
             keywords=tags[:5],  # Top 5 keywords
         )
-        
+
         # Build blog post object
         blog_post = BlogPost(
             title=title,
@@ -106,7 +106,7 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
             generated_from="text" if not request.media_files else "multimodal",
             product_mentioned="Datadog",
         )
-        
+
         # Build response
         return BlogPostResponse(
             post_id=post_id,

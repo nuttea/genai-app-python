@@ -28,4 +28,3 @@ blog_planner_sub_agent = Agent(
     Generate the outline in a clear, structured Markdown format.
     """,
 )
-

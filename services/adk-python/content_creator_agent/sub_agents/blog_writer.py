@@ -33,4 +33,3 @@ blog_writer_sub_agent = Agent(
     - A strong conclusion with next steps or call-to-action
     """,
 )
-

@@ -44,7 +44,7 @@ class GeminiService:
         # Thread pool for running sync Gemini calls
         self._executor = ThreadPoolExecutor(max_workers=4)
         logger.info(f"GeminiService initialized with model: {self.model}")
-    
+
     def _get_client(self):
         """
         Create Gemini client in a thread-safe manner.
@@ -275,19 +275,14 @@ class GeminiService:
                 """Run synchronous Gemini call in thread pool."""
                 client = self._get_client()
                 response = client.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=config
+                    model=self.model, contents=contents, config=config
                 )
                 return response.text
-            
+
             # Execute in thread pool to avoid event loop conflicts
             loop = asyncio.get_running_loop()
-            result = await loop.run_in_executor(
-                self._executor,
-                _sync_generate
-            )
-            
+            result = await loop.run_in_executor(self._executor, _sync_generate)
+
             # Annotate LLMObs span with output
             if llm_span:
                 LLMObs.annotate(
@@ -299,7 +294,7 @@ class GeminiService:
                     },
                 )
                 llm_span.finish()
-            
+
             logger.info(f"Content generation complete: {len(result)} characters")
             return result
 
@@ -309,6 +304,6 @@ class GeminiService:
                 llm_span.set_tag("error", True)
                 llm_span.set_tag("error.message", str(e))
                 llm_span.finish()
-            
+
             logger.error(f"Error generating content: {e}", exc_info=True)
             raise

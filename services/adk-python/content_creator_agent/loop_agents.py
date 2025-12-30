@@ -117,4 +117,3 @@ When the script is validated successfully, present it to the user for approval.
     sub_agents=[video_script_writer_sub_agent],
     tools=[FunctionTool(validate_video_script)],
 )
-

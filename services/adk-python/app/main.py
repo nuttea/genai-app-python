@@ -63,13 +63,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Google Cloud Project: {settings.google_cloud_project}")
     logger.info(f"Artifact Service: {type(artifact_service).__name__}")
-    logger.info("Note: ADK agents available in /agents directory for future `adk run`/`adk web` usage")
+    logger.info(
+        "Note: ADK agents available in /agents directory for future `adk run`/`adk web` usage"
+    )
 
     yield
 
     # Cleanup
     logger.info(f"Shutting down {settings.service_name}")
-    
+
     # Flush LLMObs data before shutdown (important for serverless)
     if settings.dd_llmobs_enabled and settings.dd_api_key:
         try:
@@ -87,7 +89,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Datadog Content Creator",
     description="ADK-compatible service for creating blog posts and video scripts about Datadog products. "
-                "Custom REST API with ADK agent support.",
+    "Custom REST API with ADK agent support.",
     version=settings.dd_version,
     lifespan=lifespan,
 )
@@ -128,7 +130,7 @@ async def root():
 async def info():
     """
     Service information endpoint.
-    
+
     Shows capabilities and how to use ADK agents.
     """
     return {
@@ -184,7 +186,7 @@ async def info():
 async def health_check():
     """
     Health check endpoint.
-    
+
     Used by Cloud Run, GKE, and load balancers to verify service health.
     """
     return {

@@ -29,4 +29,3 @@ blog_editor_sub_agent = Agent(
     Return the complete revised blog post in Markdown format.
     """,
 )
-

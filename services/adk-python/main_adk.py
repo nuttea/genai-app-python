@@ -46,7 +46,9 @@ BASE_DIR = Path(__file__).parent
 AGENTS_DIR = str(BASE_DIR)  # Parent directory containing agents/
 # For session storage, use SQLite URI format
 SESSION_SERVICE_URI = os.getenv("SESSION_SERVICE_URI", f"sqlite:///{BASE_DIR}/sessions.db")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8501").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8501").split(
+    ","
+)
 SERVE_WEB_INTERFACE = os.getenv("SERVE_WEB_INTERFACE", "true").lower() == "true"
 
 logger.info(f"ADK Agents directory: {AGENTS_DIR}")
@@ -69,15 +71,17 @@ logger.info("ADK Python Service started with get_fast_api_app()")
 # Verify agent loading
 try:
     from content_creator_agent.agent import root_agent
+
     logger.info(f"✅ Agent loaded: {root_agent.name} with {len(root_agent.tools)} tools")
 except Exception as e:
     logger.error(f"❌ Failed to load agent: {e}")
+
 
 @app.get("/health")
 async def health_check():
     """
     Health check endpoint.
-    
+
     Used by Cloud Run, GKE, and load balancers to verify service health.
     """
     return {
@@ -87,12 +91,13 @@ async def health_check():
         "adk": "enabled",
     }
 
+
 # Register shutdown handler for LLMObs flush
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown."""
     logger.info("Shutting down ADK Python Service")
-    
+
     if DD_API_KEY:
         try:
             LLMObs.flush()
@@ -111,4 +116,3 @@ if __name__ == "__main__":
     config.worker_class = "asyncio"
 
     asyncio.run(serve(app, config))
-

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class InMemoryArtifactService:
     """
     Simple in-memory artifact storage service.
-    
+
     Stores artifacts (files as genai_types.Part) in memory for the session.
     Suitable for development and testing.
     """
@@ -25,9 +25,7 @@ class InMemoryArtifactService:
         self._artifacts: Dict[str, genai_types.Part] = {}
         logger.info("Initialized InMemoryArtifactService")
 
-    def save(
-        self, filename: str, artifact: genai_types.Part, namespace: str = "session"
-    ) -> None:
+    def save(self, filename: str, artifact: genai_types.Part, namespace: str = "session") -> None:
         """
         Save an artifact.
 
@@ -89,11 +87,7 @@ class InMemoryArtifactService:
             List of artifact filenames
         """
         prefix = f"{namespace}:"
-        return [
-            key.replace(prefix, "")
-            for key in self._artifacts.keys()
-            if key.startswith(prefix)
-        ]
+        return [key.replace(prefix, "") for key in self._artifacts.keys() if key.startswith(prefix)]
 
     def clear(self, namespace: Optional[str] = None) -> None:
         """
@@ -117,4 +111,3 @@ class InMemoryArtifactService:
     def __len__(self) -> int:
         """Return the number of stored artifacts."""
         return len(self._artifacts)
-

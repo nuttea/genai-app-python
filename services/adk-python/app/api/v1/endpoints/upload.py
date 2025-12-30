@@ -41,7 +41,7 @@ SUPPORTED_DOCUMENT_TYPES = {
 @router.post("/single", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_single_file(
     request: Request,
-    file: UploadFile = File(..., description="File to upload (video, image, or document)")
+    file: UploadFile = File(..., description="File to upload (video, image, or document)"),
 ) -> UploadResponse:
     """
     Upload a single file for content creation.
@@ -62,7 +62,7 @@ async def upload_single_file(
         # Validate file type (with fallback detection from filename)
         content_type = file.content_type or ""
         filename = file.filename or ""
-        
+
         # Try to determine type from content_type first, then from filename extension
         file_type = _determine_file_type(content_type, filename)
 
@@ -111,9 +111,7 @@ async def upload_single_file(
                     f"Extracted text from {file.filename}: {len(extracted_text)} characters"
                 )
             except UnicodeDecodeError:
-                logger.warning(
-                    f"Failed to decode {file.filename} as UTF-8, will store as artifact"
-                )
+                logger.warning(f"Failed to decode {file.filename} as UTF-8, will store as artifact")
                 should_extract_text = False
 
         if not should_extract_text:
@@ -241,7 +239,7 @@ def _determine_file_type(content_type: str, filename: str = "") -> Optional[str]
                 return "video"
         else:
             return "document"
-    
+
     # Fallback: try filename extension
     if filename:
         ext = Path(filename).suffix.lower()
@@ -251,7 +249,7 @@ def _determine_file_type(content_type: str, filename: str = "") -> Optional[str]
             return "image"
         elif ext in {".mp4", ".mov", ".avi", ".webm"}:
             return "video"
-    
+
     return None
 
 
