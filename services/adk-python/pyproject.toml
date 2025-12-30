@@ -96,6 +96,13 @@ ignore = [
     "TRY400",    # Allow logging.error instead of logging.exception
     "RUF010",    # Allow implicit str() conversion
     "COM812",    # Allow missing trailing comma
+    "C901",      # Allow complex functions (complexity > 10)
+    "B008",      # Allow function calls in default arguments
+    "N802",      # Allow non-lowercase function names
+    "E501",      # Allow line too long (handled by Black)
+    "W291",      # Allow trailing whitespace (handled by Black)
+    "W293",      # Allow blank lines with whitespace (handled by Black)
+    "B007",      # Allow unused loop control variable
 ]
 
 [tool.ruff.per-file-ignores]
