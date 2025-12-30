@@ -26,7 +26,6 @@ export function DatadogInit() {
       trackResources: true,
       trackLongTasks: true,
       trackUserInteractions: true,
-      trackBfcacheViews: true,
       defaultPrivacyLevel: 'allow',
       forwardErrorsToLogs: true,
       allowedTracingUrls: [
