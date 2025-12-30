@@ -19,8 +19,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 
 # Install dependencies into system Python using uv pip
-# uv pip install installs into the current Python environment (system Python in this case)
-RUN uv pip install .
+# --system flag installs into system Python instead of a virtual environment
+RUN uv pip install --system .
 
 # Production stage
 FROM python:3.11-slim
