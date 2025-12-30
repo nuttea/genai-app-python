@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     cloud_storage_bucket: Optional[str] = Field(
         default=None, description="GCS bucket for file uploads"
     )
+    gcs_bucket_name: Optional[str] = Field(
+        default=None, description="GCS bucket name (alias for cloud_storage_bucket)"
+    )
     upload_max_size_mb: int = Field(default=500, description="Max upload size in MB")
 
     # LLM Configuration

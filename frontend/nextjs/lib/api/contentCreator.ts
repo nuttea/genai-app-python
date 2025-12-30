@@ -5,12 +5,24 @@ import { contentCreatorClient } from './client';
  */
 
 export interface FileUploadResponse {
-  file_id: string;
-  filename: string;
-  size: number;
-  content_type: string;
-  gcs_uri?: string;
-  uploaded_at: string;
+  success: boolean;
+  message: string;
+  file: {
+    filename: string;
+    content_type: string;
+    size_bytes: number;
+    gcs_uri: string | null;
+    file_type: string;
+    extracted_text?: string | null;
+  };
+  files?: Array<{
+    filename: string;
+    content_type: string;
+    size_bytes: number;
+    gcs_uri: string | null;
+    file_type: string;
+    extracted_text?: string | null;
+  }> | null;
 }
 
 export interface BlogPostRequest {
@@ -86,6 +98,8 @@ export interface SocialMediaResponse {
 export const contentCreatorApi = {
   /**
    * Upload a single file
+   * - Text/Markdown files: Returns extracted text
+   * - Images/Videos: Returns artifact reference
    */
   uploadFile: async (file: File): Promise<FileUploadResponse> => {
     const formData = new FormData();

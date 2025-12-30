@@ -29,12 +29,18 @@ MAX_DOCUMENT_SIZE = 50 * 1024 * 1024  # 50MB
 
 # Supported file types
 SUPPORTED_VIDEO_TYPES = {"video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"}
-SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
-SUPPORTED_DOCUMENT_TYPES = {"text/plain", "text/markdown", "application/pdf"}
+SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp", "image/jpg"}
+SUPPORTED_DOCUMENT_TYPES = {
+    "text/plain",
+    "text/markdown",
+    "text/x-markdown",
+    "application/pdf",
+    "application/octet-stream",  # Fallback for unknown types
+}
 
 
-@router.post("/file", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
-async def upload_file(
+@router.post("/single", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_single_file(
     file: UploadFile = File(..., description="File to upload (video, image, or document)")
 ) -> UploadResponse:
     """
@@ -45,18 +51,25 @@ async def upload_file(
     - Images: PNG, JPG, GIF, WebP (max 20MB)
     - Documents: TXT, MD, PDF (max 50MB)
 
+    Smart handling:
+    - Text/Markdown files: Content extracted and returned as text
+    - Images/Videos: Stored as ADK Artifacts for Gemini multimodal processing
+
     Returns:
-    - File info with GCS URI and metadata
+    - File info with content or artifact reference
     """
     try:
-        # Validate file type
+        # Validate file type (with fallback detection from filename)
         content_type = file.content_type or ""
-        file_type = _determine_file_type(content_type)
+        filename = file.filename or ""
+        
+        # Try to determine type from content_type first, then from filename extension
+        file_type = _determine_file_type(content_type, filename)
 
         if not file_type:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported file type: {content_type}. "
+                detail=f"Unsupported file type: {content_type} ({filename}). "
                 f"Supported: video (MP4, MOV, AVI, WebM), "
                 f"images (PNG, JPG, GIF, WebP), "
                 f"documents (TXT, MD, PDF)",
@@ -75,27 +88,48 @@ async def upload_file(
             f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{file_extension}"
         )
 
-        # Upload to Cloud Storage
-        storage_service = FileStorageService()
-        gcs_uri = await storage_service.upload_file(
-            file_content=content,
-            filename=unique_filename,
-            content_type=content_type,
-            metadata={
-                "original_filename": file.filename,
-                "file_type": file_type,
-                "uploaded_at": datetime.utcnow().isoformat(),
-            },
-        )
+        # Smart handling based on file type
+        gcs_uri = None
+        extracted_text = None
+        local_path = None
 
-        # Validate media file (optional checks)
-        validator = MediaValidator()
-        is_valid, validation_message = validator.validate_file(
-            file_path=unique_filename, content_type=content_type, file_size=file_size
-        )
+        # Determine if we should extract text or store as artifact
+        ext = Path(filename).suffix.lower()
+        should_extract_text = ext in {".txt", ".md", ".markdown"} or content_type in {
+            "text/plain",
+            "text/markdown",
+            "text/x-markdown",
+        }
 
-        if not is_valid:
-            logger.warning(f"File validation warning: {validation_message}")
+        if should_extract_text:
+            # For text/markdown files, extract content directly (no GCS needed)
+            try:
+                extracted_text = content.decode("utf-8")
+                logger.info(
+                    f"Extracted text from {file.filename}: {len(extracted_text)} characters"
+                )
+            except UnicodeDecodeError:
+                logger.warning(
+                    f"Failed to decode {file.filename} as UTF-8, will store as artifact"
+                )
+                should_extract_text = False
+
+        if not should_extract_text:
+            # For images, videos, PDFs: Store locally for ADK Artifacts
+            # (Gemini will process these as multimodal inputs)
+            local_dir = Path("/app/uploads")
+            local_dir.mkdir(parents=True, exist_ok=True)
+            local_path = str(local_dir / unique_filename)
+
+            # Write to local file
+            with open(local_path, "wb") as f:
+                f.write(content)
+
+            # For artifact reference, use local path
+            gcs_uri = f"file://{local_path}"
+            logger.info(
+                f"File stored locally for artifact processing: {file.filename} -> {local_path}"
+            )
 
         # Build response
         file_info = FileInfo(
@@ -104,9 +138,13 @@ async def upload_file(
             size_bytes=file_size,
             gcs_uri=gcs_uri,
             file_type=file_type,
+            extracted_text=extracted_text,  # Will be None for non-text files
         )
 
-        logger.info(f"File uploaded successfully: {file.filename} -> {gcs_uri} ({file_size} bytes)")
+        logger.info(
+            f"File processed successfully: {file.filename} "
+            f"({'text extracted' if extracted_text else 'stored as artifact'}, {file_size} bytes)"
+        )
 
         return UploadResponse(
             success=True,
@@ -152,7 +190,7 @@ async def upload_batch(
     for file in files:
         try:
             # Upload each file
-            result = await upload_file(file)
+            result = await upload_single_file(file)
             uploaded_files.append(result.file)
         except Exception as e:
             logger.error(f"Error uploading file {file.filename}: {e}")
@@ -176,14 +214,38 @@ async def upload_batch(
     )
 
 
-def _determine_file_type(content_type: str) -> Optional[str]:
-    """Determine file type category from content type."""
+def _determine_file_type(content_type: str, filename: str = "") -> Optional[str]:
+    """Determine file type category from content type or filename extension."""
+    # Try content type first
     if content_type in SUPPORTED_VIDEO_TYPES:
         return "video"
     elif content_type in SUPPORTED_IMAGE_TYPES:
         return "image"
     elif content_type in SUPPORTED_DOCUMENT_TYPES:
-        return "document"
+        # For octet-stream, try to determine from filename
+        if content_type == "application/octet-stream" and filename:
+            ext = Path(filename).suffix.lower()
+            if ext in {".txt", ".md", ".markdown"}:
+                return "document"
+            elif ext in {".pdf"}:
+                return "document"
+            elif ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+                return "image"
+            elif ext in {".mp4", ".mov", ".avi", ".webm"}:
+                return "video"
+        else:
+            return "document"
+    
+    # Fallback: try filename extension
+    if filename:
+        ext = Path(filename).suffix.lower()
+        if ext in {".txt", ".md", ".markdown", ".pdf"}:
+            return "document"
+        elif ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+            return "image"
+        elif ext in {".mp4", ".mov", ".avi", ".webm"}:
+            return "video"
+    
     return None
 
 
