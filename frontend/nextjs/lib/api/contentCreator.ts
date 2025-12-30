@@ -3,8 +3,7 @@ import { contentCreatorClient } from './client';
 // API Base URL for SSE streaming (Next.js will replace at build time)
 const getApiBaseUrl = (): string => {
   if (typeof window === 'undefined') return 'http://localhost:8002';
-  // @ts-expect-error - Next.js replaces process.env.NEXT_PUBLIC_* at build time
-  return process.env.NEXT_PUBLIC_CONTENT_CREATOR_API_URL || 'http://localhost:8002';
+  return (process.env.NEXT_PUBLIC_CONTENT_CREATOR_API_URL as string) || 'http://localhost:8002';
 };
 const API_BASE_URL = getApiBaseUrl();
 
@@ -15,6 +14,7 @@ const API_BASE_URL = getApiBaseUrl();
 export interface FileUploadResponse {
   success: boolean;
   message: string;
+  file_id?: string;
   file: {
     filename: string;
     content_type: string;
@@ -59,6 +59,7 @@ export interface VideoScriptRequest {
   title: string;
   description: string;
   duration?: number;
+  platform?: string;
   file_ids?: string[];
   generation_config?: {
     temperature?: number;
@@ -70,18 +71,22 @@ export interface VideoScriptRequest {
 export interface VideoScriptResponse {
   title: string;
   duration: number;
+  platform?: string;
+  estimated_duration?: number;
   script: string;
   scenes: Array<{
     time: string;
     description: string;
     dialogue?: string;
   }>;
+  hashtags?: string[];
   generated_at: string;
 }
 
 export interface SocialMediaRequest {
   content: string;
   platforms: string[];
+  topic?: string;
   file_ids?: string[];
   generation_config?: {
     temperature?: number;

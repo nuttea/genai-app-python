@@ -93,14 +93,14 @@ export default function VoteExtractorPage() {
     }
 
     try {
-      const result = await execute(() => voteExtractorApi.extractVotes(files));
+      const result = await execute(voteExtractorApi.extractVotes, files);
       setExtractionResult(result);
       setSelectedReportIdx(0);
       setActiveTab('summary');
       
-      if (result.success) {
+      if (result && result.success) {
         toast.success(`Successfully extracted ${result.reports_extracted} report(s)`);
-      } else {
+      } else if (result) {
         toast.error('Extraction completed with errors');
       }
     } catch (error) {
