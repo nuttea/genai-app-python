@@ -58,6 +58,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 EXPOSE 8002
 
 # Run with hypercorn (supports HTTP/2 for Cloud Run)
-# Using h2c (HTTP/2 Cleartext) for Cloud Run's HTTP/2 support
-CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8080", "--worker-class", "asyncio"]
+# --http2-clear enables h2c (HTTP/2 Cleartext) for Cloud Run's HTTP/2 support
+CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8080", "--worker-class", "asyncio", "--http2-clear"]
 

@@ -32,6 +32,7 @@ ENV PORT=8002
 # Expose port
 EXPOSE 8002
 
-# Run with hypercorn (supports HTTP/2)
-CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8002", "--worker-class", "asyncio"]
+# Run with hypercorn (supports HTTP/2 with h2c)
+# --http2-clear enables HTTP/2 Cleartext (h2c)
+CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8002", "--worker-class", "asyncio", "--http2-clear"]
 
