@@ -112,6 +112,7 @@ ignore = [
     "RUF022",    # Allow unsorted __all__
     "RUF012",    # Allow mutable class attributes
     "RET504",    # Allow unnecessary variable assignment before return
+    "UP045",     # Allow Optional[T] instead of T | None (required for ADK function calling)
     "PLR0911",   # Allow too many return statements
     "PIE810",    # Allow multiple starts/ends arguments
     "EM102",     # Allow exception message from f-string
