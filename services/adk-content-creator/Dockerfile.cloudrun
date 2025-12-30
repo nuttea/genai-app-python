@@ -1,0 +1,65 @@
+# Multi-stage Dockerfile for Cloud Run deployment
+# Includes media processing tools (ffmpeg, opencv)
+
+FROM python:3.11-slim as builder
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml ./
+
+# Install dependencies
+RUN uv sync --system --no-deps
+
+# Production stage
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python environment from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY app/ ./app/
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8002
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8002/health')"
+
+# Expose port
+EXPOSE 8002
+
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+
