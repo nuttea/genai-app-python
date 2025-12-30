@@ -22,7 +22,7 @@ export default function BlogPostPage() {
   const [style, setStyle] = useState('professional');
   const [audience, setAudience] = useState('developers');
   const [files, setFiles] = useState<File[]>([]);
-  const [uploadedFileIds, setUploadedFileIds] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{filename: string; extractedText?: string; gcsUri?: string}>>([]);
   const [generatedPost, setGeneratedPost] = useState<BlogPostResponse | null>(null);
 
   const { loading, error, execute } = useApi<BlogPostResponse, BlogPostRequest>();
@@ -36,9 +36,23 @@ export default function BlogPostPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        const fileIds = results.map((r) => r.file_id);
-        setUploadedFileIds(fileIds);
-        toast.success(`Uploaded ${fileIds.length} file(s) successfully`);
+        
+        // Extract file info from responses
+        const fileInfos = results.map((r) => ({
+          filename: r.file.filename,
+          extractedText: r.file.extracted_text || undefined,
+          gcsUri: r.file.gcs_uri || undefined,
+        }));
+        
+        setUploadedFiles(fileInfos);
+        toast.success(`Uploaded ${fileInfos.length} file(s) successfully`);
+        
+        // Log extracted text for debugging
+        fileInfos.forEach((info) => {
+          if (info.extractedText) {
+            console.log(`Extracted text from ${info.filename}:`, info.extractedText.substring(0, 100));
+          }
+        });
       } catch (err) {
         toast.error('Failed to upload files');
         console.error('Upload error:', err);
@@ -57,12 +71,26 @@ export default function BlogPostPage() {
       return;
     }
 
+    // Combine description with extracted text from uploaded files
+    let fullDescription = description.trim();
+    if (uploadedFiles.length > 0) {
+      const extractedTexts = uploadedFiles
+        .filter((f) => f.extractedText)
+        .map((f) => `\n\n---\nFrom ${f.filename}:\n${f.extractedText}`)
+        .join('\n');
+      
+      if (extractedTexts) {
+        fullDescription += extractedTexts;
+      }
+    }
+
     const request: BlogPostRequest = {
       title: title.trim(),
-      description: description.trim(),
+      description: fullDescription,
       style,
       target_audience: audience,
-      file_ids: uploadedFileIds.length > 0 ? uploadedFileIds : undefined,
+      // For now, we pass artifact URIs as file_ids (will be handled by backend)
+      file_ids: uploadedFiles.filter((f) => f.gcsUri).map((f) => f.gcsUri!) || undefined,
       generation_config: {
         temperature: 0.7,
         max_tokens: 8192,
