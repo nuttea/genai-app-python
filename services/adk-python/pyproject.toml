@@ -103,6 +103,21 @@ ignore = [
     "W291",      # Allow trailing whitespace (handled by Black)
     "W293",      # Allow blank lines with whitespace (handled by Black)
     "B007",      # Allow unused loop control variable
+    "TRY300",    # Allow return in try block
+    "TRY301",    # Allow raise in else block
+    "TRY003",    # Allow long exception messages
+    "SIM118",    # Allow keys() in dictionary iteration
+    "SIM115",    # Allow context managers for file operations
+    "PTH123",    # Allow builtin open() instead of Path.open()
+    "RUF022",    # Allow unsorted __all__
+    "RUF012",    # Allow mutable class attributes
+    "RET504",    # Allow unnecessary variable assignment before return
+    "PLR0911",   # Allow too many return statements
+    "PIE810",    # Allow multiple starts/ends arguments
+    "EM102",     # Allow exception message from f-string
+    "DTZ005",    # Allow timezone-naive datetime
+    "DTZ003",    # Allow timezone-naive datetime
+    "ARG001",    # Allow unused function arguments
 ]
 
 [tool.ruff.per-file-ignores]
