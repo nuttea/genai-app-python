@@ -89,6 +89,7 @@ export interface SocialMediaRequest {
   platforms: string[];
   topic?: string;
   key_message?: string;
+  style?: string;
   file_ids?: string[];
   generation_config?: {
     temperature?: number;
