@@ -18,7 +18,7 @@ function createApiClient(baseURL: string, timeout: number): AxiosInstance {
     (config) => {
       // Add API key for vote extractor if available
       const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      if (apiKey && baseURL.includes('8000')) {
+      if (apiKey && baseURL === API_CONFIG.voteExtractor.baseUrl) {
         config.headers['X-API-Key'] = apiKey;
       }
       return config;

@@ -98,6 +98,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Get API Key from Secret Manager
+        id: get-api-key
+        run: |
+          API_KEY=$(gcloud secrets versions access latest --secret="api-key" 2>/dev/null || echo "")
+          echo "api_key=$API_KEY" >> $GITHUB_OUTPUT
+          echo "API Key retrieved (length: ${#API_KEY})"
+
       - name: Build and Push to GCR
         uses: docker/build-push-action@v5
         with:
@@ -113,6 +120,7 @@ jobs:
             DD_GIT_COMMIT_SHA=${{ github.sha }}
             NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }}
             NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
+            NEXT_PUBLIC_API_KEY=${{ steps.get-api-key.outputs.api_key }}
 
       - name: Deploy to Cloud Run
         run: |
@@ -144,8 +152,7 @@ jobs:
             --set-env-vars NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }} \
             --set-env-vars NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }} \
             --set-env-vars NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }} \
-            --set-env-vars NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }} \
-            --set-secrets NEXT_PUBLIC_API_KEY=api-key:latest
+            --set-env-vars NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
 
       - name: Get Service URL
         id: get-url
