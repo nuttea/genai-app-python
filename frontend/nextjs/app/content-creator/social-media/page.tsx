@@ -40,7 +40,7 @@ export default function SocialMediaPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        const fileIds = results.map((r) => r.file_id);
+        const fileIds = results.map((r) => r.file_id).filter((id): id is string => id !== undefined);
         setUploadedFileIds(fileIds);
         toast.success(`Uploaded ${fileIds.length} file(s) successfully`);
       } catch (err) {

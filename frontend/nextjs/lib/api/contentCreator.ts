@@ -60,6 +60,7 @@ export interface VideoScriptRequest {
   description: string;
   duration?: number;
   platform?: string;
+  tone?: string;
   file_ids?: string[];
   generation_config?: {
     temperature?: number;
@@ -87,6 +88,7 @@ export interface SocialMediaRequest {
   content: string;
   platforms: string[];
   topic?: string;
+  key_message?: string;
   file_ids?: string[];
   generation_config?: {
     temperature?: number;

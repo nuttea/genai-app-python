@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { voteExtractorApi } from '@/lib/api/voteExtractor';
-import { useApi } from '@/hooks/useApi';
 import { useToast } from '@/hooks/useToast';
 import { 
   FileText, 
@@ -72,7 +71,7 @@ export default function VoteExtractorPage() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [showLLMConfig, setShowLLMConfig] = useState(false);
   
-  const { loading, execute } = useApi<ExtractionResult, FormData>();
+  const [loading, setLoading] = useState(false);
   const toast = useToast();
 
   const handleFilesSelected = (selectedFiles: File[]) => {
@@ -92,20 +91,23 @@ export default function VoteExtractorPage() {
       return;
     }
 
+    setLoading(true);
     try {
-      const result = await execute(voteExtractorApi.extractVotes, files);
+      const result = await voteExtractorApi.extractVotes(files);
       setExtractionResult(result);
       setSelectedReportIdx(0);
       setActiveTab('summary');
       
-      if (result && result.success) {
+      if (result.success) {
         toast.success(`Successfully extracted ${result.reports_extracted} report(s)`);
-      } else if (result) {
+      } else {
         toast.error('Extraction completed with errors');
       }
     } catch (error) {
       console.error('Extraction error:', error);
       toast.error('Failed to extract data from images');
+    } finally {
+      setLoading(false);
     }
   };
 

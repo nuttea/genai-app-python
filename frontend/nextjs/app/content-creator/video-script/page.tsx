@@ -34,7 +34,7 @@ export default function VideoScriptPage() {
       try {
         const uploadPromises = selectedFiles.map((file) => contentCreatorApi.uploadFile(file));
         const results = await Promise.all(uploadPromises);
-        const fileIds = results.map((r) => r.file_id);
+        const fileIds = results.map((r) => r.file_id).filter((id): id is string => id !== undefined);
         setUploadedFileIds(fileIds);
         toast.success(`Uploaded ${fileIds.length} file(s) successfully`);
       } catch (err) {
@@ -255,12 +255,14 @@ export default function VideoScriptPage() {
                         <div className="space-y-4">
                           {/* Metadata */}
                           <div className="flex flex-wrap gap-4 text-sm">
-                            <span className="flex items-center text-muted-foreground">
-                              {getPlatformEmoji(generatedScript.platform)}
-                              <span className="ml-1 capitalize">
-                                {generatedScript.platform.replace('_', ' ')}
+                            {generatedScript.platform && (
+                              <span className="flex items-center text-muted-foreground">
+                                {getPlatformEmoji(generatedScript.platform)}
+                                <span className="ml-1 capitalize">
+                                  {generatedScript.platform.replace('_', ' ')}
+                                </span>
                               </span>
-                            </span>
+                            )}
                             <span className="flex items-center text-muted-foreground">
                               <Clock className="w-4 h-4 mr-1" />
                               {generatedScript.estimated_duration}
