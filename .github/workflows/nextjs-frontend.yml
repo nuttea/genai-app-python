@@ -83,7 +83,7 @@ jobs:
             --region ${{ env.REGION }} \
             --format 'value(status.url)' 2>/dev/null || echo "")
           
-          CONTENT_CREATOR_URL=$(gcloud run services describe genai-content-creator \
+          CONTENT_CREATOR_URL=$(gcloud run services describe genai-adk-python \
             --region ${{ env.REGION }} \
             --format 'value(status.url)' 2>/dev/null || echo "")
           
