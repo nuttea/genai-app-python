@@ -12,7 +12,9 @@ import logging
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
-from app.config import settings
+from app.config import get_settings
+
+settings = get_settings()
 
 logger = logging.getLogger(__name__)
 

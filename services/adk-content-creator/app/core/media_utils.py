@@ -3,9 +3,39 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+
+class MediaValidator:
+    """Validator for media files."""
+
+    def validate_file(
+        self, file_path: str, content_type: str, file_size: int
+    ) -> Tuple[bool, str]:
+        """
+        Validate a media file.
+
+        Args:
+            file_path: Path to the media file
+            content_type: MIME type of the file
+            file_size: File size in bytes
+
+        Returns:
+            Tuple of (is_valid, message)
+        """
+        # Basic validation - file size already checked by upload endpoint
+        # This is just for additional checks
+
+        # Check if content type is reasonable
+        if not content_type:
+            return False, "Missing content type"
+
+        logger.info(
+            f"Media file validated: {file_path} ({content_type}, {file_size / (1024**2):.1f}MB)"
+        )
+        return True, "Valid"
 
 
 def validate_file_size(file_size: int, max_size_mb: int = 500) -> bool:
