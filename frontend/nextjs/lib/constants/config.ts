@@ -22,8 +22,7 @@ export const API_CONFIG = {
 export const DATADOG_CONFIG = {
   applicationId:
     process.env.NEXT_PUBLIC_DD_APPLICATION_ID || 'c93d9c73-1492-43c7-9bf5-85c26b8cba38',
-  clientToken:
-    process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN || 'pub61674ae290f180cee960cbac314bb8bf',
+  clientToken: process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN || 'pub61674ae290f180cee960cbac314bb8bf',
   site: process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com',
   service: process.env.NEXT_PUBLIC_DD_SERVICE || 'genai-nextjs',
   env: process.env.NEXT_PUBLIC_DD_ENV || 'prod',
