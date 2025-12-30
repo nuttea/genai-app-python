@@ -70,6 +70,7 @@ export default function SocialMediaPage() {
     }
 
     const request: SocialMediaRequest = {
+      content: topic.trim(),
       topic: topic.trim(),
       key_message: keyMessage.trim() || undefined,
       platforms,
