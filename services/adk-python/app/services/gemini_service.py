@@ -273,7 +273,9 @@ class GeminiService:
                 """Run synchronous Gemini call in thread pool."""
                 client = self._get_client()
                 response = client.models.generate_content(
-                    model=self.model, contents=contents, config=config,
+                    model=self.model,
+                    contents=contents,
+                    config=config,
                 )
                 return response.text
 

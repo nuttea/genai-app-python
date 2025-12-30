@@ -11,13 +11,16 @@ class ContentGenerationRequest(BaseModel):
     title: str | None = Field(None, description="Title or topic of the content")
     description: str = Field(..., description="Description or draft content")
     media_files: list[str] | None = Field(
-        None, description="GCS URIs of uploaded media files (videos, images)",
+        None,
+        description="GCS URIs of uploaded media files (videos, images)",
     )
     style: str | None = Field(
-        None, description="Writing style (professional, casual, technical, etc.)",
+        None,
+        description="Writing style (professional, casual, technical, etc.)",
     )
     target_audience: str | None = Field(
-        None, description="Target audience (e.g., DevOps engineers, developers)",
+        None,
+        description="Target audience (e.g., DevOps engineers, developers)",
     )
     datadog_product: str | None = Field(
         None,

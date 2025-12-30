@@ -1,6 +1,5 @@
 """Data models for video scripts."""
 
-
 from pydantic import BaseModel, Field
 
 

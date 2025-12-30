@@ -123,7 +123,9 @@ async def upload_single_file(
             # Use unique filename as artifact ID
             artifact_filename = unique_filename
             artifact_service.save(
-                filename=artifact_filename, artifact=artifact_part, namespace="session",
+                filename=artifact_filename,
+                artifact=artifact_part,
+                namespace="session",
             )
 
             logger.info(

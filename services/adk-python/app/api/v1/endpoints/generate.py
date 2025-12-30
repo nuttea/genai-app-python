@@ -125,7 +125,9 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
 
 
 @router.post(
-    "/video-script", response_model=VideoScriptResponse, status_code=status.HTTP_201_CREATED,
+    "/video-script",
+    response_model=VideoScriptResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 @tracer.wrap(name="api.generate_video_script", service="adk-content-creator")
 async def generate_video_script(request: ContentGenerationRequest) -> VideoScriptResponse:
@@ -164,7 +166,8 @@ async def generate_video_script(request: ContentGenerationRequest) -> VideoScrip
 
         # Parse script
         title, description, scenes, total_duration = _parse_video_script(
-            script_content, request.title,
+            script_content,
+            request.title,
         )
 
         logger.info(f"Video script generated: {len(scenes)} scenes, {total_duration}s")
@@ -186,7 +189,9 @@ async def generate_video_script(request: ContentGenerationRequest) -> VideoScrip
 
 
 @router.post(
-    "/social-media", response_model=SocialMediaResponse, status_code=status.HTTP_201_CREATED,
+    "/social-media",
+    response_model=SocialMediaResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 @tracer.wrap(name="api.generate_social_media", service="adk-content-creator")
 async def generate_social_media(request: ContentGenerationRequest) -> SocialMediaResponse:
