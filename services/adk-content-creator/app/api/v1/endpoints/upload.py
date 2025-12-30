@@ -2,19 +2,18 @@
 File Upload API Endpoints
 
 Handles uploading of various media files (video, images, documents)
-to Google Cloud Storage for processing by Gemini.
+using ADK Artifacts (InMemoryArtifactService).
 """
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, File, UploadFile, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from typing import List, Optional
 import logging
 from pathlib import Path
 import uuid
 from datetime import datetime
+from google.genai import types as genai_types
 
-from app.core.file_storage import FileStorageService
-from app.core.media_utils import MediaValidator
 from app.models.upload_response import UploadResponse, FileInfo
 
 logger = logging.getLogger(__name__)
@@ -41,6 +40,7 @@ SUPPORTED_DOCUMENT_TYPES = {
 
 @router.post("/single", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_single_file(
+    request: Request,
     file: UploadFile = File(..., description="File to upload (video, image, or document)")
 ) -> UploadResponse:
     """
@@ -88,10 +88,12 @@ async def upload_single_file(
             f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}{file_extension}"
         )
 
+        # Get artifact service from app state
+        artifact_service = request.app.state.artifact_service
+
         # Smart handling based on file type
-        gcs_uri = None
+        artifact_filename = None
         extracted_text = None
-        local_path = None
 
         # Determine if we should extract text or store as artifact
         ext = Path(filename).suffix.lower()
@@ -102,7 +104,7 @@ async def upload_single_file(
         }
 
         if should_extract_text:
-            # For text/markdown files, extract content directly (no GCS needed)
+            # For text/markdown files, extract content directly (no artifact needed)
             try:
                 extracted_text = content.decode("utf-8")
                 logger.info(
@@ -115,20 +117,22 @@ async def upload_single_file(
                 should_extract_text = False
 
         if not should_extract_text:
-            # For images, videos, PDFs: Store locally for ADK Artifacts
-            # (Gemini will process these as multimodal inputs)
-            local_dir = Path("/app/uploads")
-            local_dir.mkdir(parents=True, exist_ok=True)
-            local_path = str(local_dir / unique_filename)
+            # For images, videos, PDFs: Store as ADK Artifact
+            # Create a Part object with the file content
+            artifact_part = genai_types.Part(
+                inline_data=genai_types.Blob(mime_type=content_type, data=content)
+            )
 
-            # Write to local file
-            with open(local_path, "wb") as f:
-                f.write(content)
+            # Save artifact using InMemoryArtifactService
+            # Use unique filename as artifact ID
+            artifact_filename = unique_filename
+            artifact_service.save(
+                filename=artifact_filename, artifact=artifact_part, namespace="session"
+            )
 
-            # For artifact reference, use local path
-            gcs_uri = f"file://{local_path}"
             logger.info(
-                f"File stored locally for artifact processing: {file.filename} -> {local_path}"
+                f"File stored as ADK Artifact: {file.filename} -> {artifact_filename} "
+                f"({len(content)} bytes, {content_type})"
             )
 
         # Build response
@@ -136,14 +140,16 @@ async def upload_single_file(
             filename=file.filename or unique_filename,
             content_type=content_type,
             size_bytes=file_size,
-            gcs_uri=gcs_uri,
+            gcs_uri=f"artifact://{artifact_filename}" if artifact_filename else None,
             file_type=file_type,
-            extracted_text=extracted_text,  # Will be None for non-text files
+            extracted_text=extracted_text,
+            artifact_id=artifact_filename,  # New field for artifact reference
         )
 
         logger.info(
             f"File processed successfully: {file.filename} "
-            f"({'text extracted' if extracted_text else 'stored as artifact'}, {file_size} bytes)"
+            f"({'text extracted' if extracted_text else f'artifact: {artifact_filename}'}, "
+            f"{file_size} bytes)"
         )
 
         return UploadResponse(

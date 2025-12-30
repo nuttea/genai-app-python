@@ -12,11 +12,14 @@ class FileInfo(BaseModel):
     filename: str = Field(..., description="Original filename")
     content_type: str = Field(..., description="MIME type of the file")
     size_bytes: int = Field(..., description="File size in bytes")
-    gcs_uri: Optional[str] = Field(None, description="Google Cloud Storage URI (for artifacts)")
+    gcs_uri: Optional[str] = Field(
+        None, description="Artifact URI (artifact://<id> for ADK artifacts)"
+    )
     file_type: str = Field(..., description="File type category (video, image, document)")
     extracted_text: Optional[str] = Field(
         None, description="Extracted text content (for text/markdown files)"
     )
+    artifact_id: Optional[str] = Field(None, description="ADK Artifact ID for binary files")
 
 
 class UploadResponse(BaseModel):

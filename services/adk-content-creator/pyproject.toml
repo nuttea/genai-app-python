@@ -16,6 +16,7 @@ dependencies = [
     
     # Google Cloud & AI
     "google-genai>=1.0.0",
+    "google-genai[adk]>=1.0.0",  # ADK with Artifacts support
     "vertexai>=1.70.0",
     "google-cloud-speech>=2.27.0",
     "google-cloud-storage>=2.18.0",

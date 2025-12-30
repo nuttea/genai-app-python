@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.api.v1.endpoints import upload, generate
+from app.core.artifact_service import InMemoryArtifactService
 
 # Configure logging
 logging.basicConfig(
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
+# Initialize ADK Artifact Service (InMemory for development)
+artifact_service = InMemoryArtifactService()
+logger.info("Initialized InMemoryArtifactService for ADK Artifacts")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +31,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.service_name} v{settings.dd_version}")
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Google Cloud Project: {settings.google_cloud_project}")
+    logger.info(f"Artifact Service: {type(artifact_service).__name__}")
 
     # Initialize services
     # TODO: Initialize Cloud Storage client
@@ -44,6 +50,9 @@ app = FastAPI(
     version=settings.dd_version,
     lifespan=lifespan,
 )
+
+# Store artifact service in app state for access in endpoints
+app.state.artifact_service = artifact_service
 
 # Configure CORS
 app.add_middleware(
