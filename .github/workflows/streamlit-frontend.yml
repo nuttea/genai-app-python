@@ -36,19 +36,25 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-frontend-${{ runner.os }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            uv-frontend-${{ runner.os }}-
 
       - name: Install dependencies
-        run: poetry install --no-root
+        run: uv sync --all-extras --no-install-project
 
       - name: Run Black (check only)
-        run: poetry run black --check .
+        run: uv run black --check .
 
       - name: Run Ruff
-        run: poetry run ruff check .
+        run: uv run ruff check .
 
   deploy:
     name: Build and Deploy to Cloud Run
