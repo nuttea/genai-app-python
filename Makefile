@@ -55,9 +55,12 @@ run-fastapi-prod: ## Run FastAPI backend in production mode
 run-streamlit: ## Run Streamlit frontend locally
 	cd frontend/streamlit && uv run streamlit run app.py
 
-run-all: ## Run both FastAPI and Streamlit locally
-	@echo "Starting FastAPI backend and Streamlit frontend..."
-	@make -j2 run-fastapi run-streamlit
+run-content-creator: ## Run Content Creator service locally
+	cd services/adk-content-creator && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
+
+run-all: ## Run all services locally (FastAPI, Streamlit, Content Creator)
+	@echo "Starting all services..."
+	@make -j3 run-fastapi run-streamlit run-content-creator
 
 # Testing
 test: ## Run tests for FastAPI backend
@@ -157,35 +160,65 @@ quick-push: ## ⚡ Format and push with auto-generated message (use carefully!)
 	@./scripts/quick-push.sh
 
 # Docker
-docker-build: ## Build Docker images
+docker-build: ## Build all Docker images
 	$(DOCKER_COMPOSE) build
+
+docker-build-backend: ## Build FastAPI backend image
+	$(DOCKER_COMPOSE) build fastapi-backend
+
+docker-build-frontend: ## Build Streamlit frontend image
+	$(DOCKER_COMPOSE) build streamlit-frontend
+
+docker-build-content-creator: ## Build Content Creator image
+	$(DOCKER_COMPOSE) build content-creator
 
 docker-up: ## Start all services with Docker Compose
 	$(DOCKER_COMPOSE) up -d
 
+docker-up-backend: ## Start only backend services (FastAPI + Content Creator)
+	$(DOCKER_COMPOSE) up -d fastapi-backend content-creator
+
+docker-up-full: ## Start all services including Content Creator
+	$(DOCKER_COMPOSE) up -d fastapi-backend streamlit-frontend content-creator
+
 docker-down: ## Stop all services
 	$(DOCKER_COMPOSE) down
 
-docker-logs: ## View Docker logs
+docker-logs: ## View all Docker logs
 	$(DOCKER_COMPOSE) logs -f
 
-docker-logs-fastapi: ## View FastAPI logs
+docker-logs-backend: ## View FastAPI backend logs
 	$(DOCKER_COMPOSE) logs -f fastapi-backend
 
-docker-logs-streamlit: ## View Streamlit logs
+docker-logs-frontend: ## View Streamlit frontend logs
 	$(DOCKER_COMPOSE) logs -f streamlit-frontend
+
+docker-logs-content-creator: ## View Content Creator logs
+	$(DOCKER_COMPOSE) logs -f content-creator
 
 docker-restart: ## Restart all services
 	$(DOCKER_COMPOSE) restart
 
+docker-restart-content-creator: ## Restart Content Creator service
+	$(DOCKER_COMPOSE) restart content-creator
+
 docker-clean: ## Remove all containers, networks, and volumes
 	$(DOCKER_COMPOSE) down -v --remove-orphans
 
-docker-build-fastapi: ## Build only FastAPI Docker image
-	$(DOCKER_COMPOSE) build fastapi-backend
-
-docker-shell-fastapi: ## Open shell in FastAPI container
+docker-shell-backend: ## Open shell in FastAPI backend container
 	$(DOCKER_COMPOSE) exec fastapi-backend /bin/bash
+
+docker-shell-frontend: ## Open shell in Streamlit frontend container
+	$(DOCKER_COMPOSE) exec streamlit-frontend /bin/bash
+
+docker-shell-content-creator: ## Open shell in Content Creator container
+	$(DOCKER_COMPOSE) exec content-creator /bin/bash
+
+docker-ps: ## Show running containers
+	$(DOCKER_COMPOSE) ps
+
+docker-stats: ## Show container resource usage
+	docker stats genai-fastapi-backend genai-streamlit-frontend genai-content-creator
 
 # Cleanup
 clean: ## Clean up cache and temporary files

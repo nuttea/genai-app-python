@@ -117,6 +117,60 @@ services:
     networks:
       - genai-network
 
+  # Datadog Content Creator - ADK Agent Service
+  content-creator:
+    build:
+      context: ./services/adk-content-creator
+      dockerfile: Dockerfile
+    container_name: genai-content-creator
+    ports:
+      - "8002:8002"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002", "--reload"]
+    environment:
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
+      - CLOUD_STORAGE_BUCKET=${CLOUD_STORAGE_BUCKET:-content-uploads}
+      - PORT=8002
+      - DEBUG=${DEBUG:-true}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      # LLM Configuration
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-gemini-2.5-flash}
+      - DEFAULT_TEMPERATURE=0.7
+      - DEFAULT_MAX_TOKENS=8192
+      # Video Processing
+      - VIDEO_FRAME_INTERVAL=2
+      - MAX_VIDEO_DURATION=600
+      # Content Configuration
+      - DEFAULT_BLOG_LENGTH=medium
+      - DEFAULT_TONE=professional
+      - DEFAULT_AUDIENCE=developers
+      # API Key (optional)
+      - API_KEY=${API_KEY:-}
+      # Datadog Configuration (optional)
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_SERVICE=adk-content-creator
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=0.1.0
+      - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
+      - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
+    volumes:
+      # Mount gcloud application default credentials
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+      # Mount code for development (hot reload)
+      - ./services/adk-content-creator/app:/app/app:ro
+      # Mount uploads directory
+      - ./services/adk-content-creator/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - genai-network
+
   # Next.js Frontend (Future)
   # nextjs-frontend:
   #   build:
