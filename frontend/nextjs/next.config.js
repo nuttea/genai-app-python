@@ -34,6 +34,8 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Datadog GenAI Platform',
     NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+    NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL: process.env.NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_CONTENT_CREATOR_API_URL: process.env.NEXT_PUBLIC_CONTENT_CREATOR_API_URL || 'http://localhost:8002',
   },
 
   // Experimental features
