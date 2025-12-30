@@ -46,6 +46,7 @@ export const ROUTES = {
   voteExtractor: '/vote-extractor',
   contentCreator: {
     home: '/content-creator',
+    interactive: '/content-creator/interactive',
     blogPost: '/content-creator/blog-post',
     videoScript: '/content-creator/video-script',
     socialMedia: '/content-creator/social-media',

@@ -16,7 +16,11 @@ function createApiClient(baseURL: string, timeout: number): AxiosInstance {
   // Request interceptor
   client.interceptors.request.use(
     (config) => {
-      // Add any auth tokens here if needed
+      // Add API key for vote extractor if available
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+      if (apiKey && baseURL.includes('8000')) {
+        config.headers['X-API-Key'] = apiKey;
+      }
       return config;
     },
     (error) => {

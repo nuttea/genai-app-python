@@ -76,10 +76,23 @@ class Settings(BaseSettings):
     )
 
     # Datadog Configuration
-    dd_service: str = Field(default="adk-content-creator")
-    dd_env: str = Field(default="dev")
-    dd_version: str = Field(default="0.1.0")
-    dd_trace_enabled: bool = Field(default=True)
+    dd_service: str = Field(default="adk-content-creator", description="Datadog service name")
+    dd_env: str = Field(default="development", description="Datadog environment")
+    dd_version: str = Field(default="0.1.0", description="Datadog version")
+    dd_trace_enabled: bool = Field(default=True, description="Enable Datadog APM tracing")
+    dd_api_key: Optional[str] = Field(default=None, description="Datadog API key")
+    dd_site: str = Field(default="datadoghq.com", description="Datadog site")
+    
+    # Datadog LLM Observability
+    dd_llmobs_enabled: bool = Field(
+        default=True, description="Enable Datadog LLM Observability"
+    )
+    dd_llmobs_ml_app: str = Field(
+        default="datadog-content-creator", description="LLM Observability ML app name"
+    )
+    dd_llmobs_agentless: bool = Field(
+        default=True, description="Enable agentless mode for LLMObs"
+    )
 
 
 @lru_cache

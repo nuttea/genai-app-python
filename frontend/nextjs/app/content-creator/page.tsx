@@ -1,6 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
-import { FileText, Video, Share2 } from 'lucide-react';
+import { FileText, Video, Share2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants/config';
 
@@ -22,6 +22,35 @@ export default function ContentCreatorPage() {
                 Datadog products using AI
               </p>
             </div>
+
+            {/* Interactive Mode Banner */}
+            <Link
+              href={ROUTES.contentCreator.interactive}
+              className="block mb-6 p-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg text-white hover:shadow-lg transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Sparkles className="w-6 h-6" />
+                    <h2 className="text-2xl font-bold">🆕 Interactive Mode (Recommended)</h2>
+                  </div>
+                  <p className="text-purple-100 mb-2">
+                    Chat with our AI agent that guides you through the complete content creation workflow
+                  </p>
+                  <ul className="space-y-1 text-sm text-purple-100">
+                    <li>✨ Multi-agent collaboration with auto-validation</li>
+                    <li>🔄 Interactive feedback loops for refinement</li>
+                    <li>📁 File upload and analysis support</li>
+                    <li>⚡ Real-time streaming responses</li>
+                  </ul>
+                </div>
+                <div className="text-white group-hover:translate-x-2 transition-transform">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
 
             {/* Service Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

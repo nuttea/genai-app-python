@@ -8,7 +8,11 @@ to process video, images, and audio without any preprocessing.
 from google import genai
 from google.genai import types
 from ddtrace import tracer
+from ddtrace.llmobs import LLMObs
+from ddtrace.llmobs.decorators import llm
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
@@ -33,14 +37,24 @@ class GeminiService:
     """
 
     def __init__(self):
-        """Initialize Gemini client with Vertex AI."""
-        self.client = genai.Client(
-            vertexai=True,
-            project=settings.google_cloud_project,
-            location=settings.vertex_ai_location,
-        )
-        self.model = settings.default_llm_model
+        """Initialize Gemini service configuration."""
+        self.model = settings.default_model
+        self.project = settings.google_cloud_project
+        self.location = settings.vertex_ai_location
+        # Thread pool for running sync Gemini calls
+        self._executor = ThreadPoolExecutor(max_workers=4)
         logger.info(f"GeminiService initialized with model: {self.model}")
+    
+    def _get_client(self):
+        """
+        Create Gemini client in a thread-safe manner.
+        This is called from within thread pool executor.
+        """
+        return genai.Client(
+            vertexai=True,
+            project=self.project,
+            location=self.location,
+        )
 
     @tracer.wrap(name="gemini.upload_file", service="adk-content-creator")
     async def upload_file(self, file_path: str) -> str:
@@ -235,15 +249,66 @@ class GeminiService:
                 config.response_mime_type = "application/json"
                 config.response_schema = response_schema
 
-            # Generate
-            response = await self.client.aio.models.generate_content(
-                model=self.model, contents=contents, config=config
-            )
+            # Start LLMObs span for LLM call
+            llm_span = None
+            if settings.dd_llmobs_enabled and settings.dd_api_key:
+                llm_span = LLMObs.llm(
+                    model_name=self.model,
+                    name="gemini.generate_content",
+                    model_provider="google",
+                    session_id=None,  # Can be set from request context
+                    ml_app=settings.dd_llmobs_ml_app,
+                )
+                # Annotate with input and metadata
+                LLMObs.annotate(
+                    span=llm_span,
+                    input_data=prompt,
+                    metadata={
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                        "media_files_count": len(media_uris or []),
+                    },
+                )
 
-            result = response.text
+            # Generate using sync API in thread pool
+            def _sync_generate():
+                """Run synchronous Gemini call in thread pool."""
+                client = self._get_client()
+                response = client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=config
+                )
+                return response.text
+            
+            # Execute in thread pool to avoid event loop conflicts
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(
+                self._executor,
+                _sync_generate
+            )
+            
+            # Annotate LLMObs span with output
+            if llm_span:
+                LLMObs.annotate(
+                    span=llm_span,
+                    output_data=result[:1000],  # Truncate for observability
+                    metadata={
+                        "output_length": len(result),
+                        "model": self.model,
+                    },
+                )
+                llm_span.finish()
+            
             logger.info(f"Content generation complete: {len(result)} characters")
             return result
 
         except Exception as e:
+            # Mark span as error if it exists
+            if llm_span:
+                llm_span.set_tag("error", True)
+                llm_span.set_tag("error.message", str(e))
+                llm_span.finish()
+            
             logger.error(f"Error generating content: {e}", exc_info=True)
             raise

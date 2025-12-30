@@ -42,6 +42,10 @@ services:
       - DD_TRACE_SAMPLE_RATE=${DD_TRACE_SAMPLE_RATE:-1.0}
       - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-}
       - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-0}
+      # Datadog Trace Agent Configuration
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
     volumes:
@@ -98,6 +102,10 @@ services:
       - DD_VERSION=${DD_VERSION:-0.1.0}
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-0}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
+      # Datadog Trace Agent Configuration
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
       # Datadog RUM (Real User Monitoring)
       - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
       - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
@@ -117,26 +125,29 @@ services:
     networks:
       - genai-network
 
-  # Datadog Content Creator - ADK Agent Service
-  content-creator:
+  # ADK Python Service - Multi-Agent Content Creation
+  adk-python:
     build:
-      context: ./services/adk-content-creator
+      context: ./services/adk-python
       dockerfile: Dockerfile
-    container_name: genai-content-creator
+    container_name: genai-adk-python
     ports:
       - "8002:8002"
     command:
       [
         "hypercorn",
-        "app.main:app",
+        "main_adk:app",
         "--bind",
         "0.0.0.0:8002",
         "--reload",
         "--worker-class",
-        "trio",
+        "asyncio",
       ]
     environment:
+      # Google Cloud & ADK Configuration
       - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-True}
       - VERTEX_AI_LOCATION=${VERTEX_AI_LOCATION:-us-central1}
       - CLOUD_STORAGE_BUCKET=${CLOUD_STORAGE_BUCKET:-content-uploads}
       - PORT=8002
@@ -158,18 +169,23 @@ services:
       # Datadog Configuration (optional)
       - DD_API_KEY=${DD_API_KEY:-}
       - DD_SITE=${DD_SITE:-datadoghq.com}
-      - DD_SERVICE=adk-content-creator
+      - DD_SERVICE=adk-python
       - DD_ENV=${DD_ENV:-development}
       - DD_VERSION=0.1.0
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
+      # Datadog Trace Agent Configuration
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
     volumes:
       # Mount gcloud application default credentials
       - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
       # Mount code for development (hot reload)
-      - ./services/adk-content-creator/app:/app/app:ro
+      - ./services/adk-python/app:/app/app:ro
+      - ./services/adk-python/content_creator_agent:/app/content_creator_agent:ro
       # Mount uploads directory
-      - ./services/adk-content-creator/uploads:/app/uploads
+      - ./services/adk-python/uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
@@ -197,7 +213,7 @@ services:
       - NEXT_PUBLIC_CONTENT_CREATOR_API=http://localhost:8002
       # API URLs (Server-side - internal routing)
       - VOTE_EXTRACTOR_API_URL=http://fastapi-backend:8000
-      - CONTENT_CREATOR_API_URL=http://content-creator:8002
+      - CONTENT_CREATOR_API_URL=http://adk-python:8002
       # Datadog RUM (optional)
       - NEXT_PUBLIC_DD_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
       - NEXT_PUBLIC_DD_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
@@ -211,6 +227,8 @@ services:
       - NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100
       # Node Environment
       - NODE_ENV=development
+      # API Key (optional) - Must be NEXT_PUBLIC_ prefix for browser access
+      - NEXT_PUBLIC_API_KEY=${API_KEY:-}
     volumes:
       # Mount code for development (hot reload)
       # Note: Removed :ro to allow Next.js to write .next build directory
@@ -222,7 +240,7 @@ services:
     depends_on:
       fastapi-backend:
         condition: service_healthy
-      content-creator:
+      adk-python:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]

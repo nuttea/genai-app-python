@@ -1,0 +1,171 @@
+name: ADK Python Service Production Deploy
+
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'services/adk-python/**'
+      - '.github/workflows/adk-python-prod.yml'
+
+env:
+  SERVICE_NAME: genai-adk-python
+  REGION: us-central1
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  deploy:
+    name: Deploy to Production with Revision Tag
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push to GCR
+        uses: docker/build-push-action@v5
+        with:
+          context: services/adk-python
+          file: services/adk-python/Dockerfile.cloudrun
+          push: true
+          tags: |
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:prod-latest
+          build-args: |
+            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run with 'prod' Tag
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8002 \
+            --memory 2Gi \
+            --cpu 2 \
+            --timeout 600 \
+            --max-instances 10 \
+            --min-instances 1 \
+            --tag prod \
+            --no-traffic \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars GOOGLE_CLOUD_LOCATION=global \
+            --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True \
+            --set-env-vars VERTEX_AI_LOCATION=us-central1 \
+            --set-env-vars PORT=8002 \
+            --set-env-vars ENVIRONMENT=production \
+            --set-env-vars DEFAULT_MODEL=gemini-2.5-flash \
+            --set-env-vars DD_SITE=datadoghq.com \
+            --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
+            --set-env-vars DD_ENV=prod \
+            --set-env-vars DD_VERSION=${{ github.sha }} \
+            --set-env-vars DD_LOGS_ENABLED=true \
+            --set-env-vars DD_LOGS_INJECTION=true \
+            --set-env-vars DD_TRACE_ENABLED=true \
+            --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
+            --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
+            --set-secrets DD_API_KEY=datadog-api-key:latest
+
+      - name: Get Production URL
+        id: get-prod-url
+        run: |
+          # Get the URL for the 'prod' tagged revision
+          PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
+
+          if [ -z "$PROD_URL" ]; then
+            echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
+            PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+              --region ${{ env.REGION }} \
+              --format 'value(status.url)')
+          fi
+
+          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
+          echo "🌐 Production URL (tag=prod): $PROD_URL"
+
+      - name: Run Production Smoke Tests
+        run: |
+          PROD_URL="${{ steps.get-prod-url.outputs.prod_url }}"
+
+          echo "Testing production service..."
+          
+          # Test health endpoint
+          echo "Testing health endpoint..."
+          curl -f "${PROD_URL}/health" || exit 1
+
+          # Test ADK list-apps endpoint
+          echo "Testing list-apps endpoint..."
+          curl -f "${PROD_URL}/list-apps" || exit 1
+
+          echo "✅ Production smoke tests passed"
+
+      - name: Create Deployment Summary
+        run: |
+          echo "## 🚀 ADK Python Service Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: prod" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Features" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Google ADK Multi-Agent Framework" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Content Creator Agent" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Datadog LLM Observability" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Vertex AI / Gemini Integration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Production traffic: Tagged revision 'prod' ready for traffic shifting" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To shift traffic to this revision:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "gcloud run services update-traffic ${{ env.SERVICE_NAME }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --region ${{ env.REGION }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --to-tags prod=100" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify Slack
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} ADK Python Service PRODUCTION deployment ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*ADK Python Service PRODUCTION Deployment ${{ job.status }}*\n• Service: ${{ env.SERVICE_NAME }}\n• Environment: prod\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-prod-url.outputs.prod_url }}\n• Status: Tagged revision ready (no-traffic)"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+

@@ -13,21 +13,45 @@ export interface VoteExtractionRequest {
   };
 }
 
-export interface CandidateVote {
-  candidate_number: number;
-  candidate_name: string;
-  votes: number;
-  vote_type: string;
+export interface VoteResult {
+  number: number;
+  candidate_name?: string;
+  party_name?: string;
+  vote_count: number;
+  vote_count_text?: string;
+}
+
+export interface BallotStatistics {
+  ballots_allocated?: number;
+  ballots_remaining?: number;
+  ballots_used: number;
+  good_ballots: number;
+  bad_ballots: number;
+  no_vote_ballots: number;
+}
+
+export interface FormInfo {
+  date?: string;
+  province?: string;
+  district?: string;
+  sub_district?: string;
+  polling_station_number?: string;
+  constituency_number?: string;
+  form_type?: string;
+}
+
+export interface ExtractionData {
+  form_info?: FormInfo;
+  ballot_statistics?: BallotStatistics;
+  vote_results?: VoteResult[];
 }
 
 export interface VoteExtractionResponse {
-  election_unit: string;
-  total_voters: number;
-  votes_cast: number;
-  valid_votes: number;
-  invalid_votes: number;
-  candidates: CandidateVote[];
-  extracted_at: string;
+  success: boolean;
+  pages_processed: number;
+  reports_extracted: number;
+  data: ExtractionData[];
+  error?: string;
 }
 
 export interface ModelInfo {
@@ -46,9 +70,12 @@ export const voteExtractorApi = {
   extractVotes: async (
     files: File[],
     llmConfig?: {
+      provider?: string;
       model?: string;
       temperature?: number;
       max_tokens?: number;
+      top_p?: number;
+      top_k?: number;
     }
   ): Promise<VoteExtractionResponse> => {
     const formData = new FormData();
@@ -58,7 +85,7 @@ export const voteExtractorApi = {
     });
 
     if (llmConfig) {
-      formData.append('llm_config', JSON.stringify(llmConfig));
+      formData.append('llm_config_json', JSON.stringify(llmConfig));
     }
 
     const response = await voteExtractorClient.post<VoteExtractionResponse>(
@@ -68,6 +95,7 @@ export const voteExtractorApi = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 2 minutes for processing images
       }
     );
 

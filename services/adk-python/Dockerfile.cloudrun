@@ -40,8 +40,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Set working directory
 WORKDIR /app
 
-# Copy application code
+# Copy application code and ADK agents
 COPY app/ ./app/
+COPY content_creator_agent/ ./content_creator_agent/
+COPY main_adk.py ./
 
 # Create uploads directory
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
@@ -59,5 +61,6 @@ EXPOSE 8002
 
 # Run with hypercorn (supports HTTP/2 for Cloud Run)
 # Hypercorn supports h2c (HTTP/2 Cleartext) by default for Cloud Run
-CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8080", "--worker-class", "asyncio"]
+# Using full ADK with get_fast_api_app()
+CMD ["hypercorn", "main_adk:app", "--bind", "0.0.0.0:8002", "--worker-class", "asyncio"]
 

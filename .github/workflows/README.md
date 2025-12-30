@@ -6,10 +6,16 @@ CI/CD workflows for automated testing and deployment.
 
 ```
 .github/workflows/
-├── fastapi-backend.yml      # FastAPI Backend CI/CD
-├── streamlit-frontend.yml   # Streamlit Frontend CI/CD
-├── code-quality.yml         # Code quality checks (all components)
-└── README.md               # This file
+├── fastapi-backend.yml          # FastAPI Backend CI/CD
+├── fastapi-backend-prod.yml     # FastAPI Backend Production Deploy
+├── adk-python.yml               # ADK Python Service CI/CD
+├── adk-python-prod.yml          # ADK Python Service Production Deploy
+├── streamlit-frontend.yml       # Streamlit Frontend CI/CD
+├── streamlit-frontend-prod.yml  # Streamlit Frontend Production Deploy
+├── nextjs-frontend.yml          # Next.js Frontend CI/CD
+├── nextjs-frontend-prod.yml     # Next.js Frontend Production Deploy
+├── code-quality.yml             # Code quality checks (all components)
+└── README.md                    # This file
 ```
 
 ## Workflows
@@ -30,7 +36,27 @@ CI/CD workflows for automated testing and deployment.
 
 **Service**: `genai-fastapi-backend`
 
-### 2. Streamlit Frontend (`streamlit-frontend.yml`)
+### 2. ADK Python Service (`adk-python.yml`)
+
+**Triggers:**
+- Push to `main`/`develop` → `services/adk-python/**`
+- Pull requests → `services/adk-python/**`
+- Manual dispatch
+
+**Jobs:**
+- Lint (Black, Ruff)
+- Build (Docker image)
+- Deploy (Cloud Run - main only)
+
+**Service**: `genai-adk-python`
+
+**Features:**
+- Google ADK Multi-Agent Framework
+- Content Creator Agent
+- Datadog LLM Observability
+- Vertex AI / Gemini Integration
+
+### 3. Streamlit Frontend (`streamlit-frontend.yml`)
 
 **Triggers:**
 - Push to `main`/`develop` → `frontend/streamlit/**`
@@ -44,7 +70,37 @@ CI/CD workflows for automated testing and deployment.
 
 **Service**: `genai-streamlit-frontend`
 
-### 3. Code Quality (`code-quality.yml`)
+### 4. Next.js Frontend (`nextjs-frontend.yml`)
+
+**Triggers:**
+- Push to `main`/`develop` → `frontend/nextjs/**`
+- Pull requests → `frontend/nextjs/**`
+- Manual dispatch
+
+**Jobs:**
+- Lint and Test (ESLint, TypeScript, Prettier)
+- Build (Docker image)
+- Deploy (Cloud Run - main only)
+
+**Service**: `genai-nextjs-frontend`
+
+### 5. Production Deployments (`*-prod.yml`)
+
+**Triggers:**
+- Push to `prod` branch
+
+**Jobs:**
+- Build and deploy with `prod` tag (no-traffic)
+- Smoke tests
+- Deployment summary with traffic shifting instructions
+
+**Services:**
+- `genai-fastapi-backend`
+- `genai-adk-python`
+- `genai-streamlit-frontend`
+- `genai-nextjs-frontend`
+
+### 6. Code Quality (`code-quality.yml`)
 
 **Triggers:**
 - All pull requests
@@ -61,22 +117,23 @@ CI/CD workflows for automated testing and deployment.
 ## Naming Convention
 
 ### Current Services
-- `fastapi-backend.yml` - FastAPI backend service
+- `fastapi-backend.yml` - FastAPI backend service (vote extraction)
+- `adk-python.yml` - ADK Python service (multi-agent content creation)
 - `streamlit-frontend.yml` - Streamlit frontend service
+- `nextjs-frontend.yml` - Next.js frontend service
 
-### Future Services
+### Service Structure
 
-When adding new services, follow this pattern:
+Actual structure:
 
 ```
 services/
 ├── fastapi-backend/           → .github/workflows/fastapi-backend.yml
-├── mcp-server/                → .github/workflows/mcp-server.yml
-└── nextjs-frontend/           → .github/workflows/nextjs-frontend.yml
+└── adk-python/                → .github/workflows/adk-python.yml
 
 frontend/
 ├── streamlit/                 → .github/workflows/streamlit-frontend.yml
-└── nextjs/                    → .github/workflows/nextjs-frontend.yml (alternative)
+└── nextjs/                    → .github/workflows/nextjs-frontend.yml
 ```
 
 **Pattern**: `{service-name}.yml` matching the directory name
@@ -92,11 +149,25 @@ paths:
   - '.github/workflows/fastapi-backend.yml'
 ```
 
+**adk-python.yml:**
+```yaml
+paths:
+  - 'services/adk-python/**'
+  - '.github/workflows/adk-python.yml'
+```
+
 **streamlit-frontend.yml:**
 ```yaml
 paths:
   - 'frontend/streamlit/**'
   - '.github/workflows/streamlit-frontend.yml'
+```
+
+**nextjs-frontend.yml:**
+```yaml
+paths:
+  - 'frontend/nextjs/**'
+  - '.github/workflows/nextjs-frontend.yml'
 ```
 
 **Benefits:**
@@ -204,7 +275,9 @@ Add to README.md:
 
 ```markdown
 ![Backend CI](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/fastapi-backend.yml/badge.svg)
-![Frontend CI](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/streamlit-frontend.yml/badge.svg)
+![ADK Python CI](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/adk-python.yml/badge.svg)
+![Streamlit Frontend CI](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/streamlit-frontend.yml/badge.svg)
+![Next.js Frontend CI](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/nextjs-frontend.yml/badge.svg)
 ![Code Quality](https://github.com/YOUR_ORG/genai-app-python/actions/workflows/code-quality.yml/badge.svg)
 ```
 
@@ -282,53 +355,17 @@ gh workflow view fastapi-backend.yml
 ./setup-workload-identity.sh
 ```
 
-## Future Services
+## All Services Implemented ✅
 
-### MCP Server (TypeScript)
+All planned services now have CI/CD workflows:
+- ✅ FastAPI Backend (Vote Extraction)
+- ✅ ADK Python Service (Multi-Agent Content Creation)
+- ✅ Streamlit Frontend
+- ✅ Next.js Frontend
 
-Create `.github/workflows/mcp-server.yml`:
-
-```yaml
-name: MCP Server CI/CD
-
-on:
-  push:
-    paths:
-      - 'services/mcp-server/**'
-      - '.github/workflows/mcp-server.yml'
-
-jobs:
-  test:
-    # Node.js testing
-  lint:
-    # TypeScript linting
-  build:
-    # Docker build
-  deploy:
-    # Cloud Run deployment
-```
-
-### Next.js Frontend
-
-Create `.github/workflows/nextjs-frontend.yml`:
-
-```yaml
-name: Next.js Frontend CI/CD
-
-on:
-  push:
-    paths:
-      - 'frontend/nextjs/**'
-      - '.github/workflows/nextjs-frontend.yml'
-
-jobs:
-  test:
-    # Next.js testing
-  build:
-    # Docker build
-  deploy:
-    # Cloud Run deployment
-```
+Each service has:
+- Development workflow (main branch) → auto-deploy to dev
+- Production workflow (prod branch) → tagged revision for manual traffic shifting
 
 ## Resources
 
@@ -338,7 +375,8 @@ jobs:
 
 ---
 
-**Workflows**: 3 (1 per service + code quality)
+**Workflows**: 9 (4 services × 2 environments + code quality)
+**Services**: FastAPI Backend, ADK Python, Streamlit Frontend, Next.js Frontend
 **Path-based**: ✅ Only affected services run
 **Secure**: ✅ Workload Identity (no keys)
 **Ready**: ✅ Add secrets and push to deploy!

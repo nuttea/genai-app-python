@@ -68,15 +68,54 @@ async def generate_blog_post(request: ContentGenerationRequest) -> BlogPostRespo
 
         logger.info(f"Blog post generated successfully: {len(content)} characters")
 
-        return BlogPostResponse(
+        # Generate unique post ID
+        import uuid
+        from datetime import datetime
+        
+        post_id = f"post_{uuid.uuid4().hex[:12]}"
+        
+        # Calculate word count and reading time
+        word_count = len(content.split())
+        reading_time = max(1, word_count // 200)  # ~200 words per minute
+        
+        # Convert markdown to HTML (simple conversion)
+        html_content = content.replace("\n## ", "\n<h2>").replace("</h2>", "</h2>\n")
+        html_content = html_content.replace("\n# ", "\n<h1>").replace("</h1>", "</h1>\n")
+        html_content = html_content.replace("\n\n", "</p>\n<p>")
+        html_content = f"<div>{html_content}</div>"
+        
+        # Build SEO metadata
+        from app.models.blog_post import SEOMetadata, BlogPost
+        
+        seo_metadata = SEOMetadata(
+            title_tag=title[:60],
+            meta_description=summary[:160] if summary else title[:160],
+            keywords=tags[:5],  # Top 5 keywords
+        )
+        
+        # Build blog post object
+        blog_post = BlogPost(
             title=title,
-            summary=summary,
+            subtitle=summary if summary else None,
             content=content,
+            html_content=html_content,
+            word_count=word_count,
+            reading_time_minutes=reading_time,
+            seo_metadata=seo_metadata,
             tags=tags,
-            format="markdown",
-            seo_metadata={
-                "meta_description": summary[:160],
-                "keywords": ", ".join(tags),
+            generated_from="text" if not request.media_files else "multimodal",
+            product_mentioned="Datadog",
+        )
+        
+        # Build response
+        return BlogPostResponse(
+            post_id=post_id,
+            blog_post=blog_post,
+            preview_url=f"/preview/{post_id}",
+            download_urls={
+                "markdown": f"/download/{post_id}.md",
+                "html": f"/download/{post_id}.html",
+                "pdf": f"/download/{post_id}.pdf",
             },
         )
 
@@ -367,7 +406,7 @@ def _parse_blog_content(content: str, requested_title: Optional[str]) -> tuple:
 
 def _parse_video_script(content: str, requested_title: Optional[str]) -> tuple:
     """Parse video script into scenes."""
-    from app.models.video_script import SceneData
+    from app.models.video_script import SceneDescription
 
     lines = content.split("\n")
 
@@ -419,15 +458,16 @@ def _parse_video_script(content: str, requested_title: Optional[str]) -> tuple:
     if current_scene:
         scenes.append(current_scene)
 
-    # Convert to SceneData objects
+    # Convert to SceneDescription objects
     scene_objects = [
-        SceneData(
+        SceneDescription(
             scene_number=s["scene_number"],
-            start_time=s["start_time"],
-            duration=s["duration"],
-            visual_description=s["visual_description"],
+            timing=f"{int(s['start_time'])}:{int(s['start_time'] + s['duration'])}",
+            start_seconds=s["start_time"],
+            end_seconds=s["start_time"] + s["duration"],
             voiceover=s["voiceover"],
-            on_screen_text=s.get("on_screen_text", ""),
+            visual=s["visual_description"],
+            text_overlay=s.get("on_screen_text"),
         )
         for s in scenes
     ]
