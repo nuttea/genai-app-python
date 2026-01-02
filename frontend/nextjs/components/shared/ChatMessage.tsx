@@ -1,5 +1,6 @@
 'use client';
 
+import React, { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -17,7 +18,8 @@ interface ChatMessageProps {
   timestamp?: string;
 }
 
-export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
+// Memoized to prevent unnecessary re-renders during streaming
+const ChatMessageComponent = ({ role, content, timestamp }: ChatMessageProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -199,5 +201,17 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
       </div>
     </div>
   );
-}
+};
+
+// Export memoized component
+export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
+  // Only re-render if content, role, or timestamp actually changed
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.role === nextProps.role &&
+    prevProps.timestamp === nextProps.timestamp
+  );
+});
+
+ChatMessage.displayName = 'ChatMessage';
 

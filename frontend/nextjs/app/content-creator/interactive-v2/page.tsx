@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { datadogRum } from '@datadog/browser-rum';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
@@ -40,6 +40,18 @@ export default function InteractiveContentCreatorV2Page() {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -95,112 +107,176 @@ export default function InteractiveContentCreatorV2Page() {
     }
   };
 
-  // Call ADK agent with proper streaming
-  const callAgent = async (userMessage: string) => {
-    if (!userMessage.trim() || isLoading) return;
+  // Throttled update function to prevent excessive re-renders
+  const throttledUpdate = useCallback(
+    (messageId: string, newContent: string) => {
+      if (!isMountedRef.current) return;
 
-    // Add user message
-    const userMsg: Message = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: userMessage,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      // Create session
-      await contentCreatorApi._createSession('content_creator_agent', 'user_nextjs', sessionId);
-
-      // Call streaming API
-      const response = await fetch(`${API_CONFIG.contentCreator.baseUrl}/run_sse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          appName: 'content_creator_agent',
-          userId: 'user_nextjs',
-          sessionId,
-          newMessage: {
-            role: 'user',
-            parts: [{ text: userMessage }],
-          },
-          streaming: true,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Clear any pending update
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let assistantMessageId: string | null = null;
+      // Use requestAnimationFrame for smooth updates
+      requestAnimationFrame(() => {
+        if (!isMountedRef.current) return;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, content: newContent } : msg
+          )
+        );
+      });
+    },
+    []
+  );
 
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
+  // Call ADK agent with optimized streaming
+  const callAgent = useCallback(
+    async (userMessage: string) => {
+      if (!userMessage.trim() || isLoading) return;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+      // Add user message
+      const userMsg: Message = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: userMessage,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput('');
+      setIsLoading(true);
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const jsonString = line.slice(6).trim();
-            if (jsonString) {
-              try {
-                const data = JSON.parse(jsonString);
-                if (data.content?.parts) {
-                  for (const part of data.content.parts) {
-                    if (part.text) {
-                      // ADK sends full accumulated text in each event
-                      const fullText = part.text;
+      // Create AbortController for cleanup
+      const abortController = new AbortController();
 
-                      if (!assistantMessageId) {
-                        // Create new assistant message
-                        assistantMessageId = `assistant-${Date.now()}`;
-                        setMessages((prev) => [
-                          ...prev,
-                          {
-                            id: assistantMessageId!,
-                            role: 'assistant',
-                            content: fullText,
-                            createdAt: new Date().toISOString(),
-                          },
-                        ]);
-                      } else {
-                        // Update existing message with full accumulated text
-                        setMessages((prev) =>
-                          prev.map((msg) =>
-                            msg.id === assistantMessageId
-                              ? { ...msg, content: fullText }
-                              : msg
-                          )
-                        );
+      try {
+        // Create session
+        await contentCreatorApi._createSession(
+          'content_creator_agent',
+          'user_nextjs',
+          sessionId
+        );
+
+        // Call streaming API
+        const response = await fetch(
+          `${API_CONFIG.contentCreator.baseUrl}/run_sse`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appName: 'content_creator_agent',
+              userId: 'user_nextjs',
+              sessionId,
+              newMessage: {
+                role: 'user',
+                parts: [{ text: userMessage }],
+              },
+              streaming: true,
+            }),
+            signal: abortController.signal,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let assistantMessageId: string | null = null;
+        let lastText = ''; // Track last text to avoid duplicate updates
+        let lastUpdateTime = 0;
+        const UPDATE_THROTTLE_MS = 50; // Throttle updates to max 20/sec
+
+        while (true) {
+          const { done, value } = await reader!.read();
+          if (done) {
+            // Final update to ensure we have the complete text
+            if (assistantMessageId && lastText) {
+              throttledUpdate(assistantMessageId, lastText);
+            }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonString = line.slice(6).trim();
+              if (jsonString) {
+                try {
+                  const data = JSON.parse(jsonString);
+                  if (data.content?.parts) {
+                    for (const part of data.content.parts) {
+                      if (part.text) {
+                        const fullText = part.text;
+
+                        // Skip if text hasn't changed (avoid duplicate renders)
+                        if (fullText === lastText) {
+                          continue;
+                        }
+                        lastText = fullText;
+
+                        const now = Date.now();
+                        const timeSinceLastUpdate = now - lastUpdateTime;
+
+                        if (!assistantMessageId) {
+                          // Create new assistant message
+                          assistantMessageId = `assistant-${Date.now()}`;
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: assistantMessageId!,
+                              role: 'assistant',
+                              content: fullText,
+                              createdAt: new Date().toISOString(),
+                            },
+                          ]);
+                          lastUpdateTime = now;
+                        } else if (timeSinceLastUpdate >= UPDATE_THROTTLE_MS) {
+                          // Throttled update: only update if enough time has passed
+                          throttledUpdate(assistantMessageId, fullText);
+                          lastUpdateTime = now;
+                        }
+                        // If throttled, the final update after stream ends will catch it
                       }
                     }
                   }
+                } catch (e) {
+                  console.error('Error parsing SSE:', e);
                 }
-              } catch (e) {
-                console.error('Error parsing SSE:', e);
               }
             }
           }
         }
+      } catch (error) {
+        // Ignore abort errors (cleanup)
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        console.error('Error calling agent:', error);
+        if (isMountedRef.current) {
+          showToast(
+            error instanceof Error ? error.message : 'Failed to get response',
+            'error'
+          );
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Error calling agent:', error);
-      showToast(
-        error instanceof Error ? error.message : 'Failed to get response',
-        'error'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+      // Cleanup function
+      return () => {
+        abortController.abort();
+      };
+    },
+    [isLoading, sessionId, throttledUpdate, showToast]
+  );
 
   // Handle form submission
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
