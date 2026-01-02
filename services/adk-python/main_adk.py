@@ -72,9 +72,20 @@ logger.info("ADK Python Service started with get_fast_api_app()")
 try:
     from content_creator_agent.agent import root_agent
 
-    logger.info(f"✅ Agent loaded: {root_agent.name} with {len(root_agent.tools)} tools")
+    logger.info(
+        f"✅ Content Creator Agent loaded: {root_agent.name} with {len(root_agent.tools)} tools"
+    )
 except Exception as e:
-    logger.error(f"❌ Failed to load agent: {e}")
+    logger.error(f"❌ Failed to load Content Creator Agent: {e}")
+
+try:
+    from image_creator_agent.agent import image_creator_agent
+
+    logger.info(
+        f"✅ Image Creator Agent loaded: {image_creator_agent.name} with {len(image_creator_agent.tools)} tools"
+    )
+except Exception as e:
+    logger.error(f"❌ Failed to load Image Creator Agent: {e}")
 
 
 @app.get("/health")
