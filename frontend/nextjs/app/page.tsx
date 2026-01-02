@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { UserProfile } from '@/components/auth/UserProfile';
 import { APP_CONFIG } from '@/lib/constants/config';
 import { FileText, Video, TrendingUp, CheckCircle } from 'lucide-react';
 
@@ -19,6 +20,11 @@ export default function HomePage() {
               <p className="text-muted-foreground">
                 Modern GenAI platform for creating content with AI-powered tools
               </p>
+            </div>
+
+            {/* User Profile Section */}
+            <div className="mb-8">
+              <UserProfile showRawData={true} />
             </div>
 
             {/* Stats Cards */}

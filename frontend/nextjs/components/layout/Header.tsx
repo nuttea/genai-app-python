@@ -1,6 +1,7 @@
 'use client';
 
-import { Bell, Settings, User } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
+import { UserProfile } from '@/components/auth/UserProfile';
 
 interface HeaderProps {
   title: string;
@@ -30,16 +31,10 @@ export function Header({ title }: HeaderProps) {
           <Settings className="w-5 h-5" />
         </button>
 
-        {/* User Profile */}
-        <button
-          className="flex items-center space-x-2 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-          aria-label="User menu"
-        >
-          <div className="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4" />
-          </div>
-          <span className="text-sm font-medium hidden md:block">User</span>
-        </button>
+        {/* User Profile - Compact Mode */}
+        <div className="pl-4 border-l border-border">
+          <UserProfile compact={true} />
+        </div>
       </div>
     </header>
   );
