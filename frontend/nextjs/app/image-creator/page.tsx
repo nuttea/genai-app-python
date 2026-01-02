@@ -78,13 +78,18 @@ export default function ImageCreatorPage() {
     { value: 'photo', label: 'Photo', desc: 'Photorealistic' },
   ];
 
-  // Aspect ratios
+  // Aspect ratios (all supported by Gemini 3 Pro Image)
   const aspectRatios = [
     { value: '1:1', label: 'Square (1:1)' },
     { value: '16:9', label: 'Wide (16:9)' },
     { value: '9:16', label: 'Tall (9:16)' },
-    { value: '4:3', label: '4:3' },
-    { value: '3:2', label: '3:2' },
+    { value: '21:9', label: 'Ultra Wide (21:9)' },
+    { value: '4:3', label: 'Standard (4:3)' },
+    { value: '3:4', label: 'Portrait (3:4)' },
+    { value: '3:2', label: 'Classic (3:2)' },
+    { value: '2:3', label: 'Portrait (2:3)' },
+    { value: '4:5', label: 'Social (4:5)' },
+    { value: '5:4', label: 'Photo (5:4)' },
   ];
 
   // Handle reference image upload
@@ -92,15 +97,48 @@ export default function ImageCreatorPage() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Gemini 3 Pro Image limits: Maximum 14 images per prompt
+    const MAX_REFERENCE_IMAGES = 14;
+    const MAX_FILE_SIZE = 7 * 1024 * 1024; // 7 MB (for inline data)
+    const SUPPORTED_MIME_TYPES = [
+      'image/png',
+      'image/jpeg',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+    ];
+
+    const currentCount = referenceImages.length;
+    const remainingSlots = MAX_REFERENCE_IMAGES - currentCount;
+
+    if (remainingSlots <= 0) {
+      showToast(`Maximum ${MAX_REFERENCE_IMAGES} reference images allowed`, 'error');
+      return;
+    }
+
     try {
       const newReferenceImages: string[] = [];
+      let skippedCount = 0;
+      let addedCount = 0;
       
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < files.length && addedCount < remainingSlots; i++) {
         const file = files[i];
         
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          showToast(`File ${file.name} is not an image`, 'error');
+        // Validate MIME type (Gemini 3 Pro Image supported types)
+        if (!SUPPORTED_MIME_TYPES.includes(file.type)) {
+          showToast(
+            `${file.name}: Unsupported format. Use PNG, JPEG, WebP, HEIC, or HEIF`,
+            'error'
+          );
+          skippedCount++;
+          continue;
+        }
+
+        // Validate file size (7 MB limit for inline data)
+        if (file.size > MAX_FILE_SIZE) {
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+          showToast(`${file.name}: File too large (${sizeMB} MB). Max 7 MB`, 'error');
+          skippedCount++;
           continue;
         }
 
@@ -117,10 +155,20 @@ export default function ImageCreatorPage() {
         });
 
         newReferenceImages.push(base64);
+        addedCount++;
       }
 
-      setReferenceImages((prev) => [...prev, ...newReferenceImages]);
-      showToast(`Added ${newReferenceImages.length} reference image(s)`, 'success');
+      if (newReferenceImages.length > 0) {
+        setReferenceImages((prev) => [...prev, ...newReferenceImages]);
+        showToast(
+          `Added ${newReferenceImages.length} reference image(s)${
+            skippedCount > 0 ? ` (${skippedCount} skipped)` : ''
+          }`,
+          'success'
+        );
+      } else if (skippedCount > 0) {
+        showToast(`No images added (${skippedCount} invalid)`, 'error');
+      }
       
       // Clear the input
       if (refImageInputRef.current) {
@@ -353,9 +401,14 @@ export default function ImageCreatorPage() {
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Reference Images (Optional)
+                      {referenceImages.length > 0 && (
+                        <span className="ml-2 text-xs text-purple-600">
+                          {referenceImages.length}/14 images
+                        </span>
+                      )}
                     </label>
                     <p className="text-xs text-gray-500 mb-2">
-                      Upload images for style reference or context (e.g., characters, themes, layouts)
+                      Upload up to 14 images (max 7 MB each) for style reference or context
                     </p>
                     
                     {/* Reference image previews */}
@@ -393,13 +446,15 @@ export default function ImageCreatorPage() {
                       onClick={() => refImageInputRef.current?.click()}
                       variant="outline"
                       className="w-full"
-                      disabled={isGenerating}
+                      disabled={isGenerating || referenceImages.length >= 14}
                       type="button"
                     >
                       <Upload className="w-4 h-4 mr-2" />
-                      {referenceImages.length > 0
-                        ? `Add More (${referenceImages.length} uploaded)`
-                        : 'Upload Reference Images'}
+                      {referenceImages.length >= 14
+                        ? 'Maximum 14 images reached'
+                        : referenceImages.length > 0
+                        ? `Add More (${referenceImages.length}/14)`
+                        : 'Upload Reference Images (Max 14)'}
                     </Button>
                   </div>
 

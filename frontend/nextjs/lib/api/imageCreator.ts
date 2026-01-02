@@ -24,8 +24,10 @@ const API_BASE_URL = API_CONFIG.contentCreator.baseUrl;
 export interface ImageGenerationRequest {
   prompt: string;
   imageType?: 'diagram' | 'comic' | 'slide' | 'infographic' | 'illustration' | 'photo';
-  aspectRatio?: '1:1' | '16:9' | '9:16' | '3:2' | '2:3' | '3:4' | '4:3' | '4:5' | '5:4' | '21:9';
-  referenceImages?: string[];  // Optional reference images as base64 strings (for style/context)
+  // Gemini 3 Pro Image supported aspect ratios: 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
+  aspectRatio?: '1:1' | '16:9' | '9:16' | '21:9' | '3:2' | '2:3' | '3:4' | '4:3' | '4:5' | '5:4';
+  // Reference images (max 14, max 7 MB each, supported: PNG, JPEG, WebP, HEIC, HEIF)
+  referenceImages?: string[];
 }
 
 export interface ImageEditRequest {
