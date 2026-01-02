@@ -120,10 +120,7 @@ async def generate_image_sync(
     """
     Non-streaming endpoint for image generation using Google Gemini directly.
     
-    Authentication:
-    - IAP: X-Serverless-Authorization header (Cloud Run with IAP)
-    - OAuth: Authorization: Bearer <token> (Google OAuth)
-    - Dev: No auth required in development mode
+    Authentication: None required (open access)
     
     Request:
     {
@@ -142,15 +139,12 @@ async def generate_image_sync(
         "image_url": "/uploads/20260102_130000_abcd1234.png",
         "mime_type": "image/png",
         "text_response": "Generated comic image...",
-        "session_id": "rum_abc123",
-        "user_email": "user@example.com",
-        "file_size_bytes": 1234567
+        "session_id": "rum_abc123"
     }
     """
     try:
-        # Authenticate user (optional - logs warning in dev mode)
-        from app.services import ImageGenerationService, get_optional_user
-        user = await get_optional_user(http_request)
+        # No authentication required - open access
+        from app.services import ImageGenerationService
         
         # Lazy initialization of Image Generation Service
         image_gen_service = ImageGenerationService()
@@ -162,10 +156,9 @@ async def generate_image_sync(
         reference_images = request.get("reference_images", [])
         session_id = request.get("session_id", f"img_{int(__import__('time').time() * 1000)}")
         
-        # Log user info
-        user_info = f"user={user.email} ({user.auth_method})" if user else "anonymous"
+        # Anonymous access
         logger.info(
-            f"🎨 Image generation request: {user_info}, type={image_type}, "
+            f"🎨 Image generation request: anonymous, type={image_type}, "
             f"ratio={aspect_ratio}, refs={len(reference_images)}, session={session_id}"
         )
         
@@ -177,11 +170,8 @@ async def generate_image_sync(
             reference_images_base64=reference_images,
         )
         
-        # Add session_id and user info to response
+        # Add session_id to response
         result["session_id"] = session_id
-        if user:
-            result["user_email"] = user.email
-            result["user_id"] = user.user_id
         
         return result
         
