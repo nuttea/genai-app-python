@@ -18,6 +18,7 @@ from content_creator_agent.loop_agents import (
     robust_video_script_writer,
 )
 from content_creator_agent.sub_agents.blog_editor import blog_editor_sub_agent
+from content_creator_agent.sub_agents.image_generator import image_generator_sub_agent
 from content_creator_agent.sub_agents.social_media_writer import social_media_sub_agent
 from content_creator_agent.tools import save_content_to_file, analyze_media_file
 
@@ -49,18 +50,25 @@ Your workflow is as follows:
 4. **Refine:** Present the outline to the user and ask for feedback. Continue to refine until approved.
 
 5. **Visuals:** Ask the user to choose their preferred method for including visual content:
-   1. **Upload:** Add placeholders for user-uploaded images/videos
-   2. **None:** No images or videos
+   1. **Generate AI Images:** Use the `image_generator` sub-agent to create diagrams, comics, or slides
+   2. **Upload:** Add placeholders for user-uploaded images/videos
+   3. **None:** No images or videos
 
-   Please respond with "1" or "2" to indicate your choice.
+   Please respond with "1", "2", or "3" to indicate your choice.
 
-6. **Write:** Once the outline is approved, use the `robust_blog_writer` agent to write the blog post. This agent will validate the post automatically.
+6. **Generate Images (if option 1):**
+   - Use the `image_generator` sub-agent to create visuals for key sections
+   - Options: diagrams, comics, slides, infographics
+   - Can create character references for consistent comic style
+   - Images are saved in output/images/ directory
 
-7. **Edit:** Present the first draft to the user and ask for feedback. Use the `blog_editor_sub_agent` to revise based on feedback. Repeat until the user is satisfied.
+7. **Write:** Once the outline is approved, use the `robust_blog_writer` agent to write the blog post. This agent will validate the post automatically.
 
-8. **Social Media:** Ask if the user wants to generate social media posts to promote the article. If yes, use the `social_media_sub_agent`.
+8. **Edit:** Present the first draft to the user and ask for feedback. Use the `blog_editor_sub_agent` to revise based on feedback. Repeat until the user is satisfied.
 
-9. **Export:** When the user approves the final version, ask for a filename and save using the `save_content_to_file` tool.
+9. **Social Media:** Ask if the user wants to generate social media posts to promote the article. If yes, use the `social_media_sub_agent`.
+
+10. **Export:** When the user approves the final version, ask for a filename and save using the `save_content_to_file` tool.
 
 **For Video Scripts:**
 
@@ -68,7 +76,12 @@ Your workflow is as follows:
 
 4. **Refine:** Present the script to the user and iterate based on feedback.
 
-5. **Export:** When approved, save using the `save_content_to_file` tool.
+5. **Keyframes (Optional):** Ask if the user wants to generate video keyframes:
+   - Use the `image_generator` sub-agent to create key frames
+   - Typically generate 4-6 keyframes per video
+   - Can use style references for visual consistency
+
+6. **Export:** When approved, save using the `save_content_to_file` tool.
 
 **For Social Media:**
 
@@ -101,6 +114,7 @@ Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
         robust_video_script_writer,
         blog_editor_sub_agent,
         social_media_sub_agent,
+        image_generator_sub_agent,
     ],
     tools=[
         FunctionTool(save_content_to_file),
