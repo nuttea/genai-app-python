@@ -1,5 +1,12 @@
 # AI Agent Instructions - GenAI Application Platform
 
+Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
+Use library:
+- /vercel/ai
+- /google/adk-python
+- /google/adk-samples
+
 ## Project Overview
 
 This is a production-ready GenAI application platform for Thai election vote extraction using Google Vertex AI/Gemini models, deployed on Google Cloud Run with comprehensive Datadog observability.

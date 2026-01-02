@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useChat } from 'ai/react';
 import { datadogRum } from '@datadog/browser-rum';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
@@ -10,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChatMessage } from '@/components/shared/ChatMessage';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { contentCreatorApi } from '@/lib/api/contentCreator';
+import { API_CONFIG } from '@/lib/constants/config';
 import { useToast } from '@/hooks/useToast';
 import {
   Send,
@@ -21,35 +21,25 @@ import {
   Share2,
 } from 'lucide-react';
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+}
+
 export default function InteractiveContentCreatorV2Page() {
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const [sessionId, setSessionId] = useState<string>(() => {
     const rumSessionId = datadogRum.getInternalContext()?.session_id;
     return rumSessionId ? `dd_${rumSessionId}` : `session_${Date.now()}`;
   });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Vercel AI SDK useChat hook
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    error,
-    setInput,
-  } = useChat({
-    api: '/api/chat',
-    body: {
-      sessionId,
-    },
-    onError: (error) => {
-      console.error('Chat error:', error);
-      toast.error(`Error: ${error.message}`);
-    },
-  });
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -105,11 +95,116 @@ export default function InteractiveContentCreatorV2Page() {
     }
   };
 
+  // Call ADK agent
+  const callAgent = async (userMessage: string) => {
+    if (!userMessage.trim() || isLoading) return;
+
+    // Add user message
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: userMessage,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      // Create session
+      await contentCreatorApi._createSession('content_creator_agent', 'user_nextjs', sessionId);
+
+      // Call streaming API
+      const response = await fetch(`${API_CONFIG.contentCreator.baseUrl}/run_sse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appName: 'content_creator_agent',
+          userId: 'user_nextjs',
+          sessionId,
+          newMessage: {
+            role: 'user',
+            parts: [{ text: userMessage }],
+          },
+          streaming: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let assistantContent = '';
+      let assistantMessageId: string | null = null;
+
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonString = line.slice(6).trim();
+            if (jsonString) {
+              try {
+                const data = JSON.parse(jsonString);
+                if (data.content?.parts) {
+                  for (const part of data.content.parts) {
+                    if (part.text) {
+                      assistantContent = part.text;
+
+                      if (!assistantMessageId) {
+                        assistantMessageId = `assistant-${Date.now()}`;
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            id: assistantMessageId!,
+                            role: 'assistant',
+                            content: assistantContent,
+                            createdAt: new Date().toISOString(),
+                          },
+                        ]);
+                      } else {
+                        setMessages((prev) =>
+                          prev.map((msg) =>
+                            msg.id === assistantMessageId
+                              ? { ...msg, content: assistantContent }
+                              : msg
+                          )
+                        );
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing SSE:', e);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error calling agent:', error);
+      showToast(
+        error instanceof Error ? error.message : 'Failed to get response',
+        'error'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle form submission
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
-    handleSubmit(e);
+    callAgent(input);
   };
 
   // Handle Enter key (Shift+Enter for new line)
@@ -117,7 +212,7 @@ export default function InteractiveContentCreatorV2Page() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (input.trim()) {
-        handleSubmit(e as any);
+        callAgent(input);
       }
     }
   };
@@ -242,13 +337,6 @@ export default function InteractiveContentCreatorV2Page() {
               </div>
             )}
 
-            {/* Error Display */}
-            {error && (
-              <div className="max-w-3xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
-                <strong>Error:</strong> {error.message}
-              </div>
-            )}
-
             <div ref={messagesEndRef} />
           </div>
 
@@ -287,7 +375,7 @@ export default function InteractiveContentCreatorV2Page() {
               {showFileUpload && (
                 <div className="mb-3">
                   <FileUpload
-                    onFileSelect={handleFileSelect}
+                    onFilesSelected={handleFileSelect}
                     maxFiles={10}
                     maxSizeMB={500}
                   />

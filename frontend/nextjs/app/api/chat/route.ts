@@ -1,7 +1,6 @@
-import { StreamingTextResponse } from 'ai';
 import { API_CONFIG } from '@/lib/constants/config';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
@@ -114,7 +113,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return new StreamingTextResponse(stream);
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
   } catch (error) {
     console.error('Chat API error:', error);
     return new Response(

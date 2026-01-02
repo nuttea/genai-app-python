@@ -65,18 +65,18 @@ export function ChatMessage({ role, content, timestamp }: ChatMessageProps) {
               rehypePlugins={[rehypeRaw, rehypeSanitize]}
               components={{
                 // Code blocks with syntax highlighting
-                code({ node, inline, className, children, ...props }) {
+                code({ className, children, ...props }: any) {
                   const match = /language-(\w+)/.exec(className || '');
                   const codeContent = String(children).replace(/\n$/, '');
+                  const inline = props.inline || !className;
 
                   return !inline && match ? (
                     <div className="relative group">
                       <SyntaxHighlighter
-                        style={vscDarkPlus}
+                        style={vscDarkPlus as any}
                         language={match[1]}
                         PreTag="div"
                         className="!mt-2 !mb-2 !rounded-lg !text-sm"
-                        {...props}
                       >
                         {codeContent}
                       </SyntaxHighlighter>
