@@ -87,11 +87,11 @@ export default function InteractiveContentCreatorV2Page() {
         .filter((id): id is string => !!id);
       setUploadedFiles((prev) => [...prev, ...fileIds]);
 
-      toast.success(`${files.length} file(s) uploaded successfully`);
+      showToast(`${files.length} file(s) uploaded successfully`, 'success');
       setShowFileUpload(false);
     } catch (error) {
       console.error('File upload error:', error);
-      toast.error('Failed to upload files');
+      showToast('Failed to upload files', 'error');
     }
   };
 
