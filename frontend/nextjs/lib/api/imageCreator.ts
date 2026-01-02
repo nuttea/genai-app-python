@@ -254,13 +254,25 @@ export const imageCreatorApi = {
             }
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n\n');
+            
+            // Split by newlines to process complete SSE messages
+            const lines = buffer.split('\n');
+            
+            // Keep the last incomplete line in buffer
             buffer = lines.pop() || '';
 
             for (const line of lines) {
+              // Skip empty lines
+              if (!line.trim()) continue;
+              
               if (line.startsWith('data: ')) {
+                const jsonString = line.slice(6).trim();
+                
+                // Skip empty data
+                if (!jsonString) continue;
+                
                 try {
-                  const data = JSON.parse(line.slice(6));
+                  const data = JSON.parse(jsonString);
 
                   if (data.content?.parts) {
                     for (const part of data.content.parts) {
@@ -287,7 +299,7 @@ export const imageCreatorApi = {
                     }
                   }
                 } catch (err) {
-                  console.error('Error parsing SSE message:', err);
+                  console.error('Error parsing SSE message:', err, 'Line:', jsonString.substring(0, 100));
                 }
               }
             }
