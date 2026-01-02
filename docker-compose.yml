@@ -40,8 +40,10 @@ services:
       - DD_LOGS_INJECTION=true
       - DD_SOURCE=python
       - DD_TRACE_SAMPLE_RATE=${DD_TRACE_SAMPLE_RATE:-1.0}
-      - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-}
-      - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-0}
+      # LLM Observability Configuration
+      - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-1}
+      - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-fastapi-vote-extractor}
+      - DD_LLMOBS_AGENTLESS_ENABLED=${DD_LLMOBS_AGENTLESS_ENABLED:-1}
       # Datadog Trace Agent Configuration
       - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
       - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
@@ -174,6 +176,10 @@ services:
       - DD_VERSION=0.1.0
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
+      # LLM Observability Configuration
+      - DD_LLMOBS_ENABLED=${DD_LLMOBS_ENABLED:-1}
+      - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-adk-python-content-creator}
+      - DD_LLMOBS_AGENTLESS_ENABLED=${DD_LLMOBS_AGENTLESS_ENABLED:-1}
       # Datadog Trace Agent Configuration
       - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
       - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
