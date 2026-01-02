@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 from ddtrace.llmobs import LLMObs
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from google.adk.cli.fast_api import get_fast_api_app
 
@@ -186,18 +186,48 @@ async def generate_image_sync(
             reference_images_base64=reference_images,
         )
         
+        # Check if result has error status
+        if result.get("status") == "error":
+            error_msg = result.get("error", "Unknown error")
+            logger.error(f"❌ Image generation failed: {error_msg}")
+            
+            # Determine HTTP status code based on error
+            if "PERMISSION_DENIED" in error_msg or "403" in error_msg:
+                status_code = 503  # Service Unavailable (backend permission issue)
+            elif "INVALID_ARGUMENT" in error_msg or "400" in error_msg:
+                status_code = 400  # Bad Request
+            elif "NOT_FOUND" in error_msg or "404" in error_msg:
+                status_code = 404  # Not Found
+            else:
+                status_code = 500  # Internal Server Error
+            
+            raise HTTPException(
+                status_code=status_code,
+                detail={
+                    "error": error_msg,
+                    "session_id": session_id,
+                    "status": "error"
+                }
+            )
+        
         # Add session_id to response
         result["session_id"] = session_id
         
         return result
         
+    except HTTPException:
+        # Re-raise HTTPException (already handled above)
+        raise
     except Exception as e:
         logger.error(f"❌ Image generation endpoint error: {e}", exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e),
-            "session_id": request.get("session_id", "unknown"),
-        }
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": str(e),
+                "session_id": request.get("session_id", "unknown"),
+                "status": "error"
+            }
+        )
 
 
 # Register shutdown handler for LLMObs flush
