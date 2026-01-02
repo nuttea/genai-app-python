@@ -87,8 +87,6 @@ on:
         required: true
       GCP_PROJECT_ID:
         required: true
-      SLACK_WEBHOOK_URL:
-        required: false
       DD_RUM_APPLICATION_ID:
         required: false
       DD_RUM_CLIENT_TOKEN:
@@ -194,46 +192,4 @@ jobs:
             --format 'value(status.url)')
           echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
           echo "Deployed to: $SERVICE_URL"
-
-      - name: Notify Slack (Success)
-        if: success()
-        uses: slackapi/slack-github-action@v1
-        continue-on-error: true
-        with:
-          payload: |
-            {
-              "text": "✅ ${{ inputs.service_name }} (${{ inputs.environment }})",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "✅ *${{ inputs.service_name }}* deployed\n• Env: ${{ inputs.environment }}\n• Ver: `${{ github.sha }}` | <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|View>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Notify Slack (Failure)
-        if: failure()
-        uses: slackapi/slack-github-action@v1
-        continue-on-error: true
-        with:
-          payload: |
-            {
-              "text": "❌ ${{ inputs.service_name }} (${{ inputs.environment }})",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ *${{ inputs.service_name }}* failed\n• Env: ${{ inputs.environment }}\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 

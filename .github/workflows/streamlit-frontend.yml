@@ -154,23 +154,3 @@ jobs:
           curl -f "${FRONTEND_URL}" || exit 1
 
           echo "✅ Smoke tests passed"
-
-      - name: Notify Slack
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} Streamlit ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ job.status == 'success' && '✅' || '❌' }} *Streamlit* ${{ job.status }}\n• ${{ job.status == 'success' && format('<{0}|Open App>', steps.get-url.outputs.url) || format('<{0}/{1}/actions/runs/{2}|View Logs>', github.server_url, github.repository, github.run_id) }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

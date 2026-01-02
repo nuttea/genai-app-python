@@ -164,23 +164,3 @@ jobs:
           echo "- ✅ Datadog LLM Observability" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Vertex AI / Gemini Integration" >> $GITHUB_STEP_SUMMARY
 
-      - name: Notify Slack
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} ADK Python ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ job.status == 'success' && '✅' || '❌' }} *ADK Python* ${{ job.status }}\n• ${{ job.status == 'success' && format('<{0}|Open App>', steps.get-url.outputs.url) || format('<{0}/{1}/actions/runs/{2}|View Logs>', github.server_url, github.repository, github.run_id) }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
