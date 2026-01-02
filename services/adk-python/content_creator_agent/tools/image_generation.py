@@ -66,11 +66,11 @@ def generate_blog_image(
         )
     """
     try:
-        # Initialize Gemini client with Vertex AI
+        # Initialize Gemini client with Vertex AI (use global location for image models)
         client = genai.Client(
             vertexai=True,
             project=os.getenv("GOOGLE_CLOUD_PROJECT"),
-            location=os.getenv("VERTEX_AI_LOCATION", "us-central1"),
+            location="global",  # Image generation models available in global endpoint
         )
 
         # Build content parts
