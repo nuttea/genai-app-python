@@ -45,9 +45,9 @@ services:
       - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-fastapi-vote-extractor}
       - DD_LLMOBS_AGENTLESS_ENABLED=${DD_LLMOBS_AGENTLESS_ENABLED:-1}
       # Datadog Trace Agent Configuration
-      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
-      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
-      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://datadog-agent:8126}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-datadog-agent}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8126}
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
     volumes:
@@ -105,9 +105,9 @@ services:
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-0}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
       # Datadog Trace Agent Configuration
-      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
-      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
-      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://datadog-agent:8126}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-datadog-agent}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8126}
       # Datadog RUM (Real User Monitoring)
       - DD_RUM_CLIENT_TOKEN=${DD_RUM_CLIENT_TOKEN:-}
       - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
@@ -181,9 +181,9 @@ services:
       - DD_LLMOBS_ML_APP=${DD_LLMOBS_ML_APP:-adk-python-content-creator}
       - DD_LLMOBS_AGENTLESS_ENABLED=${DD_LLMOBS_AGENTLESS_ENABLED:-1}
       # Datadog Trace Agent Configuration
-      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://localhost:8136}
-      - DD_AGENT_HOST=${DD_AGENT_HOST:-localhost}
-      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8136}
+      - DD_TRACE_AGENT_URL=${DD_TRACE_AGENT_URL:-http://datadog-agent:8126}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-datadog-agent}
+      - DD_TRACE_AGENT_PORT=${DD_TRACE_AGENT_PORT:-8126}
     volumes:
       # Mount gcloud application default credentials
       - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
@@ -254,6 +254,56 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    restart: unless-stopped
+    networks:
+      - genai-network
+
+  # Datadog Agent for APM and LLM Observability
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: datadog-agent
+    environment:
+      # Core Datadog Configuration
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_HOSTNAME=docker-local
+      - DD_TAGS=env:development project:genai-app-python
+      
+      # APM (Application Performance Monitoring)
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_APM_RECEIVER_SOCKET=/var/run/datadog/apm.socket
+      
+      # Logs Collection
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      
+      # Process Monitoring
+      - DD_PROCESS_AGENT_ENABLED=true
+      
+      # Docker Integration
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
+      
+      # LLM Observability (if using agentless, this is optional)
+      - DD_LLMOBS_ENABLED=true
+    ports:
+      - "8126:8126"  # APM intake
+      - "8125:8125/udp"  # DogStatsD
+    volumes:
+      # Docker socket for container metrics
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host proc for system metrics
+      - /proc/:/host/proc/:ro
+      # Host sys for system metrics
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      # Optional: APM socket sharing (if needed)
+      - /var/run/datadog:/var/run/datadog
+    healthcheck:
+      test: ["CMD", "agent", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
     networks:
       - genai-network
