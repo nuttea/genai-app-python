@@ -79,10 +79,10 @@ except Exception as e:
     logger.error(f"❌ Failed to load Content Creator Agent: {e}")
 
 try:
-    from image_creator_agent.agent import image_creator_agent
+    from image_creator_agent.agent import root_agent as image_creator_root_agent
 
     logger.info(
-        f"✅ Image Creator Agent loaded: {image_creator_agent.name} with {len(image_creator_agent.tools)} tools"
+        f"✅ Image Creator Agent loaded: {image_creator_root_agent.name} with {len(image_creator_root_agent.tools)} tools"
     )
 except Exception as e:
     logger.error(f"❌ Failed to load Image Creator Agent: {e}")

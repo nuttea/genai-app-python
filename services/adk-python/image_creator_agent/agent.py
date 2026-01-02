@@ -127,3 +127,6 @@ Always be helpful, creative, and respectful of safety guidelines!
     output_key="image_results",
 )
 
+# ADK expects 'root_agent' as the entry point
+root_agent = image_creator_agent
+
