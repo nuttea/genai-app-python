@@ -169,6 +169,12 @@ Comprehensive documentation for deep dives:
   - Performance benchmarks
 
 ### Troubleshooting
+- **[troubleshooting/CORS_IAP_FIX.md](troubleshooting/CORS_IAP_FIX.md)** 🆕
+  - CORS errors with "Redirect is not allowed for a preflight request"
+  - Identity-Aware Proxy (IAP) conflicts
+  - Cloud Run authentication issues
+  - Complete diagnosis and fix steps
+
 - **[troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)**
   - JSON parsing errors (Unterminated string)
   - max_tokens configuration
@@ -363,6 +369,7 @@ docs/
 │
 ├── troubleshooting/
 │   ├── README.md                               # Troubleshooting index
+│   ├── CORS_IAP_FIX.md                         # 🆕 CORS/IAP redirect errors
 │   ├── TROUBLESHOOTING_MAX_TOKENS.md           # JSON parsing errors
 │   ├── FIX_SUMMARY.md                          # Recent fixes
 │   ├── STREAMING_FIX_SUMMARY.md                # ✅ Streaming fixes
@@ -554,6 +561,7 @@ scripts/tests/
 - "How do I monitor?" → [monitoring/quickstart.md](monitoring/quickstart.md)
 - "How does it work?" → [PROJECT_PLAN.md](../PROJECT_PLAN.md)
 - "How do I configure LLMs?" → [getting-started/LLM_CONFIG_QUICKSTART.md](getting-started/LLM_CONFIG_QUICKSTART.md)
+- "CORS errors?" → [troubleshooting/CORS_IAP_FIX.md](troubleshooting/CORS_IAP_FIX.md)
 - "JSON parsing errors?" → [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
 - "Why no models listed?" → [investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)
 - "How to test?" → [../../scripts/tests/README.md](../../scripts/tests/README.md)
