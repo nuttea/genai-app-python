@@ -799,7 +799,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.9.1" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.1.1" },
-    { name = "ddtrace", specifier = ">=2.0.0" },
+    { name = "ddtrace", specifier = ">=4.0.0" },
     { name = "fastapi", specifier = ">=0.109.0" },
     { name = "google-auth", specifier = ">=2.27.0" },
     { name = "google-cloud-aiplatform", specifier = ">=1.42.1" },

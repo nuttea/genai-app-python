@@ -23,30 +23,12 @@ COPY --from=datadog/serverless-init:1 /datadog-init /app/datadog-init
 # Install uv
 RUN pip install --no-cache-dir uv
 
-# Copy dependency files
-COPY pyproject.toml ./
+# Copy dependency files and README (required by pyproject.toml)
+COPY pyproject.toml README.md ./
 
 # Install dependencies using uv
 # Extract and install production dependencies from pyproject.toml
-RUN uv pip install --system \
-    "fastapi>=0.109.0" \
-    "uvicorn[standard]>=0.27.0" \
-    "python-multipart>=0.0.9" \
-    "google-cloud-aiplatform>=1.42.1" \
-    "google-auth>=2.27.0" \
-    "google-genai>=0.2.0" \
-    "pydantic>=2.5.3" \
-    "pydantic-settings>=2.1.0" \
-    "python-dotenv>=1.0.0" \
-    "httpx>=0.26.0" \
-    "aiohttp>=3.9.1" \
-    "python-json-logger>=2.0.7" \
-    "structlog>=24.1.0" \
-    "python-jose[cryptography]>=3.3.0" \
-    "passlib[bcrypt]>=1.7.4" \
-    "ddtrace>=2.0.0" \
-    "opentelemetry-api>=1.20.0" \
-    "slowapi>=0.1.9"
+RUN uv pip install --system -e .
 
 # Install Datadog tracer to specific directory for serverless-init
 RUN pip install --target /dd_tracer/python/ ddtrace
