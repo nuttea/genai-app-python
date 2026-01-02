@@ -69,6 +69,14 @@ Comprehensive documentation for deep dives:
   - Rollback strategies
   - Monitoring and logging
 
+- **[deployment/REUSABLE_WORKFLOWS_QUICKSTART.md](deployment/REUSABLE_WORKFLOWS_QUICKSTART.md)** ✅
+  - Quick start for reusable GitHub Actions workflows
+  - Template usage examples
+
+- **[deployment/REUSABLE_WORKFLOWS_GUIDE.md](deployment/REUSABLE_WORKFLOWS_GUIDE.md)** ✅
+  - Complete guide for reusable workflows
+  - Best practices and patterns
+
 ### Security
 - **[security/AUTHENTICATION.md](security/AUTHENTICATION.md)**
   - GCP authentication methods
@@ -92,6 +100,18 @@ Comprehensive documentation for deep dives:
   - Dashboard creation
   - Alerting
   - Cost optimization
+
+- **[monitoring/DATADOG_LLMOBS_COMPLETE.md](monitoring/DATADOG_LLMOBS_COMPLETE.md)** ✅
+  - Complete LLMObs implementation guide
+  - Production setup and configuration
+
+- **[monitoring/DATADOG_LLMOBS_LOCAL_SETUP.md](monitoring/DATADOG_LLMOBS_LOCAL_SETUP.md)** ✅
+  - Local Docker Compose LLMObs setup
+  - Development environment configuration
+
+- **[monitoring/DATADOG_TRACE_AGENT_CONFIG.md](monitoring/DATADOG_TRACE_AGENT_CONFIG.md)** ✅
+  - Trace agent configuration
+  - Local and Cloud Run settings
 
 ### Features
 - **[features/vote-extractor.md](features/vote-extractor.md)**
@@ -121,6 +141,33 @@ Comprehensive documentation for deep dives:
   - Video script structure
   - Cost estimates
 
+- **[features/ADK_ARTIFACTS_IMPLEMENTATION_COMPLETE.md](features/ADK_ARTIFACTS_IMPLEMENTATION_COMPLETE.md)** ✅
+  - ADK Artifacts implementation complete
+  - File upload and analysis
+  - Multimodal support
+
+- **[features/ADK_ARTIFACTS_BROWSER_TEST_RESULTS.md](features/ADK_ARTIFACTS_BROWSER_TEST_RESULTS.md)** ✅
+  - Browser testing results for ADK Artifacts
+  - File upload validation
+
+- **[features/CONTENT_CREATOR_FILE_UPLOAD_TEST.md](features/CONTENT_CREATOR_FILE_UPLOAD_TEST.md)** ✅
+  - File upload testing results
+  - Frontend integration tests
+
+- **[features/INTERACTIVE_SUGGESTED_ACTIONS.md](features/INTERACTIVE_SUGGESTED_ACTIONS.md)** ✅
+  - Interactive content creator with contextual suggestions
+  - Workflow-aware quick actions
+  - Enhanced UX features
+
+- **[features/VERCEL_AI_SDK_IMPLEMENTATION.md](features/VERCEL_AI_SDK_IMPLEMENTATION.md)** ✅
+  - Vercel AI SDK integration
+  - Streaming LLM responses
+  - Beautiful markdown rendering
+
+- **[features/VERCEL_AI_SDK_TEST_SUCCESS.md](features/VERCEL_AI_SDK_TEST_SUCCESS.md)** ✅
+  - Vercel AI SDK testing results
+  - Performance benchmarks
+
 ### Troubleshooting
 - **[troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)**
   - JSON parsing errors (Unterminated string)
@@ -131,6 +178,18 @@ Comprehensive documentation for deep dives:
 - **[troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)**
   - Recent fixes and improvements
   - Testing instructions
+
+- **[troubleshooting/STREAMING_FIX_SUMMARY.md](troubleshooting/STREAMING_FIX_SUMMARY.md)** ✅
+  - Streaming response fixes
+  - SSE implementation improvements
+
+- **[troubleshooting/STREAMING_OPTIMIZATION_SUCCESS.md](troubleshooting/STREAMING_OPTIMIZATION_SUCCESS.md)** ✅
+  - Streaming performance optimization
+  - Smooth incremental rendering
+
+- **[troubleshooting/STREAMING_OPTIMIZATION_V2.md](troubleshooting/STREAMING_OPTIMIZATION_V2.md)** ✅
+  - Advanced streaming optimizations
+  - React.memo and performance tuning
 
 ### Investigations
 - **[investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)**
@@ -145,6 +204,19 @@ Comprehensive documentation for deep dives:
 - **[investigations/OPTIONAL_DYNAMIC_MODELS.md](investigations/OPTIONAL_DYNAMIC_MODELS.md)**
   - Dynamic model listing with Google AI API
   - Trade-offs and considerations
+
+- **[investigations/ADK_STREAMING_RESEARCH.md](investigations/ADK_STREAMING_RESEARCH.md)** ✅
+  - ADK streaming capabilities research
+  - Token-level vs accumulated text streaming
+  - Performance analysis
+
+- **[investigations/GOOGLE_ADK_CLIENT_EVALUATION.md](investigations/GOOGLE_ADK_CLIENT_EVALUATION.md)** ✅
+  - Third-party ADK client evaluation
+  - Comparison with manual SSE implementation
+
+- **[investigations/STREAMING_INVESTIGATION_SUMMARY.md](investigations/STREAMING_INVESTIGATION_SUMMARY.md)** ✅
+  - Comprehensive streaming investigation summary
+  - Best practices and recommendations
 
 ### Reference
 - **[reference/environment-variables.md](reference/environment-variables.md)**
@@ -258,9 +330,11 @@ docs/
 │   └── LLMOBS_EVALUATIONS_QUICKSTART.md    # LLMObs evaluations (5 min) ⭐
 │
 ├── deployment/
-│   ├── quickstart.md                       # Quick deploy (10 min) ⭐
-│   ├── CLOUD_RUN_DEPLOYMENT.md             # Complete guide (60 min)
-│   └── PRODUCTION_STRATEGY.md              # Production strategy
+│   ├── quickstart.md                           # Quick deploy (10 min) ⭐
+│   ├── CLOUD_RUN_DEPLOYMENT.md                 # Complete guide (60 min)
+│   ├── PRODUCTION_STRATEGY.md                  # Production strategy
+│   ├── REUSABLE_WORKFLOWS_QUICKSTART.md        # ✅ Reusable workflows quickstart
+│   └── REUSABLE_WORKFLOWS_GUIDE.md             # ✅ Complete reusable workflows guide
 │
 ├── security/
 │   ├── api-key-quickstart.md               # Quick setup (2 min) ⭐
@@ -268,27 +342,42 @@ docs/
 │   └── AUTHENTICATION.md                   # GCP auth (30 min)
 │
 ├── monitoring/
-│   ├── quickstart.md                       # Quick setup (2 min) ⭐
-│   ├── DATADOG_SETUP.md                    # Complete guide (45 min)
-│   └── LLMOBS_NEXT_STEPS.md                # LLMObs roadmap
+│   ├── quickstart.md                           # Quick setup (2 min) ⭐
+│   ├── DATADOG_SETUP.md                        # Complete guide (45 min)
+│   ├── LLMOBS_NEXT_STEPS.md                    # LLMObs roadmap
+│   ├── DATADOG_LLMOBS_COMPLETE.md              # ✅ Complete LLMObs implementation
+│   ├── DATADOG_LLMOBS_LOCAL_SETUP.md           # ✅ Local Docker LLMObs setup
+│   └── DATADOG_TRACE_AGENT_CONFIG.md           # ✅ Trace agent configuration
 │
 ├── features/
-│   ├── vote-extractor.md                      # Vote extraction guide (30 min)
-│   ├── LLM_CONFIGURATION.md                   # LLM config guide
-│   ├── DATADOG_CONTENT_CREATOR_PLAN.md        # 🆕 Content Creator implementation plan
-│   └── DATADOG_CONTENT_CREATOR_QUICKREF.md    # 🆕 Content Creator quick reference
+│   ├── vote-extractor.md                            # Vote extraction guide (30 min)
+│   ├── LLM_CONFIGURATION.md                         # LLM config guide
+│   ├── DATADOG_CONTENT_CREATOR_PLAN.md              # 🆕 Content Creator implementation plan
+│   ├── DATADOG_CONTENT_CREATOR_QUICKREF.md          # 🆕 Content Creator quick reference
+│   ├── ADK_ARTIFACTS_IMPLEMENTATION_COMPLETE.md     # ✅ ADK Artifacts implementation
+│   ├── ADK_ARTIFACTS_BROWSER_TEST_RESULTS.md        # ✅ ADK Artifacts testing
+│   ├── CONTENT_CREATOR_FILE_UPLOAD_TEST.md          # ✅ File upload testing
+│   ├── INTERACTIVE_SUGGESTED_ACTIONS.md             # ✅ Interactive UI enhancements
+│   ├── VERCEL_AI_SDK_IMPLEMENTATION.md              # ✅ Vercel AI SDK integration
+│   └── VERCEL_AI_SDK_TEST_SUCCESS.md                # ✅ Vercel AI SDK testing
 │
 ├── troubleshooting/
-│   ├── README.md                           # Troubleshooting index
-│   ├── TROUBLESHOOTING_MAX_TOKENS.md       # JSON parsing errors
-│   └── FIX_SUMMARY.md                      # Recent fixes
+│   ├── README.md                               # Troubleshooting index
+│   ├── TROUBLESHOOTING_MAX_TOKENS.md           # JSON parsing errors
+│   ├── FIX_SUMMARY.md                          # Recent fixes
+│   ├── STREAMING_FIX_SUMMARY.md                # ✅ Streaming fixes
+│   ├── STREAMING_OPTIMIZATION_SUCCESS.md       # ✅ Streaming optimization
+│   └── STREAMING_OPTIMIZATION_V2.md            # ✅ Advanced streaming optimizations
 │
 ├── investigations/
-│   ├── README.md                           # Investigation index
-│   ├── MODELS_API_FINDINGS.md              # Model listing findings
-│   ├── INVESTIGATION_COMPLETE.md           # Investigation summary
-│   ├── OPTIONAL_DYNAMIC_MODELS.md          # Dynamic models approach
-│   └── TEST_MODELS_API.md                  # Test results
+│   ├── README.md                               # Investigation index
+│   ├── MODELS_API_FINDINGS.md                  # Model listing findings
+│   ├── INVESTIGATION_COMPLETE.md               # Investigation summary
+│   ├── OPTIONAL_DYNAMIC_MODELS.md              # Dynamic models approach
+│   ├── TEST_MODELS_API.md                      # Test results
+│   ├── ADK_STREAMING_RESEARCH.md               # ✅ ADK streaming research
+│   ├── GOOGLE_ADK_CLIENT_EVALUATION.md         # ✅ Third-party client evaluation
+│   └── STREAMING_INVESTIGATION_SUMMARY.md      # ✅ Streaming investigation summary
 │
 ├── reference/
 │   ├── environment-variables.md            # All env vars
@@ -307,7 +396,11 @@ docs/
     ├── DATADOG_IMPLEMENTATION_SUMMARY.md
     ├── FINAL_IMPLEMENTATION_SUMMARY.md
     ├── FINAL_ORGANIZATION_SUMMARY.md
-    └── NAVIGATION.md
+    ├── NAVIGATION.md
+    ├── ADK_MIGRATION_SUMMARY.md              # ✅ ADK migration history
+    ├── DEPLOYMENT_OPTIMIZATION_SUMMARY.md    # ✅ Deployment optimizations
+    ├── DOCS_ORGANIZATION_SUMMARY.md          # ✅ Documentation organization
+    └── WORKFLOW_LINTING_STRATEGY.md          # ✅ Linting strategy history
 ```
 
 **Test Scripts:**

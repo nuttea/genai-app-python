@@ -2,6 +2,16 @@
 
 Complete overview of all documentation and test scripts in the GenAI Application Platform.
 
+**📦 Recently Organized (Jan 2, 2026):**
+- ✅ Moved 21 documentation files into proper directories
+- ✅ Features: Added 6 implementation docs
+- ✅ Monitoring: Added 3 LLMObs configuration docs
+- ✅ Investigations: Added 3 streaming research docs
+- ✅ Troubleshooting: Added 3 streaming optimization docs
+- ✅ Deployment: Added 2 reusable workflow docs
+- ✅ Archive: Added 4 historical summaries
+- 📍 See [`docs/INDEX.md`](./docs/INDEX.md) for complete navigation
+
 ## 🗂️ Organization Structure
 
 ### Documentation (`docs/`)
