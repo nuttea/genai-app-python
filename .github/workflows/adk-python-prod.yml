@@ -43,6 +43,8 @@ jobs:
       min_instances: '0'
       port: '8002'
       env_vars: |
+        GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }}
+        GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
         DD_ENV=prod
         DD_SERVICE=genai-adk-python
         DD_VERSION=${{ github.sha }}

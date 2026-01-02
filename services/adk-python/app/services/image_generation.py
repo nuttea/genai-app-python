@@ -26,7 +26,8 @@ class ImageGenerationService:
 
     def __init__(self):
         """Initialize the image generation service."""
-        project_id = os.environ.get("GCP_PROJECT_ID", "datadog-sandbox")
+        # Use GOOGLE_CLOUD_PROJECT (set by Cloud Run) or fall back to GCP_PROJECT_ID
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT_ID", "datadog-ese-sandbox")
         
         # Check Cloud Run environment
         is_cloud_run = os.environ.get("K_SERVICE") is not None
