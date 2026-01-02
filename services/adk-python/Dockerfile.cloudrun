@@ -3,6 +3,10 @@
 
 FROM python:3.11-slim as builder
 
+# Build arguments for Datadog Source Code Integration
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+
 # Install system dependencies  
 # Note: ffmpeg/OpenCV not needed - Gemini 2.5 Flash handles multimodal natively
 RUN apt-get update && apt-get install -y \
@@ -24,6 +28,10 @@ RUN uv pip install --system .
 
 # Production stage
 FROM python:3.11-slim
+
+# Build arguments for Datadog Source Code Integration
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -67,6 +75,8 @@ ENV PYTHONUNBUFFERED=1 \
     DD_TRACE_SAMPLE_RATE=1.0 \
     DD_TRACE_ENABLED=1 \
     DD_PROFILING_ENABLED=true \
+    DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL} \
+    DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA} \
     PATH=/usr/local/bin:$PATH
 
 # Health check

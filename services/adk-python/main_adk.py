@@ -21,12 +21,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Datadog LLM Observability
+# Initialize Datadog LLM Observability and Source Code Integration
 DD_API_KEY = os.getenv("DD_API_KEY")
 DD_SITE = os.getenv("DD_SITE", "datadoghq.com")
 DD_ENV = os.getenv("DD_ENV", "development")
 DD_SERVICE = os.getenv("DD_SERVICE", "adk-python")
 DD_VERSION = os.getenv("DD_VERSION", "1.0.0")
+DD_GIT_REPOSITORY_URL = os.getenv("DD_GIT_REPOSITORY_URL")
+DD_GIT_COMMIT_SHA = os.getenv("DD_GIT_COMMIT_SHA")
+
+# Log Datadog Source Code Integration status
+if DD_GIT_REPOSITORY_URL and DD_GIT_COMMIT_SHA:
+    logger.info(f"📝 Datadog Source Code Integration enabled:")
+    logger.info(f"   Repository: {DD_GIT_REPOSITORY_URL}")
+    logger.info(f"   Commit: {DD_GIT_COMMIT_SHA[:8]}")
+else:
+    logger.warning("⚠️  Datadog Source Code Integration not configured (missing git metadata)")
 
 if DD_API_KEY:
     try:
