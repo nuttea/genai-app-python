@@ -121,6 +121,7 @@ async def generate_image_sync(
     Non-streaming endpoint for image generation using Google Gemini directly.
     
     Authentication: None required (open access)
+    IAP Headers: Logged if present, but not enforced
     
     Request:
     {
@@ -143,6 +144,10 @@ async def generate_image_sync(
     }
     """
     try:
+        # Log IAP headers if present (no enforcement)
+        from app.utils.iap_logger import log_iap_headers
+        user_info = log_iap_headers(http_request)
+        
         # No authentication required - open access
         from app.services import ImageGenerationService
         
@@ -156,9 +161,10 @@ async def generate_image_sync(
         reference_images = request.get("reference_images", [])
         session_id = request.get("session_id", f"img_{int(__import__('time').time() * 1000)}")
         
-        # Anonymous access
+        # Log request with user info if available
+        user_str = f"user={user_info['email']} (via {user_info['auth_method']})" if user_info else "anonymous"
         logger.info(
-            f"🎨 Image generation request: anonymous, type={image_type}, "
+            f"🎨 Image generation request: {user_str}, type={image_type}, "
             f"ratio={aspect_ratio}, refs={len(reference_images)}, session={session_id}"
         )
         
