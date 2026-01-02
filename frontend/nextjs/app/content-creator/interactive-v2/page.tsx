@@ -386,7 +386,7 @@ export default function InteractiveContentCreatorV2Page() {
               <form onSubmit={onSubmit} className="flex gap-2">
                 <Textarea
                   value={input}
-                  onChange={handleInputChange}
+                  onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message... (Shift+Enter for new line)"
                   className="flex-1 min-h-[60px] max-h-[200px] resize-none"
