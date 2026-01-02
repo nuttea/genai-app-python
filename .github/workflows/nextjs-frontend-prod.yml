@@ -15,52 +15,28 @@ env:
 
 jobs:
   lint-and-test:
-    name: Lint and Test Frontend (Production Quality Gate)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend/nextjs
+    name: Quality Gate - Lint & Test
+    uses: ./.github/workflows/_reusable-nodejs-lint.yml
+    with:
+      working_directory: 'frontend/nextjs'
+      node_version: '20'
+      run_eslint: true
+      run_typecheck: true
+      run_prettier: true
+      run_build: true
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Run Type Check
-        run: npm run type-check
-
-      - name: Run Prettier Check
-        run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"
-
-      - name: Build Application
-        run: npm run build
-        env:
-          VOTE_EXTRACTOR_API_URL: http://localhost:8000
-          CONTENT_CREATOR_API_URL: http://localhost:8002
-
-  deploy:
-    name: Deploy to Production with Revision Tag
+  get-backend-urls:
+    name: Get Backend Production URLs
     runs-on: ubuntu-latest
     needs: [lint-and-test]
-    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
     permissions:
       contents: read
       id-token: write
+    outputs:
+      vote_extractor_url: ${{ steps.get-urls.outputs.vote_extractor_url }}
+      content_creator_url: ${{ steps.get-urls.outputs.content_creator_url }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -70,8 +46,8 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Get Backend Production URLs
-        id: get-backend-urls
+      - name: Get Backend URLs
+        id: get-urls
         run: |
           # Get production tagged URLs for backend services
           VOTE_EXTRACTOR_URL=$(gcloud run services describe genai-fastapi-backend \
@@ -93,146 +69,49 @@ jobs:
           echo "Vote Extractor Production URL: $VOTE_EXTRACTOR_URL"
           echo "Content Creator Production URL: $CONTENT_CREATOR_URL"
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Get API Key from Secret Manager
-        id: get-api-key
-        run: |
-          API_KEY=$(gcloud secrets versions access latest --secret="api-key" 2>/dev/null || echo "")
-          echo "api_key=$API_KEY" >> $GITHUB_OUTPUT
-          echo "API Key retrieved (length: ${#API_KEY})"
-
-      - name: Build and Push to GCR
-        uses: docker/build-push-action@v5
-        with:
-          context: frontend/nextjs
-          file: frontend/nextjs/Dockerfile.cloudrun
-          push: true
-          tags: |
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:prod-latest
-          build-args: |
-            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
-            DD_GIT_COMMIT_SHA=${{ github.sha }}
-            NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }}
-            NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
-            NEXT_PUBLIC_API_KEY=${{ steps.get-api-key.outputs.api_key }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to Cloud Run with 'prod' Tag
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --port 3000 \
-            --memory 1Gi \
-            --cpu 1 \
-            --timeout 300 \
-            --max-instances 10 \
-            --min-instances 1 \
-            --tag prod \
-            --no-traffic \
-            --set-env-vars VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }} \
-            --set-env-vars CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }} \
-            --set-env-vars NODE_ENV=production \
-            --set-env-vars NEXT_TELEMETRY_DISABLED=1 \
-            --set-env-vars NEXT_PUBLIC_APP_NAME="Datadog GenAI Platform" \
-            --set-env-vars NEXT_PUBLIC_APP_VERSION=${{ github.sha }} \
-            --set-env-vars NEXT_PUBLIC_DD_SITE=datadoghq.com \
-            --set-env-vars NEXT_PUBLIC_DD_SERVICE=${{ env.SERVICE_NAME }} \
-            --set-env-vars NEXT_PUBLIC_DD_ENV=prod \
-            --set-env-vars NEXT_PUBLIC_DD_VERSION=${{ github.sha }} \
-            --set-env-vars NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED=true \
-            --set-env-vars NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE=100 \
-            --set-env-vars NEXT_PUBLIC_DD_TRACE_ENABLED=true \
-            --set-env-vars NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100 \
-            --set-env-vars NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }} \
-            --set-env-vars NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }} \
-            --set-env-vars NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ steps.get-backend-urls.outputs.vote_extractor_url }} \
-            --set-env-vars NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ steps.get-backend-urls.outputs.content_creator_url }}
-
-      - name: Get Production URL
-        id: get-prod-url
-        run: |
-          # Get the URL for the 'prod' tagged revision
-          PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
-
-          if [ -z "$PROD_URL" ]; then
-            echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
-            PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-              --region ${{ env.REGION }} \
-              --format 'value(status.url)')
-          fi
-
-          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
-          echo "🌐 Production URL (tag=prod): $PROD_URL"
-
-      - name: Run Production Smoke Tests
-        run: |
-          PROD_URL="${{ steps.get-prod-url.outputs.prod_url }}"
-
-          echo "Testing production frontend..."
-          
-          # Test health endpoint
-          echo "Testing health endpoint..."
-          curl -f "${PROD_URL}/api/health" || exit 1
-
-          # Test main page
-          echo "Testing main page..."
-          curl -f "${PROD_URL}" || exit 1
-
-          echo "✅ Production smoke tests passed"
-
-      - name: Create Deployment Summary
-        run: |
-          echo "## 🚀 Next.js Frontend Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: prod" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Backend Services" >> $GITHUB_STEP_SUMMARY
-          echo "- **Vote Extractor**: ${{ steps.get-backend-urls.outputs.vote_extractor_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Content Creator**: ${{ steps.get-backend-urls.outputs.content_creator_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Production traffic: Tagged revision 'prod' ready for traffic shifting" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "To shift traffic to this revision:" >> $GITHUB_STEP_SUMMARY
-          echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "gcloud run services update-traffic ${{ env.SERVICE_NAME }} \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --region ${{ env.REGION }} \\" >> $GITHUB_STEP_SUMMARY
-          echo "  --to-tags prod=100" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Notify Slack
-        if: always()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} Next.js Frontend PRODUCTION deployment ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Next.js Frontend PRODUCTION Deployment ${{ job.status }}*\n• Service: ${{ env.SERVICE_NAME }}\n• Environment: prod\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-prod-url.outputs.prod_url }}\n• Status: Tagged revision ready (no-traffic)"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  deploy:
+    name: Deploy to Production
+    needs: [lint-and-test, get-backend-urls]
+    uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
+    with:
+      service_name: genai-nextjs-frontend
+      region: us-central1
+      dockerfile_path: frontend/nextjs/Dockerfile.cloudrun
+      docker_context: frontend/nextjs
+      deployment_tag: prod
+      no_traffic: true
+      environment: prod
+      memory: 1Gi
+      cpu: '1'
+      timeout: '300'
+      max_instances: '1'
+      min_instances: '0'
+      port: '3000'
+      build_args: |
+        NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ needs.get-backend-urls.outputs.vote_extractor_url }}
+        NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ needs.get-backend-urls.outputs.content_creator_url }}
+        NEXT_PUBLIC_API_KEY=${{ secrets.API_KEY }}
+      env_vars: |
+        NODE_ENV=production
+        NEXT_TELEMETRY_DISABLED=1
+        NEXT_PUBLIC_APP_NAME=Datadog GenAI Platform
+        NEXT_PUBLIC_APP_VERSION=${{ github.sha }}
+        NEXT_PUBLIC_DD_SITE=datadoghq.com
+        NEXT_PUBLIC_DD_SERVICE=genai-nextjs-frontend
+        NEXT_PUBLIC_DD_ENV=prod
+        DD_VERSION=${{ github.sha }}
+        NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED=true
+        NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE=100
+        NEXT_PUBLIC_DD_TRACE_ENABLED=true
+        NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100
+        NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
+        NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
+      DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
+      API_KEY: ${{ secrets.API_KEY }}
 

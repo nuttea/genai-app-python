@@ -1,4 +1,4 @@
-name: Fastapi Backend Production Deploy
+name: FastAPI Backend Production Deploy
 
 on:
   push:
@@ -15,151 +15,54 @@ env:
 
 jobs:
   lint:
-    name: Lint Backend (Production Quality Gate)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/fastapi-backend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Run Black (check only)
-        run: uv run black --check app/
-
-      - name: Run Ruff
-        run: uv run ruff check app/
+    name: Quality Gate - Lint
+    uses: ./.github/workflows/_reusable-python-lint.yml
+    with:
+      working_directory: 'services/fastapi-backend'
+      python_version: '3.11'
+      black_path: 'app/'
+      ruff_path: 'app/'
+      sync_extras: '--all-extras'
 
   deploy:
-    name: Deploy to Production with Revision Tag
-    runs-on: ubuntu-latest
+    name: Deploy to Production
     needs: [lint]
-    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
-    permissions:
-      contents: read
-      id-token: write
+    uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
+    with:
+      service_name: genai-fastapi-backend
+      region: us-central1
+      dockerfile_path: services/fastapi-backend/Dockerfile.cloudrun
+      docker_context: services/fastapi-backend
+      deployment_tag: prod
+      no_traffic: true
+      environment: prod
+      memory: 2Gi
+      cpu: '2'
+      timeout: '300'
+      max_instances: '1'
+      min_instances: '0'
+      port: '8000'
+      env_vars: |
+        DD_ENV=prod
+        DD_SERVICE=genai-fastapi-backend
+        DD_VERSION=${{ github.sha }}
+        DD_LOGS_INJECTION=true
+        DD_TRACE_ENABLED=true
+        DD_RUNTIME_METRICS_ENABLED=true
+        DD_PROFILING_ENABLED=true
+        DD_TRACE_SAMPLE_RATE=1
+        DD_PROFILING_HEAP_ENABLED=true
+        DD_PROFILING_MEMORY_ENABLED=true
+        ENVIRONMENT=production
+        LOG_LEVEL=INFO
+        ALLOWED_ORIGINS=*
+      secrets: |
+        DD_API_KEY=dd-api-key:latest
+        API_KEY=api-key:latest
+        GEMINI_API_KEY=gemini-api-key:latest
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Push to GCR
-        uses: docker/build-push-action@v5
-        with:
-          context: services/fastapi-backend
-          file: services/fastapi-backend/Dockerfile.cloudrun
-          push: true
-          tags: |
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:prod-latest
-          build-args: |
-            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
-            DD_GIT_COMMIT_SHA=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to Cloud Run with 'prod' Tag
-        run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --port 8000 \
-            --memory 2Gi \
-            --cpu 2 \
-            --timeout 300 \
-            --max-instances 10 \
-            --min-instances 0 \
-            --tag prod \
-            --no-traffic \
-            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }} \
-            --set-env-vars VERTEX_AI_LOCATION=${{ env.REGION }} \
-            --set-env-vars FASTAPI_ENV=production \
-            --set-env-vars LOG_LEVEL=info \
-            --set-env-vars CORS_ORIGINS=* \
-            --set-env-vars DEFAULT_MODEL=gemini-2.5-flash \
-            --set-env-vars DD_SITE=datadoghq.com \
-            --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
-            --set-env-vars DD_ENV=prod \
-            --set-env-vars DD_VERSION=${{ github.sha }} \
-            --set-env-vars DD_LOGS_ENABLED=true \
-            --set-env-vars DD_LOGS_INJECTION=true \
-            --set-env-vars DD_SOURCE=python \
-            --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
-            --set-env-vars DD_PROFILING_ENABLED=true \
-            --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
-            --set-env-vars API_KEY_REQUIRED=true \
-            --set-secrets DD_API_KEY=dd-api-key:latest \
-            --set-secrets API_KEY=api-key:latest \
-            --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest
-
-      - name: Get Production URL
-        id: get-prod-url
-        run: |
-          # Get the URL for the 'prod' tagged revision
-          PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
-
-          if [ -z "$PROD_URL" ]; then
-            echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
-            PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-              --region ${{ env.REGION }} \
-              --format 'value(status.url)')
-          fi
-
-          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
-          echo "🌐 Production URL (tag=prod): $PROD_URL"
-
-      - name: Run Production Smoke Tests
-        run: |
-          PROD_URL="${{ steps.get-prod-url.outputs.prod_url }}"
-
-          echo "Testing production endpoint..."
-          # Test health endpoint
-          curl -f "${PROD_URL}/health" || exit 1
-
-          # Test API docs
-          curl -f "${PROD_URL}/docs" || exit 1
-
-          echo "✅ Production smoke tests passed"
-
-      - name: Create Deployment Summary
-        run: |
-          echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: prod" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Production traffic: 100% on 'prod' tag" >> $GITHUB_STEP_SUMMARY
