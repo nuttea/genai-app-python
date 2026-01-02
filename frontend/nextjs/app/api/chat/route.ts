@@ -67,7 +67,9 @@ export async function POST(req: Request) {
         }
 
         const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
         let buffer = '';
+        let previousText = ''; // Track previously sent text
 
         try {
           while (true) {
@@ -92,9 +94,20 @@ export async function POST(req: Request) {
                     if (data.content?.parts) {
                       for (const part of data.content.parts) {
                         if (part.text) {
-                          // Send text chunk to Vercel AI SDK
-                          const encoder = new TextEncoder();
-                          controller.enqueue(encoder.encode(part.text));
+                          const currentText = part.text;
+                          
+                          // Send only the new incremental text
+                          if (currentText.startsWith(previousText)) {
+                            const newText = currentText.slice(previousText.length);
+                            if (newText) {
+                              controller.enqueue(encoder.encode(newText));
+                              previousText = currentText;
+                            }
+                          } else {
+                            // If text doesn't start with previous (shouldn't happen), send all
+                            controller.enqueue(encoder.encode(currentText));
+                            previousText = currentText;
+                          }
                         }
                       }
                     }
