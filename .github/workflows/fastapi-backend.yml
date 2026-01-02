@@ -207,13 +207,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ Backend deployed successfully",
+              "text": "✅ Backend deployed",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Backend Deployment Success*\n• Service: ${{ env.SERVICE_NAME }}\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-url.outputs.url }}"
+                    "text": "✅ *Backend* deployed\n• <${{ steps.get-url.outputs.url }}|Open App>"
                   }
                 }
               ]
@@ -227,13 +227,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "❌ Backend deployment failed",
+              "text": "❌ Backend deploy failed",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Backend Deployment Failed*\n• Service: ${{ env.SERVICE_NAME }}\n• Version: `${{ github.sha }}`\n• Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "❌ *Backend* failed\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
                   }
                 }
               ]

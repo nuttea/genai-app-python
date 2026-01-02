@@ -170,13 +170,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "${{ job.status == 'success' && '✅' || '❌' }} ADK Python Service deployment ${{ job.status }}",
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} ADK Python ${{ job.status }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*ADK Python Service Deployment ${{ job.status }}*\n• Service: ${{ env.SERVICE_NAME }}\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-url.outputs.url }}"
+                    "text": "${{ job.status == 'success' && '✅' || '❌' }} *ADK Python* ${{ job.status }}\n• ${{ job.status == 'success' && format('<{0}|Open App>', steps.get-url.outputs.url) || format('<{0}/{1}/actions/runs/{2}|View Logs>', github.server_url, github.repository, github.run_id) }}"
                   }
                 }
               ]

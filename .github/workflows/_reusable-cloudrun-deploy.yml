@@ -199,13 +199,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ ${{ inputs.service_name }} deployment success (${{ inputs.environment }})",
+              "text": "✅ ${{ inputs.service_name }} (${{ inputs.environment }})",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*${{ inputs.service_name }} Deployment Success (${{ inputs.environment }})*\n• Service: ${{ inputs.service_name }}\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-service-url.outputs.url }}"
+                    "text": "✅ *${{ inputs.service_name }}* deployed\n• Env: ${{ inputs.environment }}\n• Ver: `${{ github.sha }}` | <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|View>"
                   }
                 }
               ]
@@ -219,13 +219,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "❌ ${{ inputs.service_name }} deployment failure (${{ inputs.environment }})",
+              "text": "❌ ${{ inputs.service_name }} (${{ inputs.environment }})",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*${{ inputs.service_name }} Deployment Failure (${{ inputs.environment }})*\n• Service: ${{ inputs.service_name }}\n• Version: `${{ github.sha }}`\n• Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "❌ *${{ inputs.service_name }}* failed\n• Env: ${{ inputs.environment }}\n• <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
                   }
                 }
               ]
