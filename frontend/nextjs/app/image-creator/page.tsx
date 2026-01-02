@@ -64,7 +64,9 @@ export default function ImageCreatorPage() {
   const [currentImage, setCurrentImage] = useState<GeneratedImage | null>(null);
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
   const [editPrompt, setEditPrompt] = useState('');
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);  // Base64 reference images
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const refImageInputRef = useRef<HTMLInputElement>(null);
 
   // Image types
   const imageTypes = [
@@ -85,6 +87,57 @@ export default function ImageCreatorPage() {
     { value: '3:2', label: '3:2' },
   ];
 
+  // Handle reference image upload
+  const handleReferenceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const newReferenceImages: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          showToast(`File ${file.name} is not an image`, 'error');
+          continue;
+        }
+
+        // Convert to base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            const base64String = dataUrl.split(',')[1];
+            resolve(base64String);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        newReferenceImages.push(base64);
+      }
+
+      setReferenceImages((prev) => [...prev, ...newReferenceImages]);
+      showToast(`Added ${newReferenceImages.length} reference image(s)`, 'success');
+      
+      // Clear the input
+      if (refImageInputRef.current) {
+        refImageInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Error uploading reference image:', error);
+      showToast('Failed to upload reference image', 'error');
+    }
+  };
+
+  // Remove reference image
+  const handleRemoveReferenceImage = (index: number) => {
+    setReferenceImages((prev) => prev.filter((_, i) => i !== index));
+    showToast('Reference image removed', 'success');
+  };
+
   // Generate image
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -98,6 +151,7 @@ export default function ImageCreatorPage() {
         {
           prompt: prompt.trim(),
           imageType: imageType as any,
+          referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
           aspectRatio: aspectRatio as any,
         },
         'user_nextjs',
@@ -293,6 +347,60 @@ export default function ImageCreatorPage() {
                       className="min-h-[100px]"
                       disabled={isGenerating}
                     />
+                  </div>
+
+                  {/* Reference Images */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reference Images (Optional)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Upload images for style reference or context (e.g., characters, themes, layouts)
+                    </p>
+                    
+                    {/* Reference image previews */}
+                    {referenceImages.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {referenceImages.map((img, idx) => (
+                          <div key={idx} className="relative group">
+                            <img
+                              src={`data:image/png;base64,${img}`}
+                              alt={`Reference ${idx + 1}`}
+                              className="w-full h-20 object-cover rounded border border-gray-300"
+                            />
+                            <button
+                              onClick={() => handleRemoveReferenceImage(idx)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              disabled={isGenerating}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <input
+                      type="file"
+                      ref={refImageInputRef}
+                      onChange={handleReferenceImageUpload}
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={isGenerating}
+                    />
+                    <Button
+                      onClick={() => refImageInputRef.current?.click()}
+                      variant="outline"
+                      className="w-full"
+                      disabled={isGenerating}
+                      type="button"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {referenceImages.length > 0
+                        ? `Add More (${referenceImages.length} uploaded)`
+                        : 'Upload Reference Images'}
+                    </Button>
                   </div>
 
                   <Button

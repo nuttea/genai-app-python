@@ -25,7 +25,7 @@ export interface ImageGenerationRequest {
   prompt: string;
   imageType?: 'diagram' | 'comic' | 'slide' | 'infographic' | 'illustration' | 'photo';
   aspectRatio?: '1:1' | '16:9' | '9:16' | '3:2' | '2:3' | '3:4' | '4:3' | '4:5' | '5:4' | '21:9';
-  referenceImageBase64?: string;  // Optional reference image for style
+  referenceImages?: string[];  // Optional reference images as base64 strings (for style/context)
 }
 
 export interface ImageEditRequest {
@@ -118,6 +118,7 @@ export const imageCreatorApi = {
           prompt: request.prompt,
           image_type: request.imageType || 'illustration',
           aspect_ratio: request.aspectRatio || '1:1',
+          reference_images: request.referenceImages || [],  // Send reference images as array
           user_id: userId,
           session_id: finalSessionId,
         }),
