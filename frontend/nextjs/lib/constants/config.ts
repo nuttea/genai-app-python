@@ -45,6 +45,12 @@ export const ROUTES = {
     videoScript: '/content-creator/video-script',
     socialMedia: '/content-creator/social-media',
   },
+  imageCreator: {
+    home: '/image-creator',
+    generate: '/image-creator/generate',
+    edit: '/image-creator/edit',
+    gallery: '/image-creator/gallery',
+  },
 } as const;
 
 export const FILE_UPLOAD = {

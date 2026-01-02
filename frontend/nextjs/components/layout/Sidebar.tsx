@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, FileText, Video, Menu, X } from 'lucide-react';
+import { Home, FileText, Video, Menu, X, Image as ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { APP_CONFIG, ROUTES } from '@/lib/constants/config';
@@ -11,6 +11,7 @@ const services = [
   { name: 'Dashboard', icon: Home, href: ROUTES.home },
   { name: 'Vote Extractor', icon: FileText, href: ROUTES.voteExtractor },
   { name: 'Content Creator', icon: Video, href: ROUTES.contentCreator.home },
+  { name: 'Image Creator', icon: ImageIcon, href: ROUTES.imageCreator.home },
 ];
 
 export function Sidebar() {
