@@ -146,6 +146,7 @@ def generate_image(
 
             # Collect image data from inline_data
             # Based on: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/image-generation
+            # Response format: {"candidates": [{"content": {"parts": [{"inline_data": {"mime_type": "...", "data": "..."}}]}}]}
             if hasattr(chunk, "candidates") and chunk.candidates:
                 for candidate in chunk.candidates:
                     # Check finish reason for safety blocks
@@ -154,15 +155,18 @@ def generate_image(
                         if "SAFETY" in finish_reason or "PROHIBITED" in finish_reason:
                             safety_blocked = True
 
-                    # Extract image from inline_data
+                    # Extract image from inline_data with correct mimeType
+                    # CRITICAL: Must preserve the exact mime_type from the response
                     if hasattr(candidate, "content") and candidate.content:
                         for part in candidate.content.parts:
                             if hasattr(part, "inline_data") and part.inline_data:
                                 # Image found in inline_data
+                                # part.inline_data.data: bytes (raw image data)
+                                # part.inline_data.mime_type: str (e.g., "image/png")
                                 image_data = part.inline_data.data
                                 image_mime_type = part.inline_data.mime_type
                                 logger.info(
-                                    f"Image received: {image_mime_type}, size: {len(image_data)} bytes"
+                                    f"✅ Image received in inline_data: {image_mime_type}, size: {len(image_data)} bytes"
                                 )
 
         # Check if blocked by safety filters
@@ -186,20 +190,23 @@ def generate_image(
             }
 
         # Convert image data to base64 for frontend
-        # Note: image_data from inline_data is already bytes
+        # inline_data.data is bytes (raw image data from Gemini)
+        # We need to encode it as base64 string for JSON transport
         if isinstance(image_data, bytes):
             image_base64 = base64.b64encode(image_data).decode("utf-8")
         else:
-            # Already string (base64)
+            # Already string (base64) - shouldn't happen but handle it
             image_base64 = image_data
 
         logger.info(f"✅ Image generated successfully: {len(image_base64)} chars (base64)")
 
+        # Return with proper inline_data format
+        # Frontend can reconstruct: data:{mime_type};base64,{image_base64}
         return {
             "status": "success",
             "text_response": text_response or "Image generated successfully",
-            "image_base64": image_base64,
-            "mime_type": image_mime_type or config.output_mime_type,
+            "image_base64": image_base64,  # Base64-encoded string
+            "mime_type": image_mime_type or config.output_mime_type,  # Actual MIME type from response
             "prompt_used": enhanced_prompt,
             "aspect_ratio": aspect_ratio,
             "image_type": image_type,
@@ -258,11 +265,16 @@ def edit_image(
                 "error": f"Invalid base64 image data: {e}",
             }
 
+        # Detect MIME type from image bytes (critical for proper inline_data handling)
+        detected_mime_type = _detect_mime_type_from_bytes(image_bytes)
+        logger.info(f"Detected input image MIME type: {detected_mime_type}")
+
         # Build content with original image + edit instructions
+        # IMPORTANT: Use detected MIME type, not hardcoded config
         content_parts = [
             types.Part.from_bytes(
                 data=image_bytes,
-                mime_type=config.output_mime_type,
+                mime_type=detected_mime_type,  # Use detected type
             ),
             types.Part.from_text(text=edit_prompt),
         ]
@@ -318,13 +330,18 @@ def edit_image(
             if chunk.text:
                 text_response += chunk.text
 
+            # Extract image from inline_data with correct mimeType
             if hasattr(chunk, "candidates") and chunk.candidates:
                 for candidate in chunk.candidates:
                     if hasattr(candidate, "content") and candidate.content:
                         for part in candidate.content.parts:
                             if hasattr(part, "inline_data") and part.inline_data:
+                                # Extract both data and mime_type from inline_data
                                 image_data = part.inline_data.data
                                 image_mime_type = part.inline_data.mime_type
+                                logger.info(
+                                    f"✅ Edited image received in inline_data: {image_mime_type}, size: {len(image_data)} bytes"
+                                )
 
         if not image_data:
             return {
@@ -333,19 +350,21 @@ def edit_image(
                 "text_response": text_response,
             }
 
-        # Convert to base64
+        # Convert to base64 for frontend
+        # inline_data.data is bytes from Gemini response
         if isinstance(image_data, bytes):
             image_base64 = base64.b64encode(image_data).decode("utf-8")
         else:
             image_base64 = image_data
 
-        logger.info(f"✅ Image edited successfully")
+        logger.info(f"✅ Image edited successfully: {len(image_base64)} chars (base64)")
 
+        # Return with proper inline_data format
         return {
             "status": "success",
             "text_response": text_response or "Image edited successfully",
-            "image_base64": image_base64,
-            "mime_type": image_mime_type or config.output_mime_type,
+            "image_base64": image_base64,  # Base64-encoded string
+            "mime_type": image_mime_type or config.output_mime_type,  # Actual MIME type from response
             "edit_prompt": edit_prompt,
             "aspect_ratio": aspect_ratio,
         }
@@ -395,11 +414,16 @@ def analyze_image(
                 "error": f"Invalid base64 image data: {e}",
             }
 
+        # Detect MIME type from image bytes (critical for proper inline_data handling)
+        detected_mime_type = _detect_mime_type_from_bytes(image_bytes)
+        logger.info(f"Detected input image MIME type for analysis: {detected_mime_type}")
+
         # Build content with image + analysis prompt
+        # IMPORTANT: Use detected MIME type, not hardcoded config
         content_parts = [
             types.Part.from_bytes(
                 data=image_bytes,
-                mime_type=config.output_mime_type,
+                mime_type=detected_mime_type,  # Use detected type
             ),
             types.Part.from_text(text=analysis_prompt),
         ]
@@ -456,8 +480,41 @@ def analyze_image(
 # Helper functions
 
 
+def _detect_mime_type_from_bytes(image_bytes: bytes) -> str:
+    """
+    Detect MIME type from image bytes using magic numbers.
+    
+    Critical for proper inline_data handling - the mimeType must match the actual image format.
+    Based on: https://en.wikipedia.org/wiki/List_of_file_signatures
+    """
+    if not image_bytes or len(image_bytes) < 12:
+        return "image/png"  # Default fallback
+    
+    # Check magic bytes (file signatures)
+    # PNG: 89 50 4E 47 0D 0A 1A 0A
+    if image_bytes[:8] == b'\x89PNG\r\n\x1a\n':
+        return "image/png"
+    
+    # JPEG: FF D8 FF
+    elif image_bytes[:3] == b'\xff\xd8\xff':
+        return "image/jpeg"
+    
+    # GIF: GIF87a or GIF89a
+    elif image_bytes[:6] in (b'GIF87a', b'GIF89a'):
+        return "image/gif"
+    
+    # WebP: RIFF....WEBP
+    elif image_bytes[:4] == b'RIFF' and image_bytes[8:12] == b'WEBP':
+        return "image/webp"
+    
+    # Default to PNG if unknown
+    else:
+        logger.warning(f"Unknown image format, defaulting to image/png. First bytes: {image_bytes[:8].hex()}")
+        return "image/png"
+
+
 def _get_mime_type(uri: str) -> str:
-    """Determine MIME type from URI."""
+    """Determine MIME type from URI file extension."""
     uri_lower = uri.lower()
     if uri_lower.endswith(".png"):
         return "image/png"
