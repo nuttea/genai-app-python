@@ -168,7 +168,7 @@ class AuthService:
 
         # Local development mode (no authentication required)
         env = os.environ.get("DD_ENV", "development")
-        if env == "development":
+        if env in ["development", "dev"]:
             logger.warning("⚠️ Using development mode authentication (no verification)")
             return User(
                 email="dev@localhost",
