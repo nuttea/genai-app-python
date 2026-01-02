@@ -1,5 +1,6 @@
 import { contentCreatorClient } from './client';
 import { API_CONFIG } from '@/lib/constants/config';
+import { MessageContent, textPart } from '@/lib/utils/imageUtils';
 
 // Use the API_CONFIG which properly handles environment variables
 const API_BASE_URL = API_CONFIG.contentCreator.baseUrl;
@@ -495,6 +496,112 @@ ${request.file_ids ? `Files: ${request.file_ids.join(', ')}` : ''}`,
             })),
             generated_at: new Date().toISOString(),
           });
+        })
+        .catch((error) => {
+          console.error('SSE streaming error:', error);
+          reject(error);
+        });
+    });
+  },
+
+  /**
+   * Send message with proper inline_data support
+   * 
+   * Use this for multimodal messages (text + images)
+   * 
+   * CRITICAL: Images must be sent as inline_data (NOT as text)
+   * 
+   * Example:
+   * ```ts
+   * import { createMultimodalMessage } from '@/lib/utils/imageUtils';
+   * 
+   * const message = await createMultimodalMessage(
+   *   "Analyze this image",
+   *   [imageFile]
+   * );
+   * 
+   * await contentCreatorApi.sendMessageWithInlineData(
+   *   'content_creator_agent',
+   *   'user_nextjs',
+   *   sessionId,
+   *   message
+   * );
+   * ```
+   */
+  sendMessageWithInlineData: async (
+    appName: string,
+    userId: string,
+    sessionId: string,
+    message: MessageContent,
+    onStreamEvent?: (text: string) => void
+  ): Promise<string> => {
+    // Ensure session exists
+    await contentCreatorApi._createSession(appName, userId, sessionId);
+
+    // Send message with proper inline_data format
+    const adkRequest = {
+      appName,
+      userId,
+      sessionId,
+      newMessage: message,  // Already has proper inline_data format
+      streaming: true,
+    };
+
+    return new Promise((resolve, reject) => {
+      fetch(`${API_BASE_URL}/run_sse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adkRequest),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+          }
+
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let fullContent = '';
+
+          if (!reader) {
+            throw new Error('No response body reader');
+          }
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  if (data.content?.parts) {
+                    for (const part of data.content.parts) {
+                      if (part.text) {
+                        fullContent = part.text;
+                        if (onStreamEvent) {
+                          onStreamEvent(part.text);
+                        }
+                      }
+                    }
+                  }
+                } catch (err) {
+                  console.error('Error parsing SSE message:', err);
+                }
+              }
+            }
+          }
+
+          resolve(fullContent);
         })
         .catch((error) => {
           console.error('SSE streaming error:', error);
