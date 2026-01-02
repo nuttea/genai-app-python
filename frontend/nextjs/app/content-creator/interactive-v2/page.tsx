@@ -41,17 +41,17 @@ export default function InteractiveContentCreatorV2Page() {
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Log session ID to Datadog
+  // Log session ID to Datadog on mount
   useEffect(() => {
     console.log('ADK Session ID linked to Datadog RUM:', sessionId);
   }, [sessionId]);
 
-  // Quick action handlers
+  // Quick action handlers - populate input with prompt
   const handleQuickAction = (action: string) => {
     let prompt = '';
     switch (action) {
@@ -95,7 +95,7 @@ export default function InteractiveContentCreatorV2Page() {
     }
   };
 
-  // Call ADK agent
+  // Call ADK agent with proper streaming
   const callAgent = async (userMessage: string) => {
     if (!userMessage.trim() || isLoading) return;
 
@@ -137,7 +137,6 @@ export default function InteractiveContentCreatorV2Page() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let assistantContent = '';
       let assistantMessageId: string | null = null;
 
       while (true) {
@@ -157,24 +156,27 @@ export default function InteractiveContentCreatorV2Page() {
                 if (data.content?.parts) {
                   for (const part of data.content.parts) {
                     if (part.text) {
-                      assistantContent = part.text;
+                      // ADK sends full accumulated text in each event
+                      const fullText = part.text;
 
                       if (!assistantMessageId) {
+                        // Create new assistant message
                         assistantMessageId = `assistant-${Date.now()}`;
                         setMessages((prev) => [
                           ...prev,
                           {
                             id: assistantMessageId!,
                             role: 'assistant',
-                            content: assistantContent,
+                            content: fullText,
                             createdAt: new Date().toISOString(),
                           },
                         ]);
                       } else {
+                        // Update existing message with full accumulated text
                         setMessages((prev) =>
                           prev.map((msg) =>
                             msg.id === assistantMessageId
-                              ? { ...msg, content: assistantContent }
+                              ? { ...msg, content: fullText }
                               : msg
                           )
                         );
@@ -317,9 +319,9 @@ export default function InteractiveContentCreatorV2Page() {
             {messages.map((message) => (
               <ChatMessage
                 key={message.id}
-                role={message.role as 'user' | 'assistant'}
+                role={message.role}
                 content={message.content}
-                timestamp={new Date(message.createdAt || Date.now()).toLocaleTimeString()}
+                timestamp={new Date().toLocaleTimeString()}
               />
             ))}
 
