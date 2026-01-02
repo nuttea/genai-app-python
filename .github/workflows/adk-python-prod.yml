@@ -58,7 +58,7 @@ jobs:
         DD_LLMOBS_ML_APP=datadog-content-creator
         ENVIRONMENT=production
         LOG_LEVEL=INFO
-        ALLOWED_ORIGINS=*
+        ALLOWED_ORIGINS=https://genai-nextjs-frontend-449012790678.us-central1.run.app,*
       secrets: |
         DD_API_KEY=DD_API_KEY:latest
     secrets:
