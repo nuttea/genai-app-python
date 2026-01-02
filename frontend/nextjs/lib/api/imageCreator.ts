@@ -27,7 +27,8 @@ export interface ImageGenerationRequest {
   // Gemini 3 Pro Image supported aspect ratios: 1:1, 3:2, 2:3, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
   aspectRatio?: '1:1' | '16:9' | '9:16' | '21:9' | '3:2' | '2:3' | '3:4' | '4:3' | '4:5' | '5:4';
   // Reference images (max 14, max 7 MB each, supported: PNG, JPEG, WebP, HEIC, HEIF)
-  referenceImages?: string[];
+  // Format: [{"data": "base64_string", "mime_type": "image/png"}, ...]
+  referenceImages?: Array<{ data: string; mime_type: string }>;
 }
 
 export interface ImageEditRequest {

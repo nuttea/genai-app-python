@@ -64,7 +64,7 @@ export default function ImageCreatorPage() {
   const [currentImage, setCurrentImage] = useState<GeneratedImage | null>(null);
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
   const [editPrompt, setEditPrompt] = useState('');
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);  // Base64 reference images
+  const [referenceImages, setReferenceImages] = useState<Array<{ data: string; mime_type: string }>>([]);  // Reference images with mime type
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -117,7 +117,7 @@ export default function ImageCreatorPage() {
     }
 
     try {
-      const newReferenceImages: string[] = [];
+      const newReferenceImages: Array<{ data: string; mime_type: string }> = [];
       let skippedCount = 0;
       let addedCount = 0;
       
@@ -154,7 +154,11 @@ export default function ImageCreatorPage() {
           reader.readAsDataURL(file);
         });
 
-        newReferenceImages.push(base64);
+        // Store with mime_type for backend
+        newReferenceImages.push({
+          data: base64,
+          mime_type: file.type,
+        });
         addedCount++;
       }
 
@@ -417,7 +421,7 @@ export default function ImageCreatorPage() {
                         {referenceImages.map((img, idx) => (
                           <div key={idx} className="relative group">
                             <img
-                              src={`data:image/png;base64,${img}`}
+                              src={`data:${img.mime_type};base64,${img.data}`}
                               alt={`Reference ${idx + 1}`}
                               className="w-full h-20 object-cover rounded border border-gray-300"
                             />
