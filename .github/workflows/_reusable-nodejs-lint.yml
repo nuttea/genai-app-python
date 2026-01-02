@@ -1,0 +1,79 @@
+name: Reusable Node.js Lint
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        description: 'Working directory for the service'
+        required: true
+        type: string
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+      run_eslint:
+        description: 'Run ESLint'
+        required: false
+        type: boolean
+        default: true
+      run_typecheck:
+        description: 'Run TypeScript type checking'
+        required: false
+        type: boolean
+        default: true
+      run_prettier:
+        description: 'Run Prettier formatting check'
+        required: false
+        type: boolean
+        default: true
+      run_build:
+        description: 'Run build verification'
+        required: false
+        type: boolean
+        default: true
+      build_env_vars:
+        description: 'Environment variables for build (JSON object)'
+        required: false
+        type: string
+        default: '{}'
+
+jobs:
+  lint:
+    name: Node.js Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint
+        if: ${{ inputs.run_eslint }}
+        run: npm run lint
+
+      - name: Run Type Check
+        if: ${{ inputs.run_typecheck }}
+        run: npm run type-check
+
+      - name: Run Prettier Check
+        if: ${{ inputs.run_prettier }}
+        run: npx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"
+
+      - name: Build Application
+        if: ${{ inputs.run_build }}
+        run: npm run build
+        env:
+          VOTE_EXTRACTOR_API_URL: http://localhost:8000
+          CONTENT_CREATOR_API_URL: http://localhost:8002
+

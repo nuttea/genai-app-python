@@ -1,0 +1,117 @@
+name: Next.js Frontend Production Deploy (Reusable)
+
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'frontend/nextjs/**'
+      - '.github/workflows/nextjs-frontend-prod-v2.yml'
+
+env:
+  SERVICE_NAME: genai-nextjs-frontend
+  REGION: us-central1
+  NODE_VERSION: '20'
+
+jobs:
+  lint-and-test:
+    name: Quality Gate - Lint & Test
+    uses: ./.github/workflows/_reusable-nodejs-lint.yml
+    with:
+      working_directory: 'frontend/nextjs'
+      node_version: '20'
+      run_eslint: true
+      run_typecheck: true
+      run_prettier: true
+      run_build: true
+
+  get-backend-urls:
+    name: Get Backend Production URLs
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      vote_extractor_url: ${{ steps.get-urls.outputs.vote_extractor_url }}
+      content_creator_url: ${{ steps.get-urls.outputs.content_creator_url }}
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Backend URLs
+        id: get-urls
+        run: |
+          # Get production tagged URLs for backend services
+          VOTE_EXTRACTOR_URL=$(gcloud run services describe genai-fastapi-backend \
+            --region ${{ env.REGION }} \
+            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url' 2>/dev/null || \
+            gcloud run services describe genai-fastapi-backend \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          
+          CONTENT_CREATOR_URL=$(gcloud run services describe genai-adk-python \
+            --region ${{ env.REGION }} \
+            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url' 2>/dev/null || \
+            gcloud run services describe genai-adk-python \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)' 2>/dev/null || echo "")
+          
+          echo "vote_extractor_url=$VOTE_EXTRACTOR_URL" >> $GITHUB_OUTPUT
+          echo "content_creator_url=$CONTENT_CREATOR_URL" >> $GITHUB_OUTPUT
+          echo "Vote Extractor Production URL: $VOTE_EXTRACTOR_URL"
+          echo "Content Creator Production URL: $CONTENT_CREATOR_URL"
+
+  deploy:
+    name: Deploy to Production
+    needs: [lint-and-test, get-backend-urls]
+    uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
+    with:
+      service_name: genai-nextjs-frontend
+      region: us-central1
+      dockerfile_path: frontend/nextjs/Dockerfile.cloudrun
+      docker_context: frontend/nextjs
+      deployment_tag: prod
+      no_traffic: true
+      environment: prod
+      memory: 1Gi
+      cpu: '1'
+      timeout: '300'
+      max_instances: '1'
+      min_instances: '0'
+      port: '3000'
+      build_args: |
+        NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ needs.get-backend-urls.outputs.vote_extractor_url }}
+        NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ needs.get-backend-urls.outputs.content_creator_url }}
+        NEXT_PUBLIC_API_KEY=${{ secrets.API_KEY }}
+      env_vars: |
+        NODE_ENV=production
+        NEXT_TELEMETRY_DISABLED=1
+        NEXT_PUBLIC_APP_NAME=Datadog GenAI Platform
+        NEXT_PUBLIC_APP_VERSION=${{ github.sha }}
+        NEXT_PUBLIC_DD_SITE=datadoghq.com
+        NEXT_PUBLIC_DD_SERVICE=genai-nextjs-frontend
+        NEXT_PUBLIC_DD_ENV=prod
+        DD_VERSION=${{ github.sha }}
+        NEXT_PUBLIC_DD_SESSION_REPLAY_ENABLED=true
+        NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE=100
+        NEXT_PUBLIC_DD_TRACE_ENABLED=true
+        NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100
+        NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
+        NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
+      DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
+      API_KEY: ${{ secrets.API_KEY }}
+

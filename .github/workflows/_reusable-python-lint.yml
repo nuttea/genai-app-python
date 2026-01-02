@@ -1,0 +1,79 @@
+name: Reusable Python Lint
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        description: 'Working directory for the service'
+        required: true
+        type: string
+      python_version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.11'
+      run_black:
+        description: 'Run Black formatter check'
+        required: false
+        type: boolean
+        default: true
+      run_ruff:
+        description: 'Run Ruff linter'
+        required: false
+        type: boolean
+        default: true
+      black_path:
+        description: 'Path for Black to check (relative to working_directory)'
+        required: false
+        type: string
+        default: '.'
+      ruff_path:
+        description: 'Path for Ruff to check (relative to working_directory)'
+        required: false
+        type: string
+        default: '.'
+      sync_extras:
+        description: 'uv sync flags (e.g., --all-extras, --all-extras --no-install-project)'
+        required: false
+        type: string
+        default: '--all-extras'
+
+jobs:
+  lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles(format('{0}/pyproject.toml', inputs.working_directory)) }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: uv sync ${{ inputs.sync_extras }}
+
+      - name: Run Black (check only)
+        if: ${{ inputs.run_black }}
+        run: uv run black --check ${{ inputs.black_path }}
+
+      - name: Run Ruff
+        if: ${{ inputs.run_ruff }}
+        run: uv run ruff check ${{ inputs.ruff_path }}
+

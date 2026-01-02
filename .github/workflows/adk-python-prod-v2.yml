@@ -1,0 +1,69 @@
+name: ADK Python Production Deploy (Reusable)
+
+on:
+  push:
+    branches:
+      - prod
+    paths:
+      - 'services/adk-python/**'
+      - '.github/workflows/adk-python-prod-v2.yml'
+
+env:
+  SERVICE_NAME: genai-adk-python
+  REGION: us-central1
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  lint:
+    name: Quality Gate - Lint
+    uses: ./.github/workflows/_reusable-python-lint.yml
+    with:
+      working_directory: 'services/adk-python'
+      python_version: '3.11'
+      black_path: '.'
+      ruff_path: '.'
+      sync_extras: '--all-extras --no-install-project'
+
+  deploy:
+    name: Deploy to Production
+    needs: [lint]
+    uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
+    with:
+      service_name: genai-adk-python
+      region: us-central1
+      dockerfile_path: services/adk-python/Dockerfile.cloudrun
+      docker_context: services/adk-python
+      deployment_tag: prod
+      no_traffic: true
+      environment: prod
+      memory: 2Gi
+      cpu: '2'
+      timeout: '600'
+      max_instances: '1'
+      min_instances: '0'
+      port: '8002'
+      env_vars: |
+        DD_ENV=prod
+        DD_SERVICE=genai-adk-python
+        DD_VERSION=${{ github.sha }}
+        DD_LOGS_INJECTION=true
+        DD_TRACE_ENABLED=true
+        DD_RUNTIME_METRICS_ENABLED=true
+        DD_PROFILING_ENABLED=true
+        DD_TRACE_SAMPLE_RATE=1
+        DD_PROFILING_HEAP_ENABLED=true
+        DD_PROFILING_MEMORY_ENABLED=true
+        DD_LLMOBS_ENABLED=true
+        DD_LLMOBS_AGENTLESS_ENABLED=true
+        DD_LLMOBS_ML_APP=datadog-content-creator
+        ENVIRONMENT=production
+        LOG_LEVEL=INFO
+        ALLOWED_ORIGINS=*
+      secrets: |
+        DD_API_KEY=dd-api-key:latest
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+

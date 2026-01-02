@@ -1,0 +1,235 @@
+name: Reusable Cloud Run Deploy
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'Cloud Run service name'
+        required: true
+        type: string
+      region:
+        description: 'GCP region'
+        required: false
+        type: string
+        default: 'us-central1'
+      dockerfile_path:
+        description: 'Path to Dockerfile'
+        required: true
+        type: string
+      docker_context:
+        description: 'Docker build context directory'
+        required: true
+        type: string
+      deployment_tag:
+        description: 'Cloud Run revision tag (empty for no tag)'
+        required: false
+        type: string
+        default: ''
+      no_traffic:
+        description: 'Deploy with --no-traffic flag'
+        required: false
+        type: boolean
+        default: false
+      environment:
+        description: 'Environment (dev/prod)'
+        required: false
+        type: string
+        default: 'dev'
+      memory:
+        description: 'Memory allocation (e.g., 1Gi, 2Gi)'
+        required: false
+        type: string
+        default: '1Gi'
+      cpu:
+        description: 'CPU allocation'
+        required: false
+        type: string
+        default: '1'
+      timeout:
+        description: 'Request timeout in seconds'
+        required: false
+        type: string
+        default: '300'
+      max_instances:
+        description: 'Maximum instances'
+        required: false
+        type: string
+        default: '10'
+      min_instances:
+        description: 'Minimum instances'
+        required: false
+        type: string
+        default: '0'
+      port:
+        description: 'Container port'
+        required: false
+        type: string
+        default: '8000'
+      build_args:
+        description: 'Docker build arguments (multi-line string)'
+        required: false
+        type: string
+        default: ''
+      env_vars:
+        description: 'Cloud Run environment variables (key=value pairs, multi-line)'
+        required: false
+        type: string
+        default: ''
+      secrets:
+        description: 'Cloud Run secrets (key=secret:version pairs, multi-line)'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_SERVICE_ACCOUNT_EMAIL:
+        required: true
+      GCP_PROJECT_ID:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+      DD_RUM_APPLICATION_ID:
+        required: false
+      DD_RUM_CLIENT_TOKEN:
+        required: false
+      API_KEY:
+        required: false
+    outputs:
+      service_url:
+        description: 'Deployed Cloud Run service URL'
+        value: ${{ jobs.deploy.outputs.service_url }}
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      service_url: ${{ steps.get-service-url.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push to GCR
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.dockerfile_path }}
+          push: true
+          no-cache: true
+          tags: |
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }}
+            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ inputs.deployment_tag != '' && format('{0}-latest', inputs.deployment_tag) || 'latest' }}
+          build-args: |
+            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
+            DD_GIT_COMMIT_SHA=${{ github.sha }}
+            ${{ inputs.build_args }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          # Build the base command
+          CMD="gcloud run deploy ${{ inputs.service_name }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }} \
+            --region ${{ inputs.region }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port ${{ inputs.port }} \
+            --memory ${{ inputs.memory }} \
+            --cpu ${{ inputs.cpu }} \
+            --timeout ${{ inputs.timeout }} \
+            --max-instances ${{ inputs.max_instances }} \
+            --min-instances ${{ inputs.min_instances }}"
+          
+          # Add revision tag if specified
+          if [ -n "${{ inputs.deployment_tag }}" ]; then
+            CMD="$CMD --tag ${{ inputs.deployment_tag }}"
+          fi
+          
+          # Add no-traffic flag if specified
+          if [ "${{ inputs.no_traffic }}" = "true" ]; then
+            CMD="$CMD --no-traffic"
+          fi
+          
+          # Add environment variables if specified
+          if [ -n "${{ inputs.env_vars }}" ]; then
+            # Convert multi-line env_vars to --set-env-vars format
+            ENV_VARS=$(echo "${{ inputs.env_vars }}" | tr '\n' ',' | sed 's/,$//')
+            CMD="$CMD --set-env-vars $ENV_VARS"
+          fi
+          
+          # Add secrets if specified
+          if [ -n "${{ inputs.secrets }}" ]; then
+            # Convert multi-line secrets to --set-secrets format
+            SECRETS=$(echo "${{ inputs.secrets }}" | tr '\n' ',' | sed 's/,$//')
+            CMD="$CMD --set-secrets $SECRETS"
+          fi
+          
+          # Execute the deployment
+          eval $CMD
+
+      - name: Get Service URL
+        id: get-service-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ inputs.service_name }} \
+            --region ${{ inputs.region }} \
+            --format 'value(status.url)')
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $SERVICE_URL"
+
+      - name: Notify Slack (Success)
+        if: success() && secrets.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "✅ ${{ inputs.service_name }} deployment success (${{ inputs.environment }})",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ inputs.service_name }} Deployment Success (${{ inputs.environment }})*\n• Service: ${{ inputs.service_name }}\n• Version: `${{ github.sha }}`\n• URL: ${{ steps.get-service-url.outputs.url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack (Failure)
+        if: failure() && secrets.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "❌ ${{ inputs.service_name }} deployment failure (${{ inputs.environment }})",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ inputs.service_name }} Deployment Failure (${{ inputs.environment }})*\n• Service: ${{ inputs.service_name }}\n• Version: `${{ github.sha }}`\n• Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
