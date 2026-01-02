@@ -12,8 +12,8 @@ import logging
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
-from image_creator_agent.config import config
-from image_creator_agent.tools.image_tools import (
+from image_creator.config import config
+from image_creator.tools.image_tools import (
     generate_image,
     edit_image,
     analyze_image,

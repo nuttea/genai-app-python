@@ -8,13 +8,15 @@ https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/image-gene
 import base64
 import logging
 import os
+import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from google import genai
 from google.genai import types
 
-from image_creator_agent.config import config
+from image_creator.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -189,28 +191,43 @@ def generate_image(
                 "safety_blocked": False,
             }
 
-        # Convert image data to base64 for frontend
-        # inline_data.data is bytes (raw image data from Gemini)
-        # We need to encode it as base64 string for JSON transport
-        if isinstance(image_data, bytes):
-            image_base64 = base64.b64encode(image_data).decode("utf-8")
-        else:
-            # Already string (base64) - shouldn't happen but handle it
-            image_base64 = image_data
+        # Save image to file instead of returning base64
+        # This prevents 400 INVALID_ARGUMENT when ADK sends tool result back to model
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        
+        # Determine file extension from mime_type
+        mime_to_ext = {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/webp": "webp",
+            "image/gif": "gif",
+        }
+        ext = mime_to_ext.get(image_mime_type, "png")
+        filename = f"{timestamp}_{unique_id}.{ext}"
+        
+        uploads_dir = Path("/app/uploads")
+        file_path = uploads_dir / filename
+        
+        # Write bytes directly to file
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+        
+        image_url = f"/uploads/{filename}"
+        logger.info(f"✅ Image saved to {file_path} ({len(image_data)} bytes)")
+        logger.info(f"✅ Image URL: {image_url}")
 
-        logger.info(f"✅ Image generated successfully: {len(image_base64)} chars (base64)")
-
-        # Return with proper inline_data format
-        # Frontend can reconstruct: data:{mime_type};base64,{image_base64}
+        # Return URL instead of base64 - much smaller payload for model
         return {
             "status": "success",
-            "text_response": text_response or "Image generated successfully",
-            "image_base64": image_base64,  # Base64-encoded string
-            "mime_type": image_mime_type or config.output_mime_type,  # Actual MIME type from response
+            "text_response": text_response or f"Image generated successfully and saved as {filename}",
+            "image_url": image_url,  # URL to fetch image (small string)
+            "mime_type": image_mime_type or config.output_mime_type,
             "prompt_used": enhanced_prompt,
             "aspect_ratio": aspect_ratio,
             "image_type": image_type,
             "safety_blocked": False,
+            "file_size_bytes": len(image_data),
         }
 
     except Exception as e:
@@ -350,23 +367,40 @@ def edit_image(
                 "text_response": text_response,
             }
 
-        # Convert to base64 for frontend
-        # inline_data.data is bytes from Gemini response
-        if isinstance(image_data, bytes):
-            image_base64 = base64.b64encode(image_data).decode("utf-8")
-        else:
-            image_base64 = image_data
+        # Save edited image to file instead of returning base64
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        
+        # Determine file extension from mime_type
+        mime_to_ext = {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/webp": "webp",
+            "image/gif": "gif",
+        }
+        ext = mime_to_ext.get(image_mime_type, "png")
+        filename = f"edit_{timestamp}_{unique_id}.{ext}"
+        
+        uploads_dir = Path("/app/uploads")
+        file_path = uploads_dir / filename
+        
+        # Write bytes directly to file
+        with open(file_path, "wb") as f:
+            f.write(image_data)
+        
+        image_url = f"/uploads/{filename}"
+        logger.info(f"✅ Edited image saved to {file_path} ({len(image_data)} bytes)")
+        logger.info(f"✅ Image URL: {image_url}")
 
-        logger.info(f"✅ Image edited successfully: {len(image_base64)} chars (base64)")
-
-        # Return with proper inline_data format
+        # Return URL instead of base64
         return {
             "status": "success",
-            "text_response": text_response or "Image edited successfully",
-            "image_base64": image_base64,  # Base64-encoded string
-            "mime_type": image_mime_type or config.output_mime_type,  # Actual MIME type from response
+            "text_response": text_response or f"Image edited successfully and saved as {filename}",
+            "image_url": image_url,  # URL to fetch image
+            "mime_type": image_mime_type or config.output_mime_type,
             "edit_prompt": edit_prompt,
             "aspect_ratio": aspect_ratio,
+            "file_size_bytes": len(image_data),
         }
 
     except Exception as e:

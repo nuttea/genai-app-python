@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { datadogRum } from '@datadog/browser-rum';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
@@ -34,6 +34,27 @@ export default function ImageCreatorPage() {
     const rumSessionId = datadogRum.getInternalContext()?.session_id;
     return rumSessionId ? `img_dd_${rumSessionId}` : `img_${Date.now()}`;
   });
+
+  // Stop RUM session on page unload/refresh (kiosk session pattern)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        // Stop the current session to start fresh on next load
+        // This prevents session continuation across page refreshes
+        datadogRum.stopSession();
+        console.log('📊 Stopped Datadog RUM session on page unload');
+      } catch (e) {
+        console.warn('Could not stop RUM session:', e);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also stop session on component unmount
+      handleBeforeUnload();
+    };
+  }, []);
 
   // State
   const [prompt, setPrompt] = useState('');

@@ -76,7 +76,7 @@ export const imageCreatorApi = {
   },
 
   /**
-   * Generate image from text prompt
+   * Generate image from text prompt (non-streaming)
    * 
    * Example:
    * ```ts
@@ -93,35 +93,94 @@ export const imageCreatorApi = {
     sessionId?: string,
     onStreamEvent?: (text: string) => void
   ): Promise<ImageCreatorResponse> => {
-    const sid = sessionId || `img_${Date.now()}`;
+    try {
+      // Get Datadog RUM session ID if available
+      let rumSessionId: string | undefined;
+      try {
+        if (typeof window !== 'undefined' && (window as any).DD_RUM) {
+          const session = (window as any).DD_RUM.getInternalContext();
+          if (session?.session_id) {
+            rumSessionId = `rum_${session.session_id}`;
+            console.log(`📊 Using Datadog RUM session ID: ${rumSessionId}`);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not get RUM session ID:', e);
+      }
 
-    // Create session
-    await imageCreatorApi._createSession(userId, sid);
+      // Use RUM session ID if available, otherwise provided sessionId
+      const finalSessionId = rumSessionId || sessionId;
 
-    // Build message parts (text only for generation)
-    const parts: Part[] = [];
+      const response = await fetch(`${API_BASE_URL}/api/v1/images/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: request.prompt,
+          image_type: request.imageType || 'illustration',
+          aspect_ratio: request.aspectRatio || '1:1',
+          user_id: userId,
+          session_id: finalSessionId,
+        }),
+      });
 
-    // Add reference image if provided
-    if (request.referenceImageBase64) {
-      parts.push(base64ToInlineData(request.referenceImageBase64));
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      console.log('📦 Image generation response:', data);
+
+      if (data.status === 'success' && data.image_url) {
+        // Fetch the image from the URL
+        console.log(`🌐 Fetching image from: ${API_BASE_URL}${data.image_url}`);
+        const imageResponse = await fetch(`${API_BASE_URL}${data.image_url}`);
+        
+        if (!imageResponse.ok) {
+          console.error(`❌ Failed to fetch image: ${imageResponse.status}`);
+          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+        }
+
+        const blob = await imageResponse.blob();
+        
+        // Convert to base64
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            const base64String = dataUrl.split(',')[1];
+            resolve(base64String);
+          };
+          reader.readAsDataURL(blob);
+        });
+
+        console.log(`✅ Image fetched: ${data.mime_type}, size: ${base64.length} chars`);
+
+        return {
+          text: data.text_response || 'Image generated successfully',
+          images: [{
+            mime_type: data.mime_type,
+            data: base64,
+          }],
+          status: 'success',
+        };
+      } else {
+        console.error('❌ Image generation failed:', data);
+        return {
+          text: data.error || 'Image generation failed',
+          status: 'error',
+          error: data.error,
+        };
+      }
+    } catch (error) {
+      console.error('❌ Image generation error:', error);
+      return {
+        text: '',
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
-
-    // Build prompt
-    let fullPrompt = `Generate ${request.imageType || 'illustration'}: ${request.prompt}`;
-    if (request.aspectRatio) {
-      fullPrompt += `\nAspect ratio: ${request.aspectRatio}`;
-    }
-
-    parts.push(textPart(fullPrompt));
-
-    // Call agent with streaming
-    return await imageCreatorApi._callAgentSSE(
-      'image_creator',
-      userId,
-      sid,
-      { role: 'user', parts },
-      onStreamEvent
-    );
   },
 
   /**
@@ -246,6 +305,9 @@ export const imageCreatorApi = {
             throw new Error('No response body reader');
           }
 
+          // Collect all image URLs for batch fetching at the end
+          const imageUrls: Array<{url: string, mimeType: string}> = [];
+
           while (true) {
             const { done, value } = await reader.read();
 
@@ -282,6 +344,9 @@ export const imageCreatorApi = {
               try {
                 const data = JSON.parse(jsonString);
 
+                // Log full data for debugging
+                console.log('SSE data received:', JSON.stringify(data).substring(0, 300));
+
                 if (data.content?.parts) {
                   for (const part of data.content.parts) {
                     // Extract text
@@ -304,12 +369,69 @@ export const imageCreatorApi = {
                         `size: ${part.inline_data.data.length} chars`
                       );
                     }
+                    
+                    // NEW: Extract image_url from tool call result
+                    // The tool result is embedded in the text response
+                    if (part.text && part.text.includes('image_url')) {
+                      try {
+                        const match = part.text.match(/"image_url":\s*"([^"]+)"/);
+                        if (match) {
+                          const imageUrl = match[1];
+                          const mimeTypeMatch = part.text.match(/"mime_type":\s*"([^"]+)"/);
+                          const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/png';
+                          console.log(`📥 Found image_url in text: ${imageUrl}`);
+                          imageUrls.push({ url: imageUrl, mimeType });
+                        }
+                      } catch (e) {
+                        console.error('Error extracting image_url from text:', e);
+                      }
+                    }
                   }
+                }
+                
+                // Also check top-level for image_url
+                if (data.image_url) {
+                  console.log(`📥 Found image_url at top level: ${data.image_url}`);
+                  imageUrls.push({ 
+                    url: data.image_url, 
+                    mimeType: data.mime_type || 'image/png' 
+                  });
                 }
               } catch (err) {
                 console.error('Error parsing SSE event:', err);
                 console.error('Event data:', jsonString.substring(0, 200) + '...');
               }
+            }
+          }
+
+          // After streaming completes, fetch all images
+          console.log(`📦 Fetching ${imageUrls.length} images from URLs...`);
+          for (const { url, mimeType } of imageUrls) {
+            try {
+              const fullUrl = `${API_BASE_URL}${url}`;
+              console.log(`🌐 Fetching: ${fullUrl}`);
+              const res = await fetch(fullUrl);
+              if (!res.ok) {
+                console.error(`❌ Failed to fetch image: ${res.status} ${res.statusText}`);
+                continue;
+              }
+              const blob = await res.blob();
+              const readerPromise = new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const base64 = (reader.result as string).split(',')[1];
+                  resolve(base64);
+                };
+                reader.readAsDataURL(blob);
+              });
+              const base64 = await readerPromise;
+              images.push({
+                mime_type: mimeType,
+                data: base64,
+              });
+              console.log(`✅ Image fetched: ${mimeType}, size: ${base64.length} chars`);
+            } catch (err) {
+              console.error(`❌ Failed to fetch image from ${url}:`, err);
             }
           }
 
