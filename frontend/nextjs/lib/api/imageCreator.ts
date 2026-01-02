@@ -255,52 +255,60 @@ export const imageCreatorApi = {
 
             buffer += decoder.decode(value, { stream: true });
             
-            // Split by newlines to process complete SSE messages
-            const lines = buffer.split('\n');
+            // SSE events are separated by double newlines
+            // Split by double newline to get complete events
+            const events = buffer.split('\n\n');
             
-            // Keep the last incomplete line in buffer
-            buffer = lines.pop() || '';
+            // Keep the last incomplete event in buffer
+            buffer = events.pop() || '';
 
-            for (const line of lines) {
-              // Skip empty lines
-              if (!line.trim()) continue;
+            for (const event of events) {
+              // Skip empty events
+              if (!event.trim()) continue;
               
-              if (line.startsWith('data: ')) {
-                const jsonString = line.slice(6).trim();
-                
-                // Skip empty data
-                if (!jsonString) continue;
-                
-                try {
-                  const data = JSON.parse(jsonString);
+              // SSE events can have multiple lines, each starting with "data: "
+              // Collect all data lines and concatenate them
+              const dataLines = event.split('\n')
+                .filter(line => line.startsWith('data: '))
+                .map(line => line.slice(6));
+              
+              if (dataLines.length === 0) continue;
+              
+              // Concatenate all data lines (some SSE implementations split large JSON)
+              const jsonString = dataLines.join('');
+              
+              if (!jsonString.trim()) continue;
+              
+              try {
+                const data = JSON.parse(jsonString);
 
-                  if (data.content?.parts) {
-                    for (const part of data.content.parts) {
-                      // Extract text
-                      if (part.text) {
-                        fullText = part.text;  // Use full text (not incremental)
-                        if (onStreamEvent) {
-                          onStreamEvent(part.text);
-                        }
-                      }
-
-                      // Extract images from inline_data
-                      // Response format: { inline_data: { mime_type: "...", data: "..." } }
-                      if (part.inline_data) {
-                        images.push({
-                          mime_type: part.inline_data.mime_type,
-                          data: part.inline_data.data,
-                        });
-                        console.log(
-                          `✅ Image received: ${part.inline_data.mime_type}, ` +
-                          `size: ${part.inline_data.data.length} chars`
-                        );
+                if (data.content?.parts) {
+                  for (const part of data.content.parts) {
+                    // Extract text
+                    if (part.text) {
+                      fullText = part.text;  // Use full text (not incremental)
+                      if (onStreamEvent) {
+                        onStreamEvent(part.text);
                       }
                     }
+
+                    // Extract images from inline_data
+                    // Response format: { inline_data: { mime_type: "...", data: "..." } }
+                    if (part.inline_data) {
+                      images.push({
+                        mime_type: part.inline_data.mime_type,
+                        data: part.inline_data.data,
+                      });
+                      console.log(
+                        `✅ Image received: ${part.inline_data.mime_type}, ` +
+                        `size: ${part.inline_data.data.length} chars`
+                      );
+                    }
                   }
-                } catch (err) {
-                  console.error('Error parsing SSE message:', err, 'Line:', jsonString.substring(0, 100));
                 }
+              } catch (err) {
+                console.error('Error parsing SSE event:', err);
+                console.error('Event data:', jsonString.substring(0, 200) + '...');
               }
             }
           }
