@@ -11,11 +11,11 @@ export const APP_CONFIG = {
 export const API_CONFIG = {
   voteExtractor: {
     baseUrl: process.env.NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL || 'http://localhost:8000',
-    timeout: 60000, // 60 seconds
+    timeout: 120000, // 120 seconds
   },
   contentCreator: {
     baseUrl: process.env.NEXT_PUBLIC_CONTENT_CREATOR_API_URL || 'http://localhost:8002',
-    timeout: 120000, // 120 seconds for LLM operations
+    timeout: 240000, // 240 seconds for LLM operations
   },
 } as const;
 
