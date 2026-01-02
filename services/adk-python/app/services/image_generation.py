@@ -10,6 +10,8 @@ from typing import Optional
 
 from google import genai
 from google.genai import types
+from google.auth import default
+from google.auth.exceptions import DefaultCredentialsError
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +26,74 @@ class ImageGenerationService:
 
     def __init__(self):
         """Initialize the image generation service."""
-        self.client = genai.Client(
-            vertexai=True,
-            project=os.environ.get("GCP_PROJECT_ID", "datadog-sandbox"),
-            location="global",
-        )
-        logger.info("✅ Image Generation Service initialized")
+        project_id = os.environ.get("GCP_PROJECT_ID", "datadog-sandbox")
+        
+        # Check Cloud Run environment
+        is_cloud_run = os.environ.get("K_SERVICE") is not None
+        service_name = os.environ.get("K_SERVICE", "local")
+        revision = os.environ.get("K_REVISION", "unknown")
+        
+        logger.info(f"🔧 Initializing Image Generation Service")
+        logger.info(f"   Environment: {'Cloud Run' if is_cloud_run else 'Local/Docker'}")
+        logger.info(f"   Service: {service_name}")
+        logger.info(f"   Revision: {revision}")
+        logger.info(f"   Project ID: {project_id}")
+        logger.info(f"   Model: {MODEL_NAME}")
+        logger.info(f"   Location: global")
+        
+        # Check for Application Default Credentials
+        try:
+            credentials, auth_project_id = default()
+            
+            # Get service account email if available
+            service_account_email = "unknown"
+            if hasattr(credentials, "service_account_email"):
+                service_account_email = credentials.service_account_email
+            elif hasattr(credentials, "_service_account_email"):
+                service_account_email = credentials._service_account_email
+            
+            logger.info(f"🔐 Google Cloud Credentials:")
+            logger.info(f"   Type: {type(credentials).__name__}")
+            logger.info(f"   Service Account: {service_account_email}")
+            logger.info(f"   Project (from credentials): {auth_project_id}")
+            logger.info(f"   Valid: {credentials.valid if hasattr(credentials, 'valid') else 'N/A'}")
+            logger.info(f"   Expired: {credentials.expired if hasattr(credentials, 'expired') else 'N/A'}")
+            
+            # Check for required scopes
+            if hasattr(credentials, "scopes"):
+                logger.info(f"   Scopes: {credentials.scopes}")
+            
+            # Warn if using wrong project
+            if auth_project_id and auth_project_id != project_id:
+                logger.warning(
+                    f"⚠️  Project ID mismatch! "
+                    f"Using {project_id} but credentials are for {auth_project_id}"
+                )
+            
+        except DefaultCredentialsError as e:
+            logger.error(f"❌ Failed to get Application Default Credentials: {e}")
+            logger.error(f"   This will likely cause PERMISSION_DENIED errors!")
+        except Exception as e:
+            logger.warning(f"⚠️  Error checking credentials: {e}")
+        
+        # Initialize GenAI client
+        try:
+            self.client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location="global",
+            )
+            logger.info("✅ GenAI Client initialized successfully")
+            
+            # Log expected permissions
+            logger.info(f"📋 Required IAM Permissions:")
+            logger.info(f"   - aiplatform.endpoints.predict")
+            logger.info(f"   - aiplatform.endpoints.get")
+            logger.info(f"   Role: roles/aiplatform.user (Vertex AI User)")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize GenAI Client: {e}")
+            raise
 
     async def generate_image(
         self,

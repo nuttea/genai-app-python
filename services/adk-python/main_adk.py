@@ -13,6 +13,8 @@ from ddtrace.llmobs import LLMObs
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from google.adk.cli.fast_api import get_fast_api_app
+from google.auth import default
+from google.auth.exceptions import DefaultCredentialsError
 
 # Configure logging
 logging.basicConfig(
@@ -51,6 +53,52 @@ if DD_API_KEY:
         logger.info("Datadog LLM Observability enabled: ml_app=adk-python-content-creator")
     except Exception as e:
         logger.warning(f"Failed to enable Datadog LLM Observability: {e}")
+
+# Verify Google Cloud Credentials for Vertex AI
+logger.info("🔐 Verifying Google Cloud Credentials...")
+try:
+    credentials, project_id = default()
+    
+    # Get service account email if available
+    service_account_email = "unknown"
+    if hasattr(credentials, "service_account_email"):
+        service_account_email = credentials.service_account_email
+    elif hasattr(credentials, "_service_account_email"):
+        service_account_email = credentials._service_account_email
+    
+    # Check Cloud Run environment
+    is_cloud_run = os.getenv("K_SERVICE") is not None
+    k_service = os.getenv("K_SERVICE", "N/A")
+    k_revision = os.getenv("K_REVISION", "N/A")
+    
+    logger.info(f"✅ Application Default Credentials found:")
+    logger.info(f"   Environment: {'Cloud Run' if is_cloud_run else 'Local/Docker'}")
+    if is_cloud_run:
+        logger.info(f"   Cloud Run Service: {k_service}")
+        logger.info(f"   Cloud Run Revision: {k_revision}")
+    logger.info(f"   Credential Type: {type(credentials).__name__}")
+    logger.info(f"   Service Account: {service_account_email}")
+    logger.info(f"   Project ID: {project_id or 'N/A'}")
+    logger.info(f"   Valid: {credentials.valid if hasattr(credentials, 'valid') else 'N/A'}")
+    
+    # Log required permissions for Vertex AI
+    logger.info(f"📋 Required IAM Roles for Vertex AI Image Generation:")
+    logger.info(f"   - roles/aiplatform.user (Vertex AI User)")
+    logger.info(f"   Required Permissions:")
+    logger.info(f"   - aiplatform.endpoints.predict")
+    logger.info(f"   - aiplatform.endpoints.get")
+    logger.info(f"   Grant with: gcloud projects add-iam-policy-binding {project_id or 'PROJECT_ID'}")
+    logger.info(f"     --member='serviceAccount:{service_account_email}'")
+    logger.info(f"     --role='roles/aiplatform.user'")
+    
+except DefaultCredentialsError as e:
+    logger.error(f"❌ No Application Default Credentials found!")
+    logger.error(f"   Error: {e}")
+    logger.error(f"   This will cause PERMISSION_DENIED errors when accessing Vertex AI!")
+    logger.error(f"   For Cloud Run: Ensure service account has proper IAM roles")
+    logger.error(f"   For local: Run 'gcloud auth application-default login'")
+except Exception as e:
+    logger.warning(f"⚠️  Could not verify credentials: {e}")
 
 # ADK Configuration
 # Point to parent directory (this file's directory) which contains 'agents' subdirectory
