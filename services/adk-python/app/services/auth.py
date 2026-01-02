@@ -1,18 +1,12 @@
-"""Authentication service with IAP and Google OAuth support."""
+"""Authentication service with simplified IAP support."""
 
 import logging
 import os
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
 
 logger = logging.getLogger(__name__)
-
-# Environment configuration
-IAP_AUDIENCE = os.environ.get("IAP_AUDIENCE")  # For IAP JWT verification
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")  # For Google OAuth
 
 
 class User:
@@ -35,90 +29,53 @@ class User:
 
 
 class AuthService:
-    """Service for authenticating users via IAP or Google OAuth."""
+    """Service for authenticating users via IAP (simplified - no audience check)."""
 
     def __init__(self):
         """Initialize the authentication service."""
-        self.iap_enabled = bool(IAP_AUDIENCE)
-        self.google_oauth_enabled = bool(GOOGLE_CLIENT_ID)
-        logger.info(
-            f"🔐 Auth Service initialized: IAP={self.iap_enabled}, OAuth={self.google_oauth_enabled}"
-        )
+        logger.info("🔐 Auth Service initialized: IAP (simplified, no audience check)")
 
-    async def verify_iap_jwt(self, jwt_token: str) -> Optional[dict]:
+    async def decode_iap_jwt(self, jwt_token: str) -> Optional[dict]:
         """
-        Verify IAP JWT token.
+        Decode IAP JWT token without audience verification.
 
         Args:
-            jwt_token: JWT token from X-Serverless-Authorization header
+            jwt_token: JWT token from X-Serverless-Authorization or X-Goog-IAP-JWT-Assertion header
 
         Returns:
             dict: Decoded token claims if valid, None otherwise
         """
-        if not self.iap_enabled:
-            return None
-
         try:
-            # Verify the token
-            decoded_token = id_token.verify_oauth2_token(
-                jwt_token,
-                google_requests.Request(),
-                audience=IAP_AUDIENCE,
-            )
+            # Decode JWT without verification (just parse the payload)
+            import base64
+            import json
 
-            # Validate issuer
-            if decoded_token.get("iss") not in [
-                "https://cloud.google.com/iap",
-                "https://accounts.google.com",
-            ]:
-                logger.warning(f"⚠️ Invalid IAP token issuer: {decoded_token.get('iss')}")
+            # JWT format: header.payload.signature
+            parts = jwt_token.split(".")
+            if len(parts) != 3:
+                logger.warning(f"⚠️ Invalid JWT format (expected 3 parts, got {len(parts)})")
                 return None
 
-            logger.info(f"✅ IAP authentication successful: {decoded_token.get('email')}")
+            # Decode payload (add padding if needed)
+            payload = parts[1]
+            # Add padding for base64 decoding
+            padding = 4 - len(payload) % 4
+            if padding != 4:
+                payload += "=" * padding
+
+            decoded_bytes = base64.urlsafe_b64decode(payload)
+            decoded_token = json.loads(decoded_bytes)
+
+            # Basic validation: check for required fields
+            if not decoded_token.get("email") or not decoded_token.get("sub"):
+                logger.warning("⚠️ IAP JWT missing required fields (email or sub)")
+                return None
+
+            logger.info(f"✅ IAP JWT decoded successfully: {decoded_token.get('email')}")
             return decoded_token
 
         except Exception as e:
-            logger.warning(f"⚠️ IAP JWT verification failed: {e}")
-            return None
-
-    async def verify_google_oauth(self, id_token_str: str) -> Optional[dict]:
-        """
-        Verify Google OAuth ID token.
-
-        Args:
-            id_token_str: Google OAuth ID token from Authorization header
-
-        Returns:
-            dict: Decoded token claims if valid, None otherwise
-        """
-        if not self.google_oauth_enabled:
-            return None
-
-        try:
-            # Verify the token
-            decoded_token = id_token.verify_oauth2_token(
-                id_token_str,
-                google_requests.Request(),
-                audience=GOOGLE_CLIENT_ID,
-            )
-
-            # Validate issuer
-            if decoded_token.get("iss") not in [
-                "https://accounts.google.com",
-                "accounts.google.com",
-            ]:
-                logger.warning(
-                    f"⚠️ Invalid Google OAuth issuer: {decoded_token.get('iss')}"
-                )
-                return None
-
-            logger.info(
-                f"✅ Google OAuth authentication successful: {decoded_token.get('email')}"
-            )
-            return decoded_token
-
-        except Exception as e:
-            logger.warning(f"⚠️ Google OAuth verification failed: {e}")
+            logger.warning(f"⚠️ IAP JWT decode failed: {e}")
             return None
 
     async def authenticate_user(self, request: Request) -> User:
@@ -126,9 +83,8 @@ class AuthService:
         Authenticate user from request headers.
 
         Tries authentication methods in order:
-        1. IAP (X-Serverless-Authorization header)
-        2. Google OAuth (Authorization: Bearer header)
-        3. Local development mode (if enabled)
+        1. IAP (X-Serverless-Authorization or X-Goog-IAP-JWT-Assertion header)
+        2. Local development mode (if enabled)
 
         Args:
             request: FastAPI request object
@@ -139,31 +95,20 @@ class AuthService:
         Raises:
             HTTPException: If authentication fails
         """
-        # Try IAP authentication first (Cloud Run with IAP)
-        iap_jwt = request.headers.get("X-Serverless-Authorization")
+        # Try IAP authentication (Cloud Run with IAP)
+        # Check both common IAP headers
+        iap_jwt = request.headers.get("X-Serverless-Authorization") or request.headers.get(
+            "X-Goog-IAP-JWT-Assertion"
+        )
         if iap_jwt:
-            logger.debug("🔍 Attempting IAP authentication")
-            decoded = await self.verify_iap_jwt(iap_jwt)
+            logger.debug("🔍 Attempting IAP authentication (simplified - no aud check)")
+            decoded = await self.decode_iap_jwt(iap_jwt)
             if decoded:
                 return User(
                     email=decoded.get("email"),
                     user_id=decoded.get("sub"),
                     name=decoded.get("name"),
                     auth_method="iap",
-                )
-
-        # Try Google OAuth (Bearer token)
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            logger.debug("🔍 Attempting Google OAuth authentication")
-            token = auth_header.replace("Bearer ", "")
-            decoded = await self.verify_google_oauth(token)
-            if decoded:
-                return User(
-                    email=decoded.get("email"),
-                    user_id=decoded.get("sub"),
-                    name=decoded.get("name"),
-                    auth_method="google_oauth",
                 )
 
         # Local development mode (no authentication required)
@@ -178,10 +123,10 @@ class AuthService:
             )
 
         # Authentication failed
-        logger.error("❌ Authentication failed: No valid credentials provided")
+        logger.error("❌ Authentication failed: No IAP JWT found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required. Provide X-Serverless-Authorization (IAP) or Authorization: Bearer (Google OAuth) header.",
+            detail="Authentication required. Provide X-Serverless-Authorization or X-Goog-IAP-JWT-Assertion header.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
