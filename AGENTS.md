@@ -4,8 +4,11 @@ Always use Context7 MCP when I need library/API documentation, code generation, 
 
 Use library:
 - /vercel/ai
+- /websites/fastapi_tiangolo
 - /google/adk-python
 - /google/adk-samples
+- /datadog/documentation
+- /websites/github_en_actions
 
 ## Project Overview
 

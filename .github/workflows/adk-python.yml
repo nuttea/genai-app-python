@@ -20,46 +20,41 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  lint:
-    name: Lint ADK Python Service
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/adk-python
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-adk-${{ runner.os }}-${{ hashFiles('services/adk-python/pyproject.toml') }}
-          restore-keys: |
-            uv-adk-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: uv sync --all-extras --no-install-project
-
-      - name: Run Black (check only)
-        run: uv run black --check .
-
-      - name: Run Ruff
-        run: uv run ruff check .
+  # Linting is skipped in dev for faster iteration
+  # See adk-python-prod.yml for full lint checks before production
+  # lint:
+  #   name: Lint ADK Python Service
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: services/adk-python
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Install uv
+  #       run: pip install uv
+  #     - name: Cache uv dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/uv
+  #         key: uv-adk-${{ runner.os }}-${{ hashFiles('services/adk-python/pyproject.toml') }}
+  #         restore-keys: |
+  #           uv-adk-${{ runner.os }}-
+  #     - name: Install dependencies
+  #       run: uv sync --all-extras --no-install-project
+  #     - name: Run Black (check only)
+  #       run: uv run black --check .
+  #     - name: Run Ruff
+  #       run: uv run ruff check .
 
   deploy:
-    name: Build and Deploy to Cloud Run
+    name: Build and Deploy to Cloud Run (Dev)
     runs-on: ubuntu-latest
-    needs: [lint]
+    # needs: [lint]  # Linting skipped in dev
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read

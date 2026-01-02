@@ -60,37 +60,29 @@ jobs:
           file: ./services/fastapi-backend/coverage.xml
           flags: backend
 
-  lint:
-    name: Lint Backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/fastapi-backend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv sync --all-extras
-
-      - name: Run Black (check only)
-        run: uv run black --check app/
-
-      - name: Run Ruff
-        run: uv run ruff check app/
-
-      # Disabled temporarily - Mypy requires extensive type annotations
-      # - name: Run Mypy
-      #   run: poetry run mypy app/
+  # Linting is skipped in dev for faster iteration
+  # See fastapi-backend-prod.yml for full lint checks before production
+  # lint:
+  #   name: Lint Backend
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: services/fastapi-backend
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Install uv
+  #       run: pip install uv
+  #     - name: Install dependencies
+  #       run: uv sync --all-extras
+  #     - name: Run Black (check only)
+  #       run: uv run black --check app/
+  #     - name: Run Ruff
+  #       run: uv run ruff check app/
 
   security:
     name: Security Scan
@@ -112,9 +104,9 @@ jobs:
           exit-code: '1'
 
   deploy:
-    name: Build and Deploy to Cloud Run
+    name: Build and Deploy to Cloud Run (Dev)
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
