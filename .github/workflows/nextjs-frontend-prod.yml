@@ -35,6 +35,9 @@ jobs:
     outputs:
       vote_extractor_url: ${{ steps.get-urls.outputs.vote_extractor_url }}
       content_creator_url: ${{ steps.get-urls.outputs.content_creator_url }}
+      api_key: ${{ steps.get-api-key.outputs.api_key }}
+      dd_rum_application_id: ${{ steps.get-dd-secrets.outputs.dd_rum_application_id }}
+      dd_rum_client_token: ${{ steps.get-dd-secrets.outputs.dd_rum_client_token }}
 
     steps:
       - name: Authenticate to Google Cloud
@@ -69,6 +72,22 @@ jobs:
           echo "Vote Extractor Production URL: $VOTE_EXTRACTOR_URL"
           echo "Content Creator Production URL: $CONTENT_CREATOR_URL"
 
+      - name: Get API Key from Secret Manager
+        id: get-api-key
+        run: |
+          API_KEY=$(gcloud secrets versions access latest --secret="api-key" 2>/dev/null || echo "")
+          echo "api_key=$API_KEY" >> $GITHUB_OUTPUT
+          echo "API Key retrieved from GCP Secret Manager (length: ${#API_KEY})"
+
+      - name: Get Datadog RUM Secrets from Secret Manager
+        id: get-dd-secrets
+        run: |
+          DD_RUM_APP_ID=$(gcloud secrets versions access latest --secret="dd-rum-application-id" 2>/dev/null || echo "")
+          DD_RUM_TOKEN=$(gcloud secrets versions access latest --secret="dd-rum-client-token" 2>/dev/null || echo "")
+          echo "dd_rum_application_id=$DD_RUM_APP_ID" >> $GITHUB_OUTPUT
+          echo "dd_rum_client_token=$DD_RUM_TOKEN" >> $GITHUB_OUTPUT
+          echo "Datadog RUM secrets retrieved from GCP Secret Manager"
+
   deploy:
     name: Deploy to Production
     needs: [lint-and-test, get-backend-urls]
@@ -90,7 +109,7 @@ jobs:
       build_args: |
         NEXT_PUBLIC_VOTE_EXTRACTOR_API_URL=${{ needs.get-backend-urls.outputs.vote_extractor_url }}
         NEXT_PUBLIC_CONTENT_CREATOR_API_URL=${{ needs.get-backend-urls.outputs.content_creator_url }}
-        NEXT_PUBLIC_API_KEY=${{ secrets.API_KEY }}
+        NEXT_PUBLIC_API_KEY=${{ needs.get-backend-urls.outputs.api_key }}
       env_vars: |
         NODE_ENV=production
         NEXT_TELEMETRY_DISABLED=1
@@ -104,14 +123,10 @@ jobs:
         NEXT_PUBLIC_DD_SESSION_SAMPLE_RATE=100
         NEXT_PUBLIC_DD_TRACE_ENABLED=true
         NEXT_PUBLIC_DD_TRACE_SAMPLE_RATE=100
-        NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
-        NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
+        NEXT_PUBLIC_DD_APPLICATION_ID=${{ needs.get-backend-urls.outputs.dd_rum_application_id }}
+        NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ needs.get-backend-urls.outputs.dd_rum_client_token }}
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
-      DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
-      API_KEY: ${{ secrets.API_KEY }}
-
