@@ -22,6 +22,7 @@ RUN uv pip install --system -e .
 # Copy application code and ADK agents
 COPY app/ ./app/
 COPY content_creator_agent/ ./content_creator_agent/
+COPY image_creator_agent/ ./image_creator_agent/
 COPY main_adk.py ./
 
 # Create uploads directory
