@@ -123,7 +123,7 @@ jobs:
             --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
             --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
             --set-env-vars ALLOWED_ORIGINS="*" \
-            --set-secrets DD_API_KEY=dd-api-key:latest
+            --set-secrets DD_API_KEY=DD_API_KEY:latest
 
       - name: Get Service URL
         id: get-url

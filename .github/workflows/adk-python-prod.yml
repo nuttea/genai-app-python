@@ -60,7 +60,7 @@ jobs:
         LOG_LEVEL=INFO
         ALLOWED_ORIGINS=*
       secrets: |
-        DD_API_KEY=dd-api-key:latest
+        DD_API_KEY=DD_API_KEY:latest
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}

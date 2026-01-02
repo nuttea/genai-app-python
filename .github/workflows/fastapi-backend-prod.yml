@@ -57,7 +57,7 @@ jobs:
         LOG_LEVEL=INFO
         ALLOWED_ORIGINS=*
       secrets: |
-        DD_API_KEY=dd-api-key:latest
+        DD_API_KEY=DD_API_KEY:latest
         API_KEY=api-key:latest
         GEMINI_API_KEY=gemini-api-key:latest
     secrets:

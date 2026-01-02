@@ -176,7 +176,7 @@ jobs:
             --set-env-vars DD_PROFILING_ENABLED=true \
             --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
             --set-env-vars API_KEY_REQUIRED=true \
-            --set-secrets DD_API_KEY=dd-api-key:latest \
+            --set-secrets DD_API_KEY=DD_API_KEY:latest \
             --set-secrets API_KEY=api-key:latest \
             --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest
 
