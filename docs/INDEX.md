@@ -134,6 +134,14 @@ Comprehensive guides for implementing Datadog LLMObs:
 
 - **[guides/llmobs/sources/02_VISUALIZING_TRACES_AND_SPANS.md](../guides/llmobs/sources/02_VISUALIZING_TRACES_AND_SPANS.md)**
   - Viewing traces in Datadog
+  - Understanding trace visualization
+
+- **[guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md)** 🆕
+  - Comprehensive guide to evaluation metric types
+  - Score, Boolean, and Categorical types
+  - When to use each type
+  - Best practices and examples
+  - Datadog integration details
   - Understanding the trace waterfall
   - Using filters and search
 
@@ -170,6 +178,19 @@ Comprehensive guides for implementing Datadog LLMObs:
   - Accept text, markdown, video demos
   - Create YouTube Shorts/TikTok/Reels scripts
   - Architecture and 7-week implementation plan
+
+- **[features/USER_FEEDBACK_LLMOBS_PLAN.md](features/USER_FEEDBACK_LLMOBS_PLAN.md)** 🆕
+  - User feedback integration with Datadog LLMObs
+  - Rating, thumbs, and comment feedback types
+  - Custom evaluations and reasoning field
+  - 4-phase implementation plan
+
+- **[features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md](features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md)** ✅
+  - Phases 1-2 implementation complete
+  - Backend API and frontend UI
+  - Integration with Vote Extractor
+  - 10 integration tests
+  - Usage examples and Datadog queries
 
 - **[features/DATADOG_CONTENT_CREATOR_QUICKREF.md](features/DATADOG_CONTENT_CREATOR_QUICKREF.md)** 🆕
   - Quick reference for Content Creator
@@ -575,6 +596,7 @@ scripts/
 - [guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md) 🆕 - Evaluation metric types
 - [docs/features/VOTE_EXTRACTION_LLMOBS_SPANS.md](features/VOTE_EXTRACTION_LLMOBS_SPANS.md) - Production example
 - [docs/features/USER_FEEDBACK_LLMOBS_PLAN.md](features/USER_FEEDBACK_LLMOBS_PLAN.md) 🆕 - User feedback plan
+- [docs/features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md](features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md) ✅ - Implementation summary
 
 ### Troubleshooting
 - [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
