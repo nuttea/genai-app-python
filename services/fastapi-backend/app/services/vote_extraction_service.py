@@ -356,7 +356,8 @@ class VoteExtractionService:
             # Prompt metadata for Datadog LLMObs tracking
             prompt_metadata = {
                 "id": "thai-election-form-extraction",
-                "version": f"v{schema_version}-schema{schema_hash}",
+                # Auto Versioning, by omitting the version field
+                # "version": f"v{schema_version}",
                 "template": prompt_text.strip(),
                 "variables": {
                     "model": "gemini-2.5-flash",

@@ -10,7 +10,11 @@ import streamlit as st
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from components.feedback import render_feedback_with_comment
+from components.feedback import (
+    render_feedback_with_comment,
+    render_star_rating,
+    render_thumbs_feedback,
+)
 from utils.datadog_rum import init_datadog_rum
 
 
@@ -664,14 +668,68 @@ def display_extraction_results(result):
     span_context = result.get("span_context")
     if span_context and span_context.get("span_id") and span_context.get("trace_id"):
         st.markdown("---")
-        render_feedback_with_comment(
-            span_id=span_context["span_id"],
-            trace_id=span_context["trace_id"],
-            ml_app="vote-extraction-app",
-            feature="vote-extraction",
-            key_suffix=f"vote_extraction_{report_idx}",
-            session_id=st.session_state.get("session_id"),
+        st.header("💬 Feedback & Trace Information")
+
+        # Display span context for debugging/transparency
+        with st.expander("🔍 Trace Context (for Datadog LLMObs)", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.text_input(
+                    "Span ID",
+                    value=span_context["span_id"],
+                    disabled=True,
+                    help="Unique identifier for this specific operation",
+                )
+            with col2:
+                st.text_input(
+                    "Trace ID",
+                    value=span_context["trace_id"],
+                    disabled=True,
+                    help="Unique identifier for the entire request trace",
+                )
+
+            st.info(
+                "💡 **Trace Context**: These IDs link your feedback to the specific AI operation "
+                "in Datadog, enabling precise performance tracking and quality monitoring."
+            )
+
+        # Feedback options in tabs
+        tab1, tab2, tab3 = st.tabs(
+            ["⭐ Rating + Comment", "👍 Quick Thumbs", "💭 Star Rating Only"]
         )
+
+        with tab1:
+            st.markdown("**Rate this extraction and optionally add a comment**")
+            render_feedback_with_comment(
+                span_id=span_context["span_id"],
+                trace_id=span_context["trace_id"],
+                ml_app="vote-extraction-app",
+                feature="vote-extraction",
+                key_suffix=f"vote_extraction_full_{report_idx}",
+                session_id=st.session_state.get("session_id"),
+            )
+
+        with tab2:
+            st.markdown("**Quick feedback: Was this extraction helpful?**")
+            render_thumbs_feedback(
+                span_id=span_context["span_id"],
+                trace_id=span_context["trace_id"],
+                ml_app="vote-extraction-app",
+                feature="vote-extraction",
+                key_suffix=f"vote_extraction_thumbs_{report_idx}",
+                session_id=st.session_state.get("session_id"),
+            )
+
+        with tab3:
+            st.markdown("**Rate the accuracy of this extraction**")
+            render_star_rating(
+                span_id=span_context["span_id"],
+                trace_id=span_context["trace_id"],
+                ml_app="vote-extraction-app",
+                feature="vote-extraction",
+                key_suffix=f"vote_extraction_rating_{report_idx}",
+                session_id=st.session_state.get("session_id"),
+            )
     else:
         # No span context - feedback not available
         pass
