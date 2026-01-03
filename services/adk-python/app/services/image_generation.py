@@ -190,18 +190,25 @@ class ImageGenerationService:
                 if chunk.text:
                     text_response += chunk.text
 
-                # Extract image from inline_data
-                if hasattr(chunk, "candidates") and chunk.candidates:
-                    for candidate in chunk.candidates:
-                        if hasattr(candidate, "content") and candidate.content:
-                            if hasattr(candidate.content, "parts"):
-                                for part in candidate.content.parts:
-                                    if hasattr(part, "inline_data") and part.inline_data:
-                                        image_data = part.inline_data.data
-                                        image_mime_type = part.inline_data.mime_type
-                                        logger.info(
-                                            f"✅ Image received: {image_mime_type}, {len(image_data)} bytes"
-                                        )
+                # Extract image from inline_data (reduced nesting)
+                if not hasattr(chunk, "candidates") or not chunk.candidates:
+                    continue
+
+                for candidate in chunk.candidates:
+                    if not hasattr(candidate, "content") or not candidate.content:
+                        continue
+                    if not hasattr(candidate.content, "parts"):
+                        continue
+
+                    for part in candidate.content.parts:
+                        if not hasattr(part, "inline_data") or not part.inline_data:
+                            continue
+
+                        image_data = part.inline_data.data
+                        image_mime_type = part.inline_data.mime_type
+                        logger.info(
+                            f"✅ Image received: {image_mime_type}, {len(image_data)} bytes"
+                        )
 
             # Save image to file
             if image_data:
