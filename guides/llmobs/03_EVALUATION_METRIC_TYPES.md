@@ -790,6 +790,55 @@ LLMObs.submit_evaluation(
 )
 ```
 
+### 4a. **Use the `reasoning` Field for Explanations**
+
+The `reasoning` tag is the **Datadog-recommended field** for providing explanations or justifications for evaluation values. Use it for:
+
+- User feedback comments
+- Automated evaluation explanations
+- Failure reasons
+- Quality assessment justifications
+
+✅ **Good**: Using reasoning for user comments
+```python
+# User provides rating with comment
+LLMObs.submit_evaluation(
+    span_context=span_context,
+    ml_app="vote-extraction-app",
+    label="user_rating",
+    metric_type="score",
+    value=4,  # 4 out of 5 stars
+    tags={
+        "reasoning": "Extraction was accurate but missed one candidate name",
+        "feedback_source": "user_ui",
+        "user_id": "user_123"
+    }
+)
+```
+
+✅ **Good**: Using reasoning for automated checks
+```python
+# Automated quality check with explanation
+LLMObs.submit_evaluation(
+    span_context=span_context,
+    ml_app="content-creator-app",
+    label="toxicity_check",
+    metric_type="categorical",
+    value="unsafe",
+    tags={
+        "reasoning": "Detected profanity in paragraph 3",
+        "detector_version": "v2.0",
+        "confidence": "high"
+    }
+)
+```
+
+**Why use `reasoning`?**
+- ✅ Follows Datadog best practices
+- ✅ Structured and queryable in Datadog UI
+- ✅ Searchable with `@tags.reasoning:*`
+- ✅ Provides context for evaluation decisions
+
 ### 5. **Choose Appropriate Scales**
 
 | Scenario | Recommended Scale |

@@ -118,13 +118,19 @@ LLMObs.submit_evaluation(
     metric_type="score",
     value=rating,
     tags={
-        "comment": comment,
+        "reasoning": comment,  # Use "reasoning" field for user comments (Datadog best practice)
         "feature": feature,
         "user_id": user_id,
         "feedback_type": feedback_type
     }
 )
 ```
+
+**Note**: User comments are submitted using the `reasoning` tag, which is the Datadog-recommended field for providing explanations and justifications for evaluation values. This approach:
+- ✅ Follows Datadog best practices
+- ✅ Keeps comments structured and queryable
+- ✅ Works with Datadog's evaluation UI
+- ✅ Allows filtering by `@tags.reasoning`
 
 ### 5. View in Datadog
 
@@ -230,7 +236,7 @@ class FeedbackService:
                 label = "user_thumbs"
             elif feedback.feedback_type == "comment":
                 metric_type = "categorical"
-                value = "comment_provided"
+                value = "to_be_reviewed"  # Indicates comment needs review
                 label = "user_comment"
             else:
                 return FeedbackResponse(
@@ -244,8 +250,9 @@ class FeedbackService:
                 "feedback_type": feedback.feedback_type
             }
             
+            # Add comment as reasoning field (Datadog best practice)
             if feedback.comment:
-                tags["comment"] = feedback.comment
+                tags["reasoning"] = feedback.comment  # Use reasoning field for explanations
             
             if feedback.user_id:
                 tags["user_id"] = feedback.user_id
@@ -254,6 +261,9 @@ class FeedbackService:
                 tags["session_id"] = feedback.session_id
             
             # Submit evaluation
+            # Note: User comments are submitted using the "reasoning" tag, which is
+            # the Datadog-recommended field for providing explanations/justifications
+            # for evaluation scores. This keeps comments structured and queryable.
             LLMObs.submit_evaluation(
                 span_context=span_context,
                 ml_app=feedback.ml_app,
@@ -992,6 +1002,7 @@ async def submit_feedback(feedback: FeedbackRequest):
 - Validate span_id and trace_id formats
 - Sanitize comment text (remove HTML, scripts)
 - Limit comment length (max 1000 characters)
+- Ensure reasoning field is properly escaped for Datadog tags
 
 ### 3. Authentication
 
@@ -1094,7 +1105,12 @@ avg(last_4h):avg:llmobs.evaluation.user_rating{feature:vote-extraction} < 3
 
 **Comments with negative sentiment**:
 ```
-@tags.comment:* @evaluation.user_rating:<3
+@tags.reasoning:* @evaluation.user_rating:<3
+```
+
+**Search user feedback comments**:
+```
+@tags.reasoning:* @tags.feedback_type:rating
 ```
 
 ---
