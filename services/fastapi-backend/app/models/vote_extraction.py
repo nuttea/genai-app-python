@@ -64,6 +64,13 @@ class ElectionFormData(BaseModel):
     )
 
 
+class SpanContext(BaseModel):
+    """Span context for LLMObs tracing and feedback."""
+
+    span_id: str = Field(..., description="Span ID from Datadog trace")
+    trace_id: str = Field(..., description="Trace ID from Datadog trace")
+
+
 class VoteExtractionResponse(BaseModel):
     """Response for vote extraction request."""
 
@@ -75,6 +82,9 @@ class VoteExtractionResponse(BaseModel):
     pages_processed: int = Field(..., description="Number of pages processed")
     reports_extracted: int = Field(
         default=0, description="Number of reports successfully extracted"
+    )
+    span_context: SpanContext | None = Field(
+        None, description="Span context for feedback submission"
     )
 
 

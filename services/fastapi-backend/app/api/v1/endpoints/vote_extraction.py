@@ -18,7 +18,12 @@ from app.core.constants import (
 )
 from app.core.rate_limiting import limiter
 from app.core.security import verify_api_key
-from app.models.vote_extraction import ElectionFormData, LLMConfig, VoteExtractionResponse
+from app.models.vote_extraction import (
+    ElectionFormData,
+    LLMConfig,
+    SpanContext,
+    VoteExtractionResponse,
+)
 from app.services.vote_extraction_service import vote_extraction_service
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -31,6 +36,28 @@ router = APIRouter(prefix="/vote-extraction", tags=["vote-extraction"])
 _models_cache: list[dict] | None = None
 _cache_timestamp: float | None = None
 CACHE_TTL = 3600  # 1 hour cache
+
+
+def _get_span_context() -> SpanContext | None:
+    """
+    Get current span context for feedback submission.
+
+    Captures the current Datadog trace span_id and trace_id for
+    associating user feedback with this specific LLM operation.
+
+    Returns:
+        SpanContext with span_id and trace_id, or None if not available
+    """
+    try:
+        from ddtrace import tracer
+
+        span = tracer.current_span()
+        if span:
+            return SpanContext(span_id=str(span.span_id), trace_id=str(span.trace_id))
+    except (ImportError, AttributeError) as e:
+        logger.debug(f"Could not get span context: {e}")
+
+    return None
 
 
 async def _validate_and_read_files(
@@ -325,12 +352,16 @@ async def extract_votes(
             if validation_warnings:
                 error_msg = "Data extracted with warnings:\n" + "\n".join(validation_warnings)
 
+            # Capture span context for feedback submission
+            span_context = _get_span_context()
+
             return VoteExtractionResponse(
                 success=True,
                 data=extracted_reports,
                 error=error_msg,
                 pages_processed=len(image_files),
                 reports_extracted=len(extracted_reports),
+                span_context=span_context,
             )
 
         except HTTPException:
