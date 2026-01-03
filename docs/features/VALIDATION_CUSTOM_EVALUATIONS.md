@@ -4,6 +4,24 @@
 
 Vote extraction validation is now implemented as **Datadog LLMObs Custom Evaluations** instead of simple annotations. This provides better tracking, quantitative metrics, and structured analysis of validation quality in Datadog.
 
+**Reference**: [Datadog External Evaluations Documentation](https://docs.datadoghq.com/llm_observability/evaluations/external_evaluations#submitting-external-evaluations-with-the-sdk)
+
+### SDK Compatibility
+
+**Important**: The Datadog LLMObs SDK supports **only TWO metric types**:
+- `"score"` - Numeric values (0.0-1.0 recommended)
+- `"categorical"` - String values (e.g., "pass", "fail", "excellent", "good")
+
+❌ **Not supported**: `"boolean"` (even though the API might support it, the SDK does not)
+
+### Additional Parameters
+
+The SDK supports these optional parameters:
+- `assessment` - String: `"pass"` or `"fail"` (provides standardized assessment field)
+- `reasoning` - String: Explanation for the evaluation (supports analysis and debugging)
+- `tags` - Dict: Additional context tags
+- `timestamp_ms` - Integer: Unix timestamp in milliseconds (optional, defaults to current time)
+
 ## Architecture
 
 ### Before: Annotations Only
@@ -44,20 +62,23 @@ LLMObs.submit_evaluation(
 
 ## Evaluation Metrics
 
-The validation submits **three types of custom evaluations** for each validation check:
+The validation submits **three custom evaluations** (two categorical, one score) for each validation check:
 
-### 1. Boolean: Validation Passed/Failed
+### 1. Categorical: Validation Passed/Failed
 ```python
 LLMObs.submit_evaluation(
     label="validation_passed",
-    metric_type="boolean",
-    value=True/False,  # Overall pass/fail
+    metric_type="categorical",
+    value="pass" or "fail",  # Overall pass/fail
+    assessment="pass" or "fail",  # Optional assessment field
     reasoning="All validation checks passed" or error_msg
 )
 ```
 
 **Use Case**: Track overall validation success rate
-**Query**: `@evaluations.validation_passed:true|false`
+**Query**: `@evaluations.validation_passed:pass|fail`
+
+**Note**: The Datadog SDK only supports `"score"` and `"categorical"` metric types (not `"boolean"`). See [official documentation](https://docs.datadoghq.com/llm_observability/evaluations/external_evaluations#submitting-external-evaluations-with-the-sdk).
 
 ### 2. Categorical: Check Type
 ```python
@@ -65,6 +86,7 @@ LLMObs.submit_evaluation(
     label="validation_check_type",
     metric_type="categorical",
     value="ballot_statistics|vote_counts|vote_results|all_checks",
+    assessment="pass" or "fail",  # Optional assessment field
     reasoning="Validated {check_type} successfully" or error_msg
 )
 ```
@@ -78,6 +100,7 @@ LLMObs.submit_evaluation(
     label="validation_score",
     metric_type="score",
     value=0.0 to 1.0,  # checks_passed / total_checks
+    assessment="pass" or "fail",  # Optional assessment field
     reasoning=f"Passed {checks_passed}/{total_checks} validation checks"
 )
 ```
@@ -98,7 +121,7 @@ ballots_used = good_ballots + bad_ballots + no_vote_ballots
 - Sum mismatch (ballots_used ≠ good + bad + no_vote)
 
 **Evaluation**:
-- `validation_passed`: `false`
+- `validation_passed`: `"fail"`
 - `validation_check_type`: `"ballot_statistics"`
 - `validation_score`: `< 1.0`
 
@@ -113,7 +136,7 @@ data.vote_results must not be empty
 - Empty vote_results list
 
 **Evaluation**:
-- `validation_passed`: `false`
+- `validation_passed`: `"fail"`
 - `validation_check_type`: `"vote_results"`
 - `validation_score`: `0.0`
 
@@ -127,7 +150,7 @@ all vote_count >= 0
 - Any candidate/party has negative vote count
 
 **Evaluation**:
-- `validation_passed`: `false`
+- `validation_passed`: `"fail"`
 - `validation_check_type`: `"vote_counts"`
 - `validation_score`: `< 1.0`
 
@@ -140,7 +163,7 @@ All validation checks passed:
 - All vote counts non-negative
 
 **Evaluation**:
-- `validation_passed`: `true`
+- `validation_passed`: `"pass"`
 - `validation_check_type`: `"all_checks"`
 - `validation_score`: `1.0`
 
@@ -259,12 +282,12 @@ def _submit_validation_evaluation(
 
 ### Find Validation Failures
 ```
-service:vote-extractor @evaluations.validation_passed:false
+service:vote-extractor @evaluations.validation_passed:fail
 ```
 
 ### Find Specific Check Failures
 ```
-service:vote-extractor @evaluations.validation_check_type:ballot_statistics @evaluations.validation_passed:false
+service:vote-extractor @evaluations.validation_check_type:ballot_statistics @evaluations.validation_passed:fail
 ```
 
 ### Find Low-Quality Extractions
@@ -280,7 +303,7 @@ service:vote-extractor
 
 ### Analyze Check Type Distribution
 ```
-service:vote-extractor @evaluations.validation_passed:false
+service:vote-extractor @evaluations.validation_passed:fail
 | stats count by @evaluations.validation_check_type
 ```
 
@@ -298,7 +321,7 @@ Group by: @evaluations.validation_passed
 #### 2. Failed Check Types
 ```
 Type: Pie Chart
-Query: service:vote-extractor @evaluations.validation_passed:false
+Query: service:vote-extractor @evaluations.validation_passed:fail
 Group by: @evaluations.validation_check_type
 ```
 
@@ -315,8 +338,8 @@ Type: Timeseries
 Query: service:vote-extractor
 Metrics: 
   - avg(@evaluations.validation_score)
-  - count(@evaluations.validation_passed:true)
-  - count(@evaluations.validation_passed:false)
+  - count(@evaluations.validation_passed:pass)
+  - count(@evaluations.validation_passed:fail)
 ```
 
 ## Monitoring & Alerts
@@ -325,7 +348,7 @@ Metrics:
 ```yaml
 name: "Vote Extraction: High Validation Failure Rate"
 query: |
-  service:vote-extractor @evaluations.validation_passed:false
+  service:vote-extractor @evaluations.validation_passed:fail
 threshold:
   warning: > 10 failures in 15 minutes
   critical: > 20 failures in 15 minutes
@@ -340,7 +363,7 @@ name: "Vote Extraction: Ballot Statistics Mismatch"
 query: |
   service:vote-extractor 
   @evaluations.validation_check_type:ballot_statistics
-  @evaluations.validation_passed:false
+  @evaluations.validation_passed:fail
 threshold:
   warning: > 5 failures in 1 hour
 notification:

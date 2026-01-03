@@ -525,14 +525,17 @@ class VoteExtractionService:
                 "has_ballot_statistics": str(data.ballot_statistics is not None),
             }
 
-            # Submit overall validation result as boolean
+            # Submit overall validation result as categorical (pass/fail)
+            # Note: SDK only supports "score" and "categorical" metric types
+            # https://docs.datadoghq.com/llm_observability/evaluations/external_evaluations#submitting-external-evaluations-with-the-sdk
             LLMObs.submit_evaluation(
                 span=span_context,
                 ml_app="vote-extractor",
                 label="validation_passed",
-                metric_type="boolean",
-                value=is_valid,
+                metric_type="categorical",
+                value="pass" if is_valid else "fail",
                 tags=tags,
+                assessment="pass" if is_valid else "fail",
                 reasoning=error_msg if error_msg else "All validation checks passed",
             )
 
@@ -544,6 +547,7 @@ class VoteExtractionService:
                 metric_type="categorical",
                 value=check_type,
                 tags=tags,
+                assessment="pass" if is_valid else "fail",
                 reasoning=error_msg if error_msg else f"Validated {check_type} successfully",
             )
 
@@ -559,6 +563,7 @@ class VoteExtractionService:
                 metric_type="score",
                 value=validation_score,
                 tags=tags,
+                assessment="pass" if is_valid else "fail",
                 reasoning=f"Passed {checks_passed}/{total_checks} validation checks",
             )
 
