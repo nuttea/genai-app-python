@@ -262,7 +262,9 @@ class VoteExtractionService:
                 "top_k": llm_config.top_k,
                 "response_mime_type": "application/json",
                 "prompt_id": prompt_metadata["id"],
-                "prompt_version": prompt_metadata["version"],
+                "prompt_version": prompt_metadata.get(
+                    "version", "auto"
+                ),  # Auto-versioned by Datadog
                 "schema_version": schema_version,
             },
             metrics={
@@ -419,7 +421,9 @@ class VoteExtractionService:
                 extra={
                     "pages_processed": len(image_files),
                     "prompt_id": prompt_metadata["id"],
-                    "prompt_version": prompt_metadata["version"],
+                    "prompt_version": prompt_metadata.get(
+                        "version", "auto"
+                    ),  # Auto-versioned by Datadog
                     "result_type": type(result).__name__,
                     "result_keys": list(result.keys()) if isinstance(result, dict) else "list",
                 },
