@@ -77,12 +77,12 @@ class FeedbackAPIClient:
             payload["session_id"] = session_id
 
         try:
-            # Get API key from secrets
+            # Get API key from secrets (optional for feedback endpoint)
             api_key = st.secrets.get("api", {}).get("key")
-            if not api_key:
-                raise ValueError("API key not found in secrets")
 
-            headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["X-API-Key"] = api_key
 
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.post(self.feedback_endpoint, json=payload, headers=headers)

@@ -64,7 +64,7 @@ class FeedbackService:
             # the Datadog-recommended field for providing explanations/justifications
             # for evaluation scores. This keeps comments structured and queryable.
             LLMObs.submit_evaluation(
-                span_context=span_context,
+                span=span_context,  # Pass span context dict with span_id and trace_id
                 ml_app=feedback.ml_app,
                 label=label,
                 metric_type=metric_type,
