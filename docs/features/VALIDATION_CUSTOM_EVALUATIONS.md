@@ -211,16 +211,15 @@ All validation checks passed:
 async def validate_extraction(
     self,
     data: ElectionFormData,
-    span_id: str | None = None,
-    trace_id: str | None = None,
 ) -> tuple[bool, str | None]:
     """
     Validate extracted vote data and submit Custom Evaluations.
     
+    Uses LLMObs.export_span() internally to automatically get
+    the current span context and attach evaluations to it.
+    
     Args:
         data: Extracted election form data
-        span_id: Span ID from extraction workflow
-        trace_id: Trace ID from extraction workflow
     
     Returns:
         Tuple of (is_valid, error_message)
@@ -235,18 +234,15 @@ async def validate_extraction(
 # 1. Extract vote data
 result = await vote_extraction_service.extract_from_images(...)
 
-# 2. Capture span context immediately after workflow
-span_context = _get_span_context()
-span_id = span_context.span_id if span_context else None
-trace_id = span_context.trace_id if span_context else None
-
-# 3. Parse and validate with span context
+# 2. Parse and validate extracted data
+# Validation uses LLMObs.export_span() internally to attach evaluations
 extracted_reports, warnings = await _parse_extraction_results(
     result=result,
     image_files_count=len(image_files),
-    span_id=span_id,  # ← Pass to validation
-    trace_id=trace_id,  # ← Pass to validation
 )
+
+# 3. Capture span context for feedback submission
+span_context = _get_span_context()
 ```
 
 ### Evaluation Submission
@@ -254,28 +250,28 @@ extracted_reports, warnings = await _parse_extraction_results(
 ```python
 def _submit_validation_evaluation(
     self,
-    span_id: str | None,
-    trace_id: str | None,
     is_valid: bool,
     check_type: str,
     error_msg: str | None,
     validation_checks: list,
     data: ElectionFormData,
 ) -> None:
-    """Submit validation result as Custom Evaluation."""
+    """
+    Submit validation result as Custom Evaluation.
     
-    if not span_id or not trace_id:
-        logger.warning("Cannot submit evaluation: missing span context")
+    Uses LLMObs.export_span() to get current span context.
+    """
+    
+    # Export current span context using official SDK method
+    # https://docs.datadoghq.com/llm_observability/evaluations/external_evaluations#submitting-external-evaluations-with-the-sdk
+    span_context = LLMObs.export_span(span=None)
+    
+    if not span_context:
+        logger.warning("Cannot submit evaluation: no active span context")
         return
     
-    # Prepare span context
-    span_context = {
-        "span_id": span_id,
-        "trace_id": trace_id,
-    }
-    
-    # Submit 3 evaluations: boolean, categorical, score
-    LLMObs.submit_evaluation(...)
+    # Submit 3 evaluations: 2 categorical, 1 score
+    LLMObs.submit_evaluation(span=span_context, ...)
 ```
 
 ## Datadog Queries

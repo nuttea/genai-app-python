@@ -482,8 +482,6 @@ class VoteExtractionService:
 
     def _submit_validation_evaluation(
         self,
-        span_id: str | None,
-        trace_id: str | None,
         is_valid: bool,
         check_type: str,
         error_msg: str | None,
@@ -493,9 +491,10 @@ class VoteExtractionService:
         """
         Submit validation result as a Datadog LLMObs Custom Evaluation.
 
+        Uses LLMObs.export_span() to get the current span context and attach
+        the evaluation to it, following Datadog's official SDK pattern.
+
         Args:
-            span_id: Span ID to attach evaluation to
-            trace_id: Trace ID to attach evaluation to
             is_valid: Whether validation passed
             check_type: Type of validation check (ballot_statistics, vote_counts, etc.)
             error_msg: Error message if validation failed
@@ -505,16 +504,14 @@ class VoteExtractionService:
         if not self._llmobs_enabled or not DDTRACE_AVAILABLE:
             return
 
-        if not span_id or not trace_id:
-            logger.warning("Cannot submit validation evaluation: missing span_id or trace_id")
-            return
-
         try:
-            # Prepare span context
-            span_context = {
-                "span_id": span_id,
-                "trace_id": trace_id,
-            }
+            # Export current span context using official SDK method
+            # https://docs.datadoghq.com/llm_observability/evaluations/external_evaluations#submitting-external-evaluations-with-the-sdk
+            span_context = LLMObs.export_span(span=None)
+
+            if not span_context:
+                logger.warning("Cannot submit validation evaluation: no active span context")
+                return
 
             # Prepare tags with context
             tags = {
@@ -604,8 +601,6 @@ class VoteExtractionService:
     async def validate_extraction(
         self,
         data: ElectionFormData,
-        span_id: str | None = None,
-        trace_id: str | None = None,
     ) -> tuple[bool, str | None]:
         """
         Validate extracted vote data for consistency and submit as Custom Evaluation.
@@ -613,10 +608,11 @@ class VoteExtractionService:
         This validation is called after the extraction workflow completes,
         and submits validation results as Datadog LLMObs Custom Evaluations.
 
+        Uses LLMObs.export_span() to automatically get the current span context
+        and attach evaluations to it, following Datadog's official SDK pattern.
+
         Args:
             data: Extracted election form data
-            span_id: Span ID from the extraction workflow (for evaluation linkage)
-            trace_id: Trace ID from the extraction workflow (for evaluation linkage)
 
         Returns:
             Tuple of (is_valid, error_message)
@@ -630,8 +626,6 @@ class VoteExtractionService:
             )
             if not is_valid:
                 self._submit_validation_evaluation(
-                    span_id=span_id,
-                    trace_id=trace_id,
                     is_valid=False,
                     check_type="ballot_statistics",
                     error_msg=error_msg,
@@ -645,8 +639,6 @@ class VoteExtractionService:
             error_msg = "No vote results extracted"
             validation_checks.append({"check": "vote_results", "passed": False, "error": error_msg})
             self._submit_validation_evaluation(
-                span_id=span_id,
-                trace_id=trace_id,
                 is_valid=False,
                 check_type="vote_results",
                 error_msg=error_msg,
@@ -664,8 +656,6 @@ class VoteExtractionService:
                     {"check": "vote_counts", "passed": False, "error": error_msg, "candidate": name}
                 )
                 self._submit_validation_evaluation(
-                    span_id=span_id,
-                    trace_id=trace_id,
                     is_valid=False,
                     check_type="vote_counts",
                     error_msg=error_msg,
@@ -678,8 +668,6 @@ class VoteExtractionService:
 
         # All validations passed - submit success evaluation
         self._submit_validation_evaluation(
-            span_id=span_id,
-            trace_id=trace_id,
             is_valid=True,
             check_type="all_checks",
             error_msg=None,
