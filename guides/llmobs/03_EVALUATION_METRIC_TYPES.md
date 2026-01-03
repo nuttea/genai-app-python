@@ -49,28 +49,35 @@ Custom evaluations allow you to:
 
 ## Understanding Metric Types
 
-Datadog LLMObs supports **two primary metric types** for evaluations:
+Datadog LLMObs supports **three metric types** for evaluations:
 
 | Metric Type | Data Type | Use Case | Example Values |
 |-------------|-----------|----------|----------------|
 | **`score`** | Numeric (float/int) | Quantitative measurements, ratings, continuous metrics | `0.95`, `4`, `3.5`, `0.0` |
-| **`categorical`** | String (label) | Qualitative classifications, discrete states, **boolean-like values** | `"pass"`, `"fail"`, `"true"`, `"false"`, `"relevant"`, `"toxic"` |
+| **`categorical`** | String (label) | Qualitative classifications, discrete states | `"pass"`, `"fail"`, `"relevant"`, `"toxic"`, `"positive"` |
+| **`boolean`** | Boolean (true/false) | Binary true/false evaluations | `true`, `false` |
 
-**Note**: There is **no separate `boolean` type**. Boolean-like values (true/false, yes/no, pass/fail) should be represented as `categorical` with string values like `"true"`, `"false"`, `"pass"`, or `"fail"`.
+**Source**: [Datadog LLM Observability API Documentation](https://docs.datadoghq.com/llm_observability/instrumentation/api/?tab=model#evalmetric)
 
 ### Quick Decision Tree
 
 ```
-Is your evaluation result a number?
+What type of evaluation result do you have?
 │
-├─ YES → Use `score`
-│   └─ Examples: ratings (1-5), probabilities (0-1), latency (ms)
+├─ NUMBER (rating, score, measurement) → Use `score`
+│   └─ Examples: 4.5, 0.87, 125, 99.9
 │
-└─ NO → Use `categorical`
-    └─ Examples: pass/fail, true/false, detected/not_detected, classes
+├─ BOOLEAN (true/false only) → Use `boolean`
+│   └─ Examples: true, false
+│
+└─ CATEGORY (labels, classifications) → Use `categorical`
+    └─ Examples: "pass", "fail", "relevant", "positive", "high"
 ```
 
-**💡 Tip**: For boolean-like evaluations (true/false, yes/no, pass/fail), use `categorical` with string values like `"true"` or `"false"`. There is no separate `boolean` metric type in Datadog LLMObs.
+**💡 Tip**: 
+- Use `boolean` for simple true/false checks (e.g., "Is answer factual?")
+- Use `categorical` for multi-option classifications (e.g., "pass"/"fail"/"partial")
+- Use `score` for numeric ratings and measurements
 
 ---
 
@@ -239,15 +246,114 @@ POST /api/v2/llm_observability/evaluations
 
 ---
 
+## Boolean Metric Type
+
+### Definition
+
+The **`boolean`** metric type is used for **simple true/false evaluations** where the result is a binary boolean value. Boolean evaluations are ideal for:
+
+- **Factuality checks**: Is the answer grounded in facts? (true/false)
+- **Relevance checks**: Is the response on-topic? (true/false)
+- **Presence checks**: Does the output contain PII? (true/false)
+- **Binary flags**: Any yes/no question with no middle ground
+
+### Characteristics
+
+| Property | Details |
+|----------|---------|
+| **Field Name** | `boolean_value` (API), `value` (Python SDK) |
+| **Data Type** | `boolean` |
+| **Values** | `true` or `false` only |
+| **Aggregations** | Count of true/false, percentage true |
+| **Alerts** | Count-based (e.g., `false > 10` occurrences) |
+
+### When to Use Boolean
+
+✅ **Use `boolean` when:**
+- You have exactly 2 possible outcomes: true or false
+- The evaluation is a simple yes/no question
+- You don't need descriptive labels
+- You want to calculate "% true" or "% false"
+
+❌ **Don't use `boolean` when:**
+- You need more than 2 values (use `categorical` instead)
+- You want descriptive labels like "pass"/"fail" (use `categorical`)
+- You need to track "uncertain" or "unknown" states (use `categorical`)
+
+### Python SDK Example (Boolean)
+
+```python
+from ddtrace.llmobs import LLMObs
+
+def check_factuality(response: str, sources: list) -> bool:
+    """Check if response is grounded in provided sources."""
+    # Your factuality checking logic here
+    return True  # or False
+
+# Submit boolean evaluation
+LLMObs.submit_evaluation(
+    span_context={"span_id": "abc123", "trace_id": "xyz789"},
+    ml_app="content-creator-app",
+    label="factuality_check",
+    metric_type="boolean",  # Boolean type
+    value=check_factuality(response, sources),  # true or false
+    tags={
+        "checker": "source_comparison",
+        "version": "v1.0"
+    }
+)
+```
+
+### API Example (Boolean)
+
+```json
+POST /api/v2/llm_observability/evaluations
+{
+  "data": {
+    "type": "evaluation_metric",
+    "attributes": {
+      "metrics": [
+        {
+          "span_id": "abc123",
+          "trace_id": "xyz789",
+          "ml_app": "content-creator-app",
+          "timestamp_ms": 1704067200000,
+          "metric_type": "boolean",
+          "label": "factuality_check",
+          "boolean_value": true,
+          "tags": {
+            "checker": "source_comparison",
+            "version": "v1.0"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### Boolean Use Cases
+
+| Use Case | Label | Description |
+|----------|-------|-------------|
+| **Factuality** | `is_factual` | Is the response grounded in facts? |
+| **Relevance** | `is_relevant` | Is the response on-topic? |
+| **PII Detection** | `contains_pii` | Does output contain personal info? |
+| **Topic Match** | `topic_relevancy` | Does response match expected topic? |
+| **Completeness** | `is_complete` | Is the answer complete? |
+| **Coherence** | `is_coherent` | Is the response logically coherent? |
+
+---
+
 ## Categorical Metric Type
 
 ### Definition
 
-The **`categorical`** metric type is used for **discrete, non-numeric classifications** where the result is one of a predefined set of labels or categories. Categorical values represent:
+The **`categorical`** metric type is used for **discrete, non-numeric classifications** where the result is one of a predefined set of labels or categories (more than 2 options). Categorical values represent:
 
-- **Binary classifications**: Pass/Fail, Yes/No, Detected/Not Detected
-- **Multi-class labels**: Good/Neutral/Bad, High/Medium/Low
-- **Status indicators**: Safe/Unsafe, Relevant/Irrelevant
+- **Multi-value classifications**: Pass/Fail/Partial, Good/Neutral/Bad
+- **Multi-class labels**: High/Medium/Low, Positive/Neutral/Negative
+- **Status indicators**: Safe/Unsafe/Warning, Relevant/Irrelevant/Unknown
 - **Custom categories**: Domain-specific classifications
 
 ### Characteristics
@@ -262,29 +368,31 @@ The **`categorical`** metric type is used for **discrete, non-numeric classifica
 
 ### Common Categorical Patterns
 
-#### 1. **Binary Classification**
+#### 1. **Binary Classification (Categorical)**
 
-Best for: Pass/fail checks, detection tasks, **boolean-like evaluations**
+Best for: Multi-option pass/fail checks, detection tasks with labels
 
 ```python
-# Example: Toxicity detection
+# Example: Toxicity detection with categories
 LLMObs.submit_evaluation(
     span_context=span_context,
     ml_app="my-chatbot",
     label="toxicity_check",
-    metric_type="categorical",  # Use categorical for boolean-like values
-    value="safe"  # or "unsafe"
+    metric_type="categorical",
+    value="safe"  # or "unsafe", "unknown"
 )
 ```
 
-**Standard values** (use `categorical` for these): 
-- Boolean-like: `"true"`, `"false"`
-- Binary: `"yes"`, `"no"`
-- Pass/Fail: `"pass"`, `"fail"`
-- Detection: `"detected"`, `"not_detected"`
-- Safety: `"safe"`, `"unsafe"`
+**Standard categorical values** (use when you need labels, not just true/false): 
+- Pass/Fail: `"pass"`, `"fail"`, `"partial"`
+- Detection: `"detected"`, `"not_detected"`, `"uncertain"`
+- Safety: `"safe"`, `"unsafe"`, `"warning"`
+- Quality: `"good"`, `"acceptable"`, `"poor"`
 
-**⚠️ Important**: Datadog LLMObs does **not have a `boolean` metric type**. Use `categorical` with string values for boolean-like evaluations.
+**Use `categorical`** when:
+- You have more than 2 possible values
+- You need descriptive labels instead of true/false
+- You want to track distribution across multiple categories
 
 #### 2. **Tri-State Classification**
 
@@ -465,21 +573,22 @@ Here's a comprehensive list of commonly used evaluation labels in LLM applicatio
 ### Decision Matrix
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Question                    │ Answer → Metric Type      │
-├─────────────────────────────────────────────────────────┤
-│ Is the result a number?     │ YES → score               │
-│                             │ NO → categorical          │
-├─────────────────────────────────────────────────────────┤
-│ Can you rank/order results? │ YES → score               │
-│                             │ NO → categorical          │
-├─────────────────────────────────────────────────────────┤
-│ Do you need averages?       │ YES → score               │
-│                             │ NO → categorical          │
-├─────────────────────────────────────────────────────────┤
-│ Are there fixed classes?    │ YES → categorical         │
-│                             │ NO → score                │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│ Question                      │ Answer → Metric Type        │
+├──────────────────────────────────────────────────────────────┤
+│ Is the result a number?       │ YES → score                 │
+│                               │ NO → continue below         │
+├──────────────────────────────────────────────────────────────┤
+│ Is it exactly true/false?     │ YES → boolean               │
+│                               │ NO → continue below         │
+├──────────────────────────────────────────────────────────────┤
+│ Multiple categories/labels?   │ YES → categorical           │
+│                               │ NO → boolean                │
+├──────────────────────────────────────────────────────────────┤
+│ Need to calculate % true?     │ YES → boolean               │
+│ Need to track distribution?   │ YES → categorical           │
+│ Need to calculate averages?   │ YES → score                 │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Use Score When:
@@ -492,44 +601,64 @@ Here's a comprehensive list of commonly used evaluation labels in LLM applicatio
 
 **Examples**: User ratings, accuracy scores, latency, cost, confidence levels
 
+### Use Boolean When:
+
+✅ You have **exactly 2 outcomes**: true or false  
+✅ It's a **simple yes/no question**  
+✅ You want to calculate **% true** or **% false**  
+✅ You need **binary flags** without descriptive labels  
+✅ You're doing **presence/absence checks**
+
+**Examples**: Factuality checks, relevance checks, PII detection, topic match, completeness flags
+
 ### Use Categorical When:
 
-✅ You have **discrete, predefined categories** (pass/fail)  
+✅ You have **3+ discrete categories** (pass/fail/partial)  
 ✅ You want to track **distribution across classes**  
-✅ The metric represents a **qualitative state** (safe/unsafe)  
+✅ The metric represents a **qualitative state** with labels  
 ✅ You need **count-based alerts** (e.g., `> 10 "fail" instances`)  
-✅ You're doing **classification** tasks
+✅ You're doing **multi-class classification**
 
-**Examples**: Toxicity detection, bias flags, hallucination checks, status indicators
+**Examples**: Quality levels (good/neutral/bad), safety states (safe/unsafe/warning), sentiment (positive/neutral/negative)
 
-### Can You Use Both?
+### Can You Use Multiple Types?
 
 **Yes!** You can submit multiple evaluations for the same span with different metric types:
 
 ```python
-# Submit both score and categorical for the same aspect
-# 1. Numeric toxicity score
+# Submit all three metric types for comprehensive evaluation
+# 1. Boolean: Simple true/false check
+LLMObs.submit_evaluation(
+    span_context=span_context,
+    ml_app="my-chatbot",
+    label="is_safe",
+    metric_type="boolean",
+    value=True  # Is it safe?
+)
+
+# 2. Score: Numeric toxicity score
 LLMObs.submit_evaluation(
     span_context=span_context,
     ml_app="my-chatbot",
     label="toxicity_score",
     metric_type="score",
-    value=0.05  # Low toxicity (0-1 scale)
+    value=0.05  # 0-1 scale, lower is better
 )
 
-# 2. Categorical toxicity classification
+# 3. Categorical: Classification with labels
 LLMObs.submit_evaluation(
     span_context=span_context,
     ml_app="my-chatbot",
-    label="toxicity_check",
+    label="safety_level",
     metric_type="categorical",
-    value="safe"  # Classification result
+    value="safe"  # safe, warning, or unsafe
 )
 ```
 
 This approach gives you:
-- **Numeric analysis**: Track toxicity trends over time
-- **Classification view**: See distribution of safe vs unsafe content
+- **Boolean**: Quick true/false overview (% safe)
+- **Score**: Trend analysis over time (improving/degrading)
+- **Categorical**: Distribution across safety levels
 
 ---
 
@@ -1140,24 +1269,25 @@ LLMObs.submit_evaluation(..., label=EVALUATION_LABELS["USER_RATING"], value=5)
 
 ### Quick Reference Table
 
-| Aspect | Score | Categorical |
-|--------|-------|-------------|
-| **Data Type** | Numeric (float/int) | String (label) |
-| **Use For** | Measurements, ratings, continuous metrics | Classifications, states, discrete labels |
-| **Aggregations** | avg, min, max, sum, percentiles | count, distribution |
-| **Alerts** | Threshold-based (`< value`) | Count-based (`> N occurrences`) |
-| **Examples** | 4.5, 0.87, 125, 99.9 | "pass", "fail", "relevant", "safe" |
-| **Visualization** | Line charts, gauges, heatmaps | Pie charts, bar charts, top lists |
+| Aspect | Score | Boolean | Categorical |
+|--------|-------|---------|-------------|
+| **Data Type** | Numeric (float/int) | Boolean (true/false) | String (label) |
+| **Use For** | Measurements, ratings, continuous metrics | Simple true/false checks | Classifications, multi-option labels |
+| **Aggregations** | avg, min, max, sum, percentiles | count true/false, % true | count, distribution by category |
+| **Alerts** | Threshold-based (`< value`) | Count-based (`false > N`) | Count-based (`"fail" > N`) |
+| **Examples** | 4.5, 0.87, 125, 99.9 | true, false | "pass", "fail", "relevant", "safe" |
+| **Visualization** | Line charts, gauges, heatmaps | Boolean bars, percentage gauges | Pie charts, bar charts, top lists |
 
 ### Key Takeaways
 
 1. ✅ Use **`score`** for numeric, measurable quantities
-2. ✅ Use **`categorical`** for discrete classifications or labels
-3. ✅ Standardize your labels and value ranges
-4. ✅ Add context with tags
-5. ✅ Submit multiple evaluations per span for comprehensive analysis
-6. ✅ Choose scales appropriate for your use case
-7. ✅ Document your evaluation standards for team consistency
+2. ✅ Use **`boolean`** for simple true/false evaluations
+3. ✅ Use **`categorical`** for multi-option classifications or labels
+4. ✅ Standardize your labels and value ranges
+5. ✅ Add context with tags (including `reasoning` for explanations)
+6. ✅ Submit multiple evaluations per span for comprehensive analysis
+7. ✅ Choose scales appropriate for your use case
+8. ✅ Document your evaluation standards for team consistency
 
 ---
 
