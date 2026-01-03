@@ -174,6 +174,9 @@ services:
       - DD_SERVICE=adk-python
       - DD_ENV=${DD_ENV:-development}
       - DD_VERSION=0.1.0
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - DD_SOURCE=python
       - DD_TRACE_ENABLED=${DD_TRACE_ENABLED:-1}
       - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=${DD_CODE_ORIGIN_FOR_SPANS_ENABLED:-true}
       # LLM Observability Configuration

@@ -34,13 +34,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     dd_env = os.getenv("DD_ENV")
     dd_version = os.getenv("DD_VERSION")
     dd_api_key = os.getenv("DD_API_KEY")
+    dd_logs_injection = os.getenv("DD_LOGS_INJECTION", "false")
 
     if dd_api_key:
         logger.info(
-            f"Datadog APM enabled: service={dd_service}, env={dd_env}, version={dd_version}"
+            f"✅ Datadog APM enabled: service={dd_service}, env={dd_env}, version={dd_version}"
+        )
+        logger.info(
+            f"✅ Datadog Logs Injection: {dd_logs_injection} "
+            "(correlates logs with APM traces via dd.trace_id and dd.span_id)"
         )
     else:
-        logger.info("Datadog APM not configured")
+        logger.info("⚠️ Datadog APM not configured (DD_API_KEY not set)")
 
     yield
 
