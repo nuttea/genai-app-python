@@ -44,8 +44,12 @@ class FeedbackService:
         try:
             from ddtrace.llmobs import LLMObs
 
-            # Prepare span context
-            span_context = {"span_id": feedback.span_id, "trace_id": feedback.trace_id}
+            # Prepare span context (IDs are in hexadecimal format from backend)
+            # Convert hex strings to integers for Datadog API
+            span_context = {
+                "span_id": int(feedback.span_id, 16),
+                "trace_id": int(feedback.trace_id, 16),
+            }
 
             # Determine metric type, value, and label based on feedback type
             metric_type, value, label = self._determine_evaluation_params(feedback)

@@ -675,22 +675,33 @@ def display_extraction_results(result):
             col1, col2 = st.columns(2)
             with col1:
                 st.text_input(
-                    "Span ID",
+                    "Span ID (hex)",
                     value=span_context["span_id"],
                     disabled=True,
-                    help="Unique identifier for this specific operation",
+                    help="Unique identifier for this specific operation (64-bit hexadecimal)",
                 )
             with col2:
                 st.text_input(
-                    "Trace ID",
+                    "Trace ID (hex)",
                     value=span_context["trace_id"],
                     disabled=True,
-                    help="Unique identifier for the entire request trace",
+                    help="Unique identifier for the entire request trace (128-bit hexadecimal)",
                 )
 
+            # Create Datadog trace link
+            # Datadog US1 site format: https://app.datadoghq.com/apm/trace/{trace_id}
+            trace_id = span_context["trace_id"]
+            datadog_url = f"https://app.datadoghq.com/apm/trace/{trace_id}"
+
+            st.markdown(
+                f"🔗 **[View this trace in Datadog LLMObs]({datadog_url})**",
+                unsafe_allow_html=False,
+            )
+
             st.info(
-                "💡 **Trace Context**: These IDs link your feedback to the specific AI operation "
-                "in Datadog, enabling precise performance tracking and quality monitoring."
+                "💡 **Trace Context**: These hexadecimal IDs link your feedback to the specific AI operation "
+                "in Datadog, enabling precise performance tracking and quality monitoring. "
+                "Click the link above to view the full trace with spans, metrics, and evaluations."
             )
 
         # Feedback options in tabs
