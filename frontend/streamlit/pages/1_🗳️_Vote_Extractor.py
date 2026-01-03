@@ -678,20 +678,44 @@ def display_extraction_results(result):
             span_id_hex = format(span_id_int, "016x")  # 64-bit = 16 hex chars
             trace_id_hex = format(trace_id_int, "032x")  # 128-bit = 32 hex chars
 
+            # Span ID - both formats
+            st.markdown("**Span ID**")
             col1, col2 = st.columns(2)
             with col1:
                 st.text_input(
-                    "Span ID (hex)",
+                    "Hexadecimal (for Datadog UI)",
                     value=span_id_hex,
                     disabled=True,
-                    help="Unique identifier for this specific operation (64-bit hexadecimal)",
+                    help="64-bit hexadecimal format - use this in Datadog UI and trace links",
+                    key=f"span_id_hex_{report_idx}",
                 )
             with col2:
                 st.text_input(
-                    "Trace ID (hex)",
+                    "Decimal (for SDK/API)",
+                    value=span_context["span_id"],
+                    disabled=True,
+                    help="Decimal string format - used internally by ddtrace SDK and API calls",
+                    key=f"span_id_dec_{report_idx}",
+                )
+
+            # Trace ID - both formats
+            st.markdown("**Trace ID**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.text_input(
+                    "Hexadecimal (for Datadog UI)",
                     value=trace_id_hex,
                     disabled=True,
-                    help="Unique identifier for the entire request trace (128-bit hexadecimal)",
+                    help="128-bit hexadecimal format - use this in Datadog UI and trace links",
+                    key=f"trace_id_hex_{report_idx}",
+                )
+            with col2:
+                st.text_input(
+                    "Decimal (for SDK/API)",
+                    value=span_context["trace_id"],
+                    disabled=True,
+                    help="Decimal string format - used internally by ddtrace SDK and API calls",
+                    key=f"trace_id_dec_{report_idx}",
                 )
 
             # Create Datadog trace link (using hex format)
@@ -704,8 +728,10 @@ def display_extraction_results(result):
             )
 
             st.info(
-                "💡 **Trace Context**: These hexadecimal IDs link your feedback to the specific AI operation "
-                "in Datadog, enabling precise performance tracking and quality monitoring. "
+                "💡 **Trace Context**: Two formats for the same IDs:\n"
+                "- **Hexadecimal**: Displayed in Datadog UI (e.g., trace links)\n"
+                "- **Decimal**: Used by ddtrace SDK and API calls\n\n"
+                "Both represent the same unique identifiers, just in different number systems. "
                 "Click the link above to view the full trace with spans, metrics, and evaluations."
             )
 
