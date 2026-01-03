@@ -132,8 +132,8 @@ jobs:
           push: true
           no-cache: true
           tags: |
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }}
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ inputs.deployment_tag != '' && format('{0}-latest', inputs.deployment_tag) || 'latest' }}
+            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }}
+            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ inputs.deployment_tag != '' && format('{0}-latest', inputs.deployment_tag) || 'latest' }}
           build-args: |
             DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
             DD_GIT_COMMIT_SHA=${{ github.sha }}
@@ -146,7 +146,7 @@ jobs:
         run: |
           # Build the base command
           CMD="gcloud run deploy ${{ inputs.service_name }} \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }} \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }} \
             --region ${{ inputs.region }} \
             --platform managed \
             --allow-unauthenticated \

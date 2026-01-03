@@ -138,8 +138,8 @@ jobs:
           file: services/fastapi-backend/Dockerfile.cloudrun
           push: true
           tags: |
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-            gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
           build-args: |
             DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
             DD_GIT_COMMIT_SHA=${{ github.sha }}
@@ -149,7 +149,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
@@ -159,7 +159,7 @@ jobs:
             --timeout 300 \
             --max-instances 10 \
             --min-instances 0 \
-            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT_ID }} \
+            --set-env-vars GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }} \
             --set-env-vars VERTEX_AI_LOCATION=${{ env.REGION }} \
             --set-env-vars FASTAPI_ENV=production \
             --set-env-vars LOG_LEVEL=info \
