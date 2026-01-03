@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Datadog LLM Observability
 try:
     from ddtrace.llmobs import LLMObs
-    from ddtrace.llmobs.decorators import task, workflow
+    from ddtrace.llmobs.decorators import workflow
 
     DDTRACE_AVAILABLE = True
 except ImportError:
@@ -538,7 +538,6 @@ class VoteExtractionService:
         validation_checks.append({"check": "ballot_statistics", "passed": True})
         return True, None
 
-    @task
     async def validate_extraction(
         self,
         data: ElectionFormData,
@@ -546,7 +545,8 @@ class VoteExtractionService:
         """
         Validate extracted vote data for consistency.
 
-        This is a task span that performs standalone data validation.
+        This validation is called as part of the extraction workflow,
+        so it inherits the parent workflow trace context.
 
         Args:
             data: Extracted election form data
