@@ -77,6 +77,10 @@ Comprehensive documentation for deep dives:
   - Complete guide for reusable workflows
   - Best practices and patterns
 
+- **[deployment/GITHUB_VARIABLES_SETUP.md](deployment/GITHUB_VARIABLES_SETUP.md)** ✅
+  - GitHub Actions variables setup
+  - GCP_PROJECT_ID and GCP_REGION configuration
+
 ### Security
 - **[security/AUTHENTICATION.md](security/AUTHENTICATION.md)**
   - GCP authentication methods
@@ -91,6 +95,14 @@ Comprehensive documentation for deep dives:
   - Key rotation
   - Usage tracking
   - Security best practices
+
+- **[security/BACKEND_AUTH_REMOVED.md](security/BACKEND_AUTH_REMOVED.md)** ✅
+  - Backend authentication removal documentation
+  - Open access implementation
+
+- **[security/IAP_STATUS_REPORT.md](security/IAP_STATUS_REPORT.md)** ✅
+  - IAP status for Cloud Run services
+  - Evidence from Datadog logs and traces
 
 ### Monitoring
 - **[monitoring/DATADOG_SETUP.md](monitoring/DATADOG_SETUP.md)**
@@ -168,6 +180,46 @@ Comprehensive documentation for deep dives:
   - Vercel AI SDK testing results
   - Performance benchmarks
 
+- **[features/AUTH_SIMPLIFICATION_SUMMARY.md](features/AUTH_SIMPLIFICATION_SUMMARY.md)** ✅
+  - Authentication simplification (removed Google OAuth)
+  - Simplified IAP (no audience check)
+
+- **[features/AUTHENTICATION_IMPLEMENTATION_SUMMARY.md](features/AUTHENTICATION_IMPLEMENTATION_SUMMARY.md)** ✅
+  - Complete authentication implementation
+  - IAP and OAuth support
+
+- **[features/CREDENTIAL_VERIFICATION_LOGGING.md](features/CREDENTIAL_VERIFICATION_LOGGING.md)** ✅
+  - Google Cloud credential verification
+  - Service account logging
+
+- **[features/DATADOG_SOURCE_CODE_INTEGRATION_SUMMARY.md](features/DATADOG_SOURCE_CODE_INTEGRATION_SUMMARY.md)** ✅
+  - Datadog source code integration
+  - GitHub linking for traces
+
+- **[features/GEMINI_3_PRO_IMAGE_SPECS.md](features/GEMINI_3_PRO_IMAGE_SPECS.md)** ✅
+  - Gemini 3 Pro Image technical specs
+  - API limits and constraints
+
+- **[features/IAP_LOGGING_IMPLEMENTATION.md](features/IAP_LOGGING_IMPLEMENTATION.md)** ✅
+  - IAP header logging (non-enforcing)
+  - User identification from requests
+
+- **[features/IAP_USER_DISPLAY_IMPLEMENTATION.md](features/IAP_USER_DISPLAY_IMPLEMENTATION.md)** ✅
+  - IAP user display in Next.js frontend
+  - JWT parsing and user info
+
+- **[features/IMAGE_CREATOR_TEST_GUIDE.md](features/IMAGE_CREATOR_TEST_GUIDE.md)** ✅
+  - Image creator testing guide
+  - Feature validation steps
+
+- **[features/NON_STREAMING_IMAGE_API_SOLUTION.md](features/NON_STREAMING_IMAGE_API_SOLUTION.md)** ✅
+  - Non-streaming image generation endpoint
+  - Direct JSON response implementation
+
+- **[features/REFERENCE_IMAGES_FEATURE.md](features/REFERENCE_IMAGES_FEATURE.md)** ✅
+  - Reference image upload feature
+  - Multi-image support (up to 14)
+
 ### Troubleshooting
 - **[troubleshooting/CORS_IAP_FIX.md](troubleshooting/CORS_IAP_FIX.md)** 🆕
   - CORS errors with "Redirect is not allowed for a preflight request"
@@ -184,6 +236,38 @@ Comprehensive documentation for deep dives:
 - **[troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)**
   - Recent fixes and improvements
   - Testing instructions
+
+- **[troubleshooting/AUTH_FIX_SUMMARY.md](troubleshooting/AUTH_FIX_SUMMARY.md)** ✅
+  - Authentication error fixes
+  - DD_ENV mismatch resolution
+
+- **[troubleshooting/FRONTEND_IMAGE_URL_FIX.md](troubleshooting/FRONTEND_IMAGE_URL_FIX.md)** ✅
+  - Frontend image URL handling fixes
+  - Non-streaming endpoint migration
+
+- **[troubleshooting/GEMINI_IMAGE_403_FIX.md](troubleshooting/GEMINI_IMAGE_403_FIX.md)** ✅
+  - Gemini API permission denied errors
+  - IAM role configuration
+
+- **[troubleshooting/GEMINI_IMAGE_PERMISSION_FIX.md](troubleshooting/GEMINI_IMAGE_PERMISSION_FIX.md)** ✅
+  - Vertex AI permission fixes
+  - Service account role grants
+
+- **[troubleshooting/IMAGE_CREATOR_FILE_BASED_FIX.md](troubleshooting/IMAGE_CREATOR_FILE_BASED_FIX.md)** ✅
+  - Image creator file-based response fix
+  - Token limit workaround
+
+- **[troubleshooting/IMAGE_CREATOR_FIX_SUMMARY.md](troubleshooting/IMAGE_CREATOR_FIX_SUMMARY.md)** ✅
+  - Image creator agent discovery fix
+  - ADK root_agent requirement
+
+- **[troubleshooting/PROJECT_ID_FIX.md](troubleshooting/PROJECT_ID_FIX.md)** ✅
+  - GCP project ID mismatch fix
+  - Environment variable configuration
+
+- **[troubleshooting/REFERENCE_IMAGES_FORMAT_FIX.md](troubleshooting/REFERENCE_IMAGES_FORMAT_FIX.md)** ✅
+  - Reference image format mismatch
+  - Frontend-backend data format alignment
 
 - **[troubleshooting/STREAMING_FIX_SUMMARY.md](troubleshooting/STREAMING_FIX_SUMMARY.md)** ✅
   - Streaming response fixes
@@ -223,6 +307,18 @@ Comprehensive documentation for deep dives:
 - **[investigations/STREAMING_INVESTIGATION_SUMMARY.md](investigations/STREAMING_INVESTIGATION_SUMMARY.md)** ✅
   - Comprehensive streaming investigation summary
   - Best practices and recommendations
+
+- **[investigations/COMPLETE_INVESTIGATION_SUMMARY.md](investigations/COMPLETE_INVESTIGATION_SUMMARY.md)** ✅
+  - Complete summary of all fixes and investigations
+  - End-to-end troubleshooting history
+
+- **[investigations/DATADOG_INVESTIGATION_SUMMARY.md](investigations/DATADOG_INVESTIGATION_SUMMARY.md)** ✅
+  - Datadog logs and traces investigation
+  - Permission denied error analysis
+
+- **[investigations/IMAGE_CREATOR_INVESTIGATION.md](investigations/IMAGE_CREATOR_INVESTIGATION.md)** ✅
+  - Image creator 400 error investigation
+  - Token limit and response size analysis
 
 ### Reference
 - **[reference/environment-variables.md](reference/environment-variables.md)**
@@ -407,7 +503,8 @@ docs/
     ├── ADK_MIGRATION_SUMMARY.md              # ✅ ADK migration history
     ├── DEPLOYMENT_OPTIMIZATION_SUMMARY.md    # ✅ Deployment optimizations
     ├── DOCS_ORGANIZATION_SUMMARY.md          # ✅ Documentation organization
-    └── WORKFLOW_LINTING_STRATEGY.md          # ✅ Linting strategy history
+    ├── WORKFLOW_LINTING_STRATEGY.md          # ✅ Linting strategy history
+    └── COMPLETE_FIX_SUMMARY.md               # ✅ Complete fix summary
 ```
 
 **Test Scripts:**
@@ -421,6 +518,17 @@ scripts/tests/
 ├── test_dynamic_models.py              # Dynamic listing test
 ├── debug_models_api.py                 # Debug script
 └── test_list_all_models.sh             # Shell script
+```
+
+**Utility Scripts:**
+```
+scripts/
+├── format-only.sh                      # Format code without commit
+├── lint-commit-push.sh                 # Complete pre-commit workflow
+├── quick-push.sh                       # Quick commit and push
+├── check-services.sh                   # Service health checks
+├── PERMISSION_FIX_GEMINI_IMAGE.sh      # Fix Gemini image permissions
+└── QUICK_FIX_COMMANDS.sh               # Quick fix commands
 ```
 
 ## 🎯 Learning Paths

@@ -43,6 +43,8 @@ jobs:
       min_instances: '0'
       port: '8000'
       env_vars: |
+        GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }}
+        GCP_PROJECT_ID=${{ vars.GCP_PROJECT_ID }}
         DD_ENV=prod
         DD_SERVICE=genai-fastapi-backend
         DD_VERSION=${{ github.sha }}
@@ -63,6 +65,3 @@ jobs:
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-

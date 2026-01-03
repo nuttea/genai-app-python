@@ -85,8 +85,6 @@ on:
         required: true
       GCP_SERVICE_ACCOUNT_EMAIL:
         required: true
-      GCP_PROJECT_ID:
-        required: true
       DD_RUM_APPLICATION_ID:
         required: false
       DD_RUM_CLIENT_TOKEN:
