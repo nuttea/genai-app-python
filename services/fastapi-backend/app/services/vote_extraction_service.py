@@ -500,14 +500,8 @@ class VoteExtractionService:
         self, stats, validation_checks: list
     ) -> tuple[bool, str | None]:
         """Validate ballot statistics consistency."""
-        # Check for None (missing data), not falsy values (0 is valid)
-        if any(
-            [
-                stats.ballots_used is None,
-                stats.good_ballots is None,
-                stats.bad_ballots is None,
-                stats.no_vote_ballots is None,
-            ]
+        if not all(
+            [stats.ballots_used, stats.good_ballots, stats.bad_ballots, stats.no_vote_ballots]
         ):
             validation_checks.append(
                 {"check": "ballot_statistics", "passed": True, "note": "Incomplete data"}
