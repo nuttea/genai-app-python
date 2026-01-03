@@ -672,26 +672,31 @@ def display_extraction_results(result):
 
         # Display span context for debugging/transparency
         with st.expander("🔍 Trace Context (for Datadog LLMObs)", expanded=False):
+            # Convert decimal IDs to hex for display (to match Datadog UI)
+            span_id_int = int(span_context["span_id"])
+            trace_id_int = int(span_context["trace_id"])
+            span_id_hex = format(span_id_int, "016x")  # 64-bit = 16 hex chars
+            trace_id_hex = format(trace_id_int, "032x")  # 128-bit = 32 hex chars
+
             col1, col2 = st.columns(2)
             with col1:
                 st.text_input(
                     "Span ID (hex)",
-                    value=span_context["span_id"],
+                    value=span_id_hex,
                     disabled=True,
                     help="Unique identifier for this specific operation (64-bit hexadecimal)",
                 )
             with col2:
                 st.text_input(
                     "Trace ID (hex)",
-                    value=span_context["trace_id"],
+                    value=trace_id_hex,
                     disabled=True,
                     help="Unique identifier for the entire request trace (128-bit hexadecimal)",
                 )
 
-            # Create Datadog trace link
+            # Create Datadog trace link (using hex format)
             # Datadog US1 site format: https://app.datadoghq.com/apm/trace/{trace_id}
-            trace_id = span_context["trace_id"]
-            datadog_url = f"https://app.datadoghq.com/apm/trace/{trace_id}"
+            datadog_url = f"https://app.datadoghq.com/apm/trace/{trace_id_hex}"
 
             st.markdown(
                 f"🔗 **[View this trace in Datadog LLMObs]({datadog_url})**",

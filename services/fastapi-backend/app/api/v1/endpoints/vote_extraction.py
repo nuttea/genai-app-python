@@ -46,19 +46,17 @@ def _get_span_context() -> SpanContext | None:
     associating user feedback with this specific LLM operation.
 
     Returns:
-        SpanContext with span_id and trace_id (in hex format for Datadog), or None if not available
+        SpanContext with span_id and trace_id (as decimal strings), or None if not available
+        Note: Frontend will convert to hex for display only
     """
     try:
         from ddtrace import tracer
 
         span = tracer.current_span()
         if span:
-            # Convert to hexadecimal format to match Datadog UI display
-            # Datadog shows trace IDs as 128-bit hex strings (32 chars)
-            # span_id is 64-bit (16 hex chars), trace_id is 128-bit (32 hex chars)
-            span_id_hex = format(span.span_id, "016x")  # 64-bit = 16 hex chars
-            trace_id_hex = format(span.trace_id, "032x")  # 128-bit = 32 hex chars
-            return SpanContext(span_id=span_id_hex, trace_id=trace_id_hex)
+            # Store as decimal strings (original format from ddtrace)
+            # Frontend will convert to hex for display to match Datadog UI
+            return SpanContext(span_id=str(span.span_id), trace_id=str(span.trace_id))
     except (ImportError, AttributeError) as e:
         logger.debug(f"Could not get span context: {e}")
 

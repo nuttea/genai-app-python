@@ -44,11 +44,11 @@ class FeedbackService:
         try:
             from ddtrace.llmobs import LLMObs
 
-            # Prepare span context (IDs are in hexadecimal format from backend)
-            # Convert hex strings to integers for Datadog API
+            # Prepare span context (IDs are decimal strings from backend)
+            # Datadog expects span_id and trace_id as STRING representations of integers
             span_context = {
-                "span_id": int(feedback.span_id, 16),
-                "trace_id": int(feedback.trace_id, 16),
+                "span_id": feedback.span_id,
+                "trace_id": feedback.trace_id,
             }
 
             # Determine metric type, value, and label based on feedback type
