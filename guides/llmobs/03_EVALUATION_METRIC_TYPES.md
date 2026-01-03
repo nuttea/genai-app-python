@@ -54,7 +54,9 @@ Datadog LLMObs supports **two primary metric types** for evaluations:
 | Metric Type | Data Type | Use Case | Example Values |
 |-------------|-----------|----------|----------------|
 | **`score`** | Numeric (float/int) | Quantitative measurements, ratings, continuous metrics | `0.95`, `4`, `3.5`, `0.0` |
-| **`categorical`** | String (label) | Qualitative classifications, discrete states | `"pass"`, `"fail"`, `"relevant"`, `"toxic"` |
+| **`categorical`** | String (label) | Qualitative classifications, discrete states, **boolean-like values** | `"pass"`, `"fail"`, `"true"`, `"false"`, `"relevant"`, `"toxic"` |
+
+**Note**: There is **no separate `boolean` type**. Boolean-like values (true/false, yes/no, pass/fail) should be represented as `categorical` with string values like `"true"`, `"false"`, `"pass"`, or `"fail"`.
 
 ### Quick Decision Tree
 
@@ -65,8 +67,10 @@ Is your evaluation result a number?
 │   └─ Examples: ratings (1-5), probabilities (0-1), latency (ms)
 │
 └─ NO → Use `categorical`
-    └─ Examples: pass/fail, detected/not_detected, classes
+    └─ Examples: pass/fail, true/false, detected/not_detected, classes
 ```
+
+**💡 Tip**: For boolean-like evaluations (true/false, yes/no, pass/fail), use `categorical` with string values like `"true"` or `"false"`. There is no separate `boolean` metric type in Datadog LLMObs.
 
 ---
 
@@ -260,7 +264,7 @@ The **`categorical`** metric type is used for **discrete, non-numeric classifica
 
 #### 1. **Binary Classification**
 
-Best for: Pass/fail checks, detection tasks
+Best for: Pass/fail checks, detection tasks, **boolean-like evaluations**
 
 ```python
 # Example: Toxicity detection
@@ -268,12 +272,19 @@ LLMObs.submit_evaluation(
     span_context=span_context,
     ml_app="my-chatbot",
     label="toxicity_check",
-    metric_type="categorical",
+    metric_type="categorical",  # Use categorical for boolean-like values
     value="safe"  # or "unsafe"
 )
 ```
 
-**Standard values**: `"pass"`, `"fail"`, `"yes"`, `"no"`, `"detected"`, `"not_detected"`, `"safe"`, `"unsafe"`
+**Standard values** (use `categorical` for these): 
+- Boolean-like: `"true"`, `"false"`
+- Binary: `"yes"`, `"no"`
+- Pass/Fail: `"pass"`, `"fail"`
+- Detection: `"detected"`, `"not_detected"`
+- Safety: `"safe"`, `"unsafe"`
+
+**⚠️ Important**: Datadog LLMObs does **not have a `boolean` metric type**. Use `categorical` with string values for boolean-like evaluations.
 
 #### 2. **Tri-State Classification**
 
