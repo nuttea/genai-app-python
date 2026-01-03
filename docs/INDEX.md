@@ -113,6 +113,42 @@ Comprehensive documentation for deep dives:
   - Trace agent configuration
   - Local and Cloud Run settings
 
+### LLM Observability Guides
+
+Comprehensive guides for implementing Datadog LLMObs:
+
+- **[guides/llmobs/README.md](../guides/llmobs/README.md)** ⭐ START HERE
+  - Index of all LLMObs guides
+  - Quick start paths for different roles
+  - Related documentation links
+
+- **[guides/llmobs/sources/00_TRACING_LLM_APPLICATIONS.md](../guides/llmobs/sources/00_TRACING_LLM_APPLICATIONS.md)**
+  - Introduction to LLM Observability
+  - Why trace LLM applications
+  - Key concepts and terminology
+
+- **[guides/llmobs/sources/01_INSTRUMENTING_SPANS.md](../guides/llmobs/sources/01_INSTRUMENTING_SPANS.md)**
+  - Span types (LLM, Workflow, Agent, Tool, Task, Embedding, Retrieval)
+  - Using decorators vs manual annotation
+  - Best practices for instrumentation
+
+- **[guides/llmobs/sources/02_VISUALIZING_TRACES_AND_SPANS.md](../guides/llmobs/sources/02_VISUALIZING_TRACES_AND_SPANS.md)**
+  - Viewing traces in Datadog
+  - Understanding the trace waterfall
+  - Using filters and search
+
+- **[guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md)** 🆕
+  - Score vs Categorical metric types
+  - Common evaluation labels (accuracy, toxicity, relevance, etc.)
+  - Choosing the right metric type
+  - Implementation examples and best practices
+  - Visualization and monitoring strategies
+
+- **[guides/llmobs/sources/99_ADDITIONAL_TOPICS.md](../guides/llmobs/sources/99_ADDITIONAL_TOPICS.md)**
+  - Advanced configuration
+  - Custom integrations
+  - Performance optimization
+
 ### Features
 - **[features/vote-extractor.md](features/vote-extractor.md)**
   - Thai election form extraction
@@ -400,6 +436,16 @@ docs/
     └── Progress reports and status updates
     
     Note: See docs/archive/ for 40+ historical documents
+
+guides/llmobs/                              # 🆕 LLM Observability Guides
+├── README.md                               # ⭐ LLMObs guides index
+├── 03_EVALUATION_METRIC_TYPES.md           # 🆕 Score vs Categorical metrics
+└── sources/
+    ├── 00_TRACING_LLM_APPLICATIONS.md      # LLMObs introduction
+    ├── 01_INSTRUMENTING_SPANS.md           # Span types and annotation
+    ├── 02_VISUALIZING_TRACES_AND_SPANS.md  # Viewing traces in Datadog
+    ├── 99_ADDITIONAL_TOPICS.md             # Advanced topics
+    └── images/                             # Guide images and diagrams
 ```
 
 **Test Scripts:**
@@ -525,6 +571,10 @@ scripts/
 ### LLM Observability
 - [getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md](getting-started/LLMOBS_EVALUATIONS_QUICKSTART.md)
 - [monitoring/LLMOBS_NEXT_STEPS.md](monitoring/LLMOBS_NEXT_STEPS.md)
+- [guides/llmobs/README.md](../guides/llmobs/README.md) ⭐ - Complete LLMObs guides
+- [guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md) 🆕 - Evaluation metric types
+- [docs/features/VOTE_EXTRACTION_LLMOBS_SPANS.md](features/VOTE_EXTRACTION_LLMOBS_SPANS.md) - Production example
+- [docs/features/USER_FEEDBACK_LLMOBS_PLAN.md](features/USER_FEEDBACK_LLMOBS_PLAN.md) 🆕 - User feedback plan
 
 ### Troubleshooting
 - [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
