@@ -17,11 +17,21 @@ logger = logging.getLogger(__name__)
 # Datadog LLM Observability
 try:
     from ddtrace.llmobs import LLMObs
+    from ddtrace.llmobs.decorators import task, workflow
 
     DDTRACE_AVAILABLE = True
 except ImportError:
     DDTRACE_AVAILABLE = False
     logger.warning("ddtrace not available - LLM observability will be disabled")
+
+    # Define no-op decorators if ddtrace is not available
+    def workflow(func):
+        """No-op workflow decorator when ddtrace is not available."""
+        return func
+
+    def task(func):
+        """No-op task decorator when ddtrace is not available."""
+        return func
 
 
 # Election form schema defined as an ARRAY to handle
@@ -170,6 +180,113 @@ class VoteExtractionService:
             )
         return self._client
 
+    def _process_images_to_content_parts(
+        self, image_files: list[bytes], image_filenames: list[str]
+    ) -> list:
+        """Process image files into content parts for Gemini."""
+        content_parts = []
+        for i, (image_bytes, filename) in enumerate(
+            zip(image_files, image_filenames, strict=False), 1
+        ):
+            try:
+                # Add an Index Label BEFORE the image
+                index_label = f"Page {i} (Filename: {filename})"
+                content_parts.append(index_label)
+
+                # Determine MIME type from filename
+                mime_type = "image/jpeg"
+                if filename.lower().endswith(".png"):
+                    mime_type = "image/png"
+                elif filename.lower().endswith((".jpg", ".jpeg")):
+                    mime_type = "image/jpeg"
+
+                # Create a Part object with the image
+                image_part = types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type=mime_type,
+                )
+                content_parts.append(image_part)
+
+                logger.info(f"Added page {i}: {filename} ({mime_type})")
+
+            except Exception as e:
+                logger.error(f"Error processing file {filename}: {e}")
+                raise ExtractionException(f"Failed to process image {filename}: {e}") from e
+
+        return content_parts
+
+    def _annotate_extraction_success(
+        self,
+        result: dict,
+        response_text: str,
+        image_files: list,
+        image_filenames: list,
+        llm_config: LLMConfig,
+        prompt_text: str,
+        schema_version: str,
+        schema_hash: str,
+        prompt_metadata: dict,
+    ) -> None:
+        """Annotate workflow span with successful extraction context."""
+        if not self._llmobs_enabled or not DDTRACE_AVAILABLE:
+            return
+
+        # Calculate token counts (approximate for multimodal)
+        approx_input_tokens = len(image_files) * 258 + 100
+        approx_output_tokens = len(response_text) // 4
+
+        # Count extracted forms
+        num_forms = len(result) if isinstance(result, list) else 1
+
+        LLMObs.annotate(
+            input_data={
+                "images_count": len(image_files),
+                "filenames": image_filenames,
+                "prompt_template": prompt_text.strip()[:200] + "...",
+                "schema_version": schema_version,
+                "schema_hash": schema_hash,
+            },
+            output_data={
+                "forms_extracted": num_forms,
+                "result_type": type(result).__name__,
+                "result_keys": (
+                    list(result[0].keys()) if isinstance(result, list) and result else []
+                ),
+            },
+            metadata={
+                "model": llm_config.model,
+                "provider": llm_config.provider,
+                "temperature": llm_config.temperature,
+                "max_tokens": llm_config.max_tokens,
+                "top_p": llm_config.top_p,
+                "top_k": llm_config.top_k,
+                "response_mime_type": "application/json",
+                "prompt_id": prompt_metadata["id"],
+                "prompt_version": prompt_metadata["version"],
+                "schema_version": schema_version,
+            },
+            metrics={
+                "input_tokens": approx_input_tokens,
+                "output_tokens": approx_output_tokens,
+                "total_tokens": approx_input_tokens + approx_output_tokens,
+                "pages_processed": len(image_files),
+                "forms_extracted": num_forms,
+                "response_length": len(response_text),
+            },
+            tags={
+                "feature": "vote-extraction",
+                "document_type": "thai-election-form",
+                "form_standard": "Form S.S. 5/18",
+                "language": "thai",
+                "model": llm_config.model,
+                "provider": llm_config.provider,
+                "schema_version": schema_version,
+                "multimodal": "true",
+                "extraction_success": "true",
+            },
+        )
+
+    @workflow
     async def extract_from_images(
         self,
         image_files: list[bytes],
@@ -178,6 +295,8 @@ class VoteExtractionService:
     ) -> dict[str, Any] | None:
         """
         Extract vote data from multiple document pages using Gemini.
+
+        This is a workflow span that orchestrates the complete vote extraction process.
 
         Args:
             image_files: List of image bytes
@@ -203,37 +322,11 @@ class VoteExtractionService:
 
         client = self._get_client()
 
-        # List to hold all content parts (Text labels + Image bytes)
-        content_parts = []
-
-        # A. Process Images (Loop through files)
-        for i, (image_bytes, filename) in enumerate(
-            zip(image_files, image_filenames, strict=False), 1
-        ):
-            try:
-                # 1. Add an Index Label BEFORE the image
-                index_label = f"Page {i} (Filename: {filename})"
-                content_parts.append(index_label)
-
-                # 2. Determine MIME type from filename
-                mime_type = "image/jpeg"
-                if filename.lower().endswith(".png"):
-                    mime_type = "image/png"
-                elif filename.lower().endswith((".jpg", ".jpeg")):
-                    mime_type = "image/jpeg"
-
-                # 3. Create a Part object with the image
-                image_part = types.Part.from_bytes(
-                    data=image_bytes,
-                    mime_type=mime_type,
-                )
-                content_parts.append(image_part)
-
-                logger.info(f"Added page {i}: {filename} ({mime_type})")
-
-            except Exception as e:
-                logger.error(f"Error processing file {filename}: {e}")
-                return None
+        # A. Process Images into content parts
+        try:
+            content_parts = self._process_images_to_content_parts(image_files, image_filenames)
+        except ExtractionException:
+            return None
 
         # B. Main Text Prompt (Placed AFTER all images)
         # Note: This is a template for prompt tracking
@@ -330,18 +423,117 @@ class VoteExtractionService:
                     "result_keys": list(result.keys()) if isinstance(result, dict) else "list",
                 },
             )
+
+            # Annotate workflow span with comprehensive context
+            self._annotate_extraction_success(
+                result,
+                response.text,
+                image_files,
+                image_filenames,
+                llm_config,
+                prompt_text,
+                schema_version,
+                schema_hash,
+                prompt_metadata,
+            )
+
             return result
 
         except ExtractionException:
+            # Annotate workflow span with error context
+            if self._llmobs_enabled and DDTRACE_AVAILABLE:
+                LLMObs.annotate(
+                    tags={
+                        "extraction_success": "false",
+                        "error_type": "ExtractionException",
+                    },
+                )
             # Re-raise extraction exceptions
             raise
         except (ValueError, TypeError, json.JSONDecodeError) as e:
             logger.error(f"Invalid response format from Gemini: {e}")
+            # Annotate workflow span with parse error context
+            if self._llmobs_enabled and DDTRACE_AVAILABLE:
+                LLMObs.annotate(
+                    output_data={"error": "Invalid JSON response", "error_details": str(e)},
+                    tags={
+                        "extraction_success": "false",
+                        "error_type": "ParseError",
+                    },
+                )
             raise ExtractionException(f"Invalid extraction response: {e}") from e
         except Exception as e:
             logger.critical(f"Unexpected error calling Gemini: {e}", exc_info=True)
+            # Annotate workflow span with unexpected error context
+            if self._llmobs_enabled and DDTRACE_AVAILABLE:
+                LLMObs.annotate(
+                    output_data={"error": "Unexpected error", "error_details": str(e)},
+                    tags={
+                        "extraction_success": "false",
+                        "error_type": type(e).__name__,
+                    },
+                )
             raise ExtractionException(f"Extraction failed: {e}") from e
 
+    def _annotate_validation_failure(
+        self, check_type: str, error_msg: str, input_data: dict, validation_checks: list
+    ) -> None:
+        """Helper to annotate validation failures."""
+        if not self._llmobs_enabled or not DDTRACE_AVAILABLE:
+            return
+
+        LLMObs.annotate(
+            input_data=input_data,
+            output_data={
+                "is_valid": False,
+                "error": error_msg,
+                "validation_checks": validation_checks,
+            },
+            tags={
+                "validation_result": "failed",
+                "check_type": check_type,
+                "feature": "vote-extraction",
+            },
+        )
+
+    def _validate_ballot_statistics(
+        self, stats, validation_checks: list
+    ) -> tuple[bool, str | None]:
+        """Validate ballot statistics consistency."""
+        if not all(
+            [stats.ballots_used, stats.good_ballots, stats.bad_ballots, stats.no_vote_ballots]
+        ):
+            validation_checks.append(
+                {"check": "ballot_statistics", "passed": True, "note": "Incomplete data"}
+            )
+            return True, None
+
+        expected_total = stats.good_ballots + stats.bad_ballots + stats.no_vote_ballots
+        if stats.ballots_used != expected_total:
+            error_msg = (
+                f"Ballot mismatch: ballots_used ({stats.ballots_used}) != "
+                f"sum of good+bad+no_vote ({expected_total})"
+            )
+            validation_checks.append(
+                {"check": "ballot_statistics", "passed": False, "error": error_msg}
+            )
+            self._annotate_validation_failure(
+                "ballot_statistics",
+                error_msg,
+                {
+                    "ballots_used": stats.ballots_used,
+                    "good_ballots": stats.good_ballots,
+                    "bad_ballots": stats.bad_ballots,
+                    "no_vote_ballots": stats.no_vote_ballots,
+                },
+                validation_checks,
+            )
+            return False, error_msg
+
+        validation_checks.append({"check": "ballot_statistics", "passed": True})
+        return True, None
+
+    @task
     async def validate_extraction(
         self,
         data: ElectionFormData,
@@ -349,34 +541,83 @@ class VoteExtractionService:
         """
         Validate extracted vote data for consistency.
 
+        This is a task span that performs standalone data validation.
+
         Args:
             data: Extracted election form data
 
         Returns:
             Tuple of (is_valid, error_message)
         """
+        validation_checks = []
+
         # Validate ballot statistics if present
         if data.ballot_statistics:
-            stats = data.ballot_statistics
-            if all(
-                [stats.ballots_used, stats.good_ballots, stats.bad_ballots, stats.no_vote_ballots]
-            ):
-                expected_total = stats.good_ballots + stats.bad_ballots + stats.no_vote_ballots
-                if stats.ballots_used != expected_total:
-                    return False, (
-                        f"Ballot mismatch: ballots_used ({stats.ballots_used}) != "
-                        f"sum of good+bad+no_vote ({expected_total})"
-                    )
+            is_valid, error_msg = self._validate_ballot_statistics(
+                data.ballot_statistics, validation_checks
+            )
+            if not is_valid:
+                return False, error_msg
 
         # Validate vote results
         if not data.vote_results:
-            return False, "No vote results extracted"
+            error_msg = "No vote results extracted"
+            validation_checks.append({"check": "vote_results", "passed": False, "error": error_msg})
+            self._annotate_validation_failure(
+                "vote_results", error_msg, {"has_vote_results": False}, validation_checks
+            )
+            return False, error_msg
 
         # Check that all vote counts are non-negative
         for result in data.vote_results:
             if result.vote_count < 0:
                 name = result.candidate_name or result.party_name or "Unknown"
-                return False, f"Negative vote count for {name}"
+                error_msg = f"Negative vote count for {name}"
+                validation_checks.append(
+                    {"check": "vote_counts", "passed": False, "error": error_msg, "candidate": name}
+                )
+                self._annotate_validation_failure(
+                    "vote_counts",
+                    error_msg,
+                    {
+                        "candidate_name": result.candidate_name,
+                        "party_name": result.party_name,
+                        "vote_count": result.vote_count,
+                    },
+                    validation_checks,
+                )
+                return False, error_msg
+
+        validation_checks.append({"check": "vote_counts", "passed": True})
+
+        # All validations passed - annotate success
+        if self._llmobs_enabled and DDTRACE_AVAILABLE:
+            LLMObs.annotate(
+                input_data={
+                    "form_info": {
+                        "form_type": data.form_info.form_type if data.form_info else None,
+                        "province": data.form_info.province if data.form_info else None,
+                    },
+                    "vote_results_count": len(data.vote_results) if data.vote_results else 0,
+                    "has_ballot_statistics": data.ballot_statistics is not None,
+                },
+                output_data={
+                    "is_valid": True,
+                    "validation_checks": validation_checks,
+                    "checks_passed": len([c for c in validation_checks if c["passed"]]),
+                    "total_checks": len(validation_checks),
+                },
+                metrics={
+                    "vote_results_count": len(data.vote_results) if data.vote_results else 0,
+                    "checks_passed": len([c for c in validation_checks if c["passed"]]),
+                    "total_checks": len(validation_checks),
+                },
+                tags={
+                    "validation_result": "passed",
+                    "feature": "vote-extraction",
+                    "form_type": data.form_info.form_type if data.form_info else "unknown",
+                },
+            )
 
         return True, None
 
