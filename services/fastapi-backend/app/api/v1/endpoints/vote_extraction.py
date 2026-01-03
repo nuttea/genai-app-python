@@ -186,9 +186,17 @@ async def _parse_llm_config(llm_config_json: str | None) -> LLMConfig | None:
 async def _parse_extraction_results(
     result: dict | list,
     image_files_count: int,
+    span_id: str | None = None,
+    trace_id: str | None = None,
 ) -> tuple[list[ElectionFormData], list[str]]:
     """
     Parse and validate extraction results.
+
+    Args:
+        result: Extraction result from the workflow
+        image_files_count: Number of image files processed
+        span_id: Span ID from extraction workflow (for custom evaluations)
+        trace_id: Trace ID from extraction workflow (for custom evaluations)
 
     Returns:
         Tuple of (extracted_reports, validation_warnings)
@@ -235,8 +243,12 @@ async def _parse_extraction_results(
 
             extracted_data = ElectionFormData(**report_data)
 
-            # Validate consistency
-            is_valid, error_msg = await vote_extraction_service.validate_extraction(extracted_data)
+            # Validate consistency (submits Custom Evaluation to Datadog LLMObs)
+            is_valid, error_msg = await vote_extraction_service.validate_extraction(
+                data=extracted_data,
+                span_id=span_id,
+                trace_id=trace_id,
+            )
             if not is_valid:
                 logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
                 validation_warnings.append(f"Report {idx + 1}: {error_msg}")
@@ -344,19 +356,25 @@ async def extract_votes(
                 reports_extracted=0,
             )
 
-        # Parse and validate extracted data
+        # Capture span context immediately after workflow completes
+        # (for validation custom evaluations and feedback submission)
+        span_context = _get_span_context()
+        span_id = span_context.span_id if span_context else None
+        trace_id = span_context.trace_id if span_context else None
+
+        # Parse and validate extracted data (submits Custom Evaluations)
         try:
             extracted_reports, validation_warnings = await _parse_extraction_results(
-                result, len(image_files)
+                result=result,
+                image_files_count=len(image_files),
+                span_id=span_id,
+                trace_id=trace_id,
             )
 
             # Build response with warnings if any
             error_msg = None
             if validation_warnings:
                 error_msg = "Data extracted with warnings:\n" + "\n".join(validation_warnings)
-
-            # Capture span context for feedback submission
-            span_context = _get_span_context()
 
             return VoteExtractionResponse(
                 success=True,

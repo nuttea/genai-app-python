@@ -595,6 +595,7 @@ scripts/
 - [guides/llmobs/README.md](../guides/llmobs/README.md) ⭐ - Complete LLMObs guides
 - [guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md) 🆕 - Evaluation metric types
 - [docs/features/VOTE_EXTRACTION_LLMOBS_SPANS.md](features/VOTE_EXTRACTION_LLMOBS_SPANS.md) - Production example
+- [docs/features/VALIDATION_CUSTOM_EVALUATIONS.md](features/VALIDATION_CUSTOM_EVALUATIONS.md) 🆕 - Validation as custom evaluations
 - [docs/features/USER_FEEDBACK_LLMOBS_PLAN.md](features/USER_FEEDBACK_LLMOBS_PLAN.md) 🆕 - User feedback plan
 - [docs/features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md](features/USER_FEEDBACK_LLMOBS_IMPLEMENTATION_SUMMARY.md) ✅ - Implementation summary
 

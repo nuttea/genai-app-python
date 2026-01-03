@@ -480,26 +480,95 @@ class VoteExtractionService:
                 )
             raise ExtractionException(f"Extraction failed: {e}") from e
 
-    def _annotate_validation_failure(
-        self, check_type: str, error_msg: str, input_data: dict, validation_checks: list
+    def _submit_validation_evaluation(
+        self,
+        span_id: str | None,
+        trace_id: str | None,
+        is_valid: bool,
+        check_type: str,
+        error_msg: str | None,
+        validation_checks: list,
+        data: ElectionFormData,
     ) -> None:
-        """Helper to annotate validation failures."""
+        """
+        Submit validation result as a Datadog LLMObs Custom Evaluation.
+
+        Args:
+            span_id: Span ID to attach evaluation to
+            trace_id: Trace ID to attach evaluation to
+            is_valid: Whether validation passed
+            check_type: Type of validation check (ballot_statistics, vote_counts, etc.)
+            error_msg: Error message if validation failed
+            validation_checks: List of all validation checks performed
+            data: Extracted election form data
+        """
         if not self._llmobs_enabled or not DDTRACE_AVAILABLE:
             return
 
-        LLMObs.annotate(
-            input_data=input_data,
-            output_data={
-                "is_valid": False,
-                "error": error_msg,
-                "validation_checks": validation_checks,
-            },
-            tags={
-                "validation_result": "failed",
-                "check_type": check_type,
+        if not span_id or not trace_id:
+            logger.warning("Cannot submit validation evaluation: missing span_id or trace_id")
+            return
+
+        try:
+            # Prepare span context
+            span_context = {
+                "span_id": span_id,
+                "trace_id": trace_id,
+            }
+
+            # Prepare tags with context
+            tags = {
                 "feature": "vote-extraction",
-            },
-        )
+                "validation_check": check_type,
+                "form_type": data.form_info.form_type if data.form_info else "unknown",
+                "vote_results_count": str(len(data.vote_results) if data.vote_results else 0),
+                "has_ballot_statistics": str(data.ballot_statistics is not None),
+            }
+
+            # Submit overall validation result as boolean
+            LLMObs.submit_evaluation(
+                span=span_context,
+                ml_app="vote-extractor",
+                label="validation_passed",
+                metric_type="boolean",
+                value=is_valid,
+                tags=tags,
+                reasoning=error_msg if error_msg else "All validation checks passed",
+            )
+
+            # Submit validation check type as categorical
+            LLMObs.submit_evaluation(
+                span=span_context,
+                ml_app="vote-extractor",
+                label="validation_check_type",
+                metric_type="categorical",
+                value=check_type,
+                tags=tags,
+                reasoning=error_msg if error_msg else f"Validated {check_type} successfully",
+            )
+
+            # Submit validation score (checks passed / total checks)
+            checks_passed = len([c for c in validation_checks if c.get("passed", False)])
+            total_checks = len(validation_checks)
+            validation_score = checks_passed / total_checks if total_checks > 0 else 1.0
+
+            LLMObs.submit_evaluation(
+                span=span_context,
+                ml_app="vote-extractor",
+                label="validation_score",
+                metric_type="score",
+                value=validation_score,
+                tags=tags,
+                reasoning=f"Passed {checks_passed}/{total_checks} validation checks",
+            )
+
+            logger.info(
+                f"✅ Submitted validation evaluation: {check_type} "
+                f"(passed={is_valid}, score={validation_score:.2f})"
+            )
+
+        except Exception as e:
+            logger.error(f"❌ Failed to submit validation evaluation: {e}", exc_info=True)
 
     def _validate_ballot_statistics(
         self, stats, validation_checks: list
@@ -522,17 +591,6 @@ class VoteExtractionService:
             validation_checks.append(
                 {"check": "ballot_statistics", "passed": False, "error": error_msg}
             )
-            self._annotate_validation_failure(
-                "ballot_statistics",
-                error_msg,
-                {
-                    "ballots_used": stats.ballots_used,
-                    "good_ballots": stats.good_ballots,
-                    "bad_ballots": stats.bad_ballots,
-                    "no_vote_ballots": stats.no_vote_ballots,
-                },
-                validation_checks,
-            )
             return False, error_msg
 
         validation_checks.append({"check": "ballot_statistics", "passed": True})
@@ -541,15 +599,19 @@ class VoteExtractionService:
     async def validate_extraction(
         self,
         data: ElectionFormData,
+        span_id: str | None = None,
+        trace_id: str | None = None,
     ) -> tuple[bool, str | None]:
         """
-        Validate extracted vote data for consistency.
+        Validate extracted vote data for consistency and submit as Custom Evaluation.
 
-        This validation is called as part of the extraction workflow,
-        so it inherits the parent workflow trace context.
+        This validation is called after the extraction workflow completes,
+        and submits validation results as Datadog LLMObs Custom Evaluations.
 
         Args:
             data: Extracted election form data
+            span_id: Span ID from the extraction workflow (for evaluation linkage)
+            trace_id: Trace ID from the extraction workflow (for evaluation linkage)
 
         Returns:
             Tuple of (is_valid, error_message)
@@ -562,14 +624,29 @@ class VoteExtractionService:
                 data.ballot_statistics, validation_checks
             )
             if not is_valid:
+                self._submit_validation_evaluation(
+                    span_id=span_id,
+                    trace_id=trace_id,
+                    is_valid=False,
+                    check_type="ballot_statistics",
+                    error_msg=error_msg,
+                    validation_checks=validation_checks,
+                    data=data,
+                )
                 return False, error_msg
 
         # Validate vote results
         if not data.vote_results:
             error_msg = "No vote results extracted"
             validation_checks.append({"check": "vote_results", "passed": False, "error": error_msg})
-            self._annotate_validation_failure(
-                "vote_results", error_msg, {"has_vote_results": False}, validation_checks
+            self._submit_validation_evaluation(
+                span_id=span_id,
+                trace_id=trace_id,
+                is_valid=False,
+                check_type="vote_results",
+                error_msg=error_msg,
+                validation_checks=validation_checks,
+                data=data,
             )
             return False, error_msg
 
@@ -581,48 +658,29 @@ class VoteExtractionService:
                 validation_checks.append(
                     {"check": "vote_counts", "passed": False, "error": error_msg, "candidate": name}
                 )
-                self._annotate_validation_failure(
-                    "vote_counts",
-                    error_msg,
-                    {
-                        "candidate_name": result.candidate_name,
-                        "party_name": result.party_name,
-                        "vote_count": result.vote_count,
-                    },
-                    validation_checks,
+                self._submit_validation_evaluation(
+                    span_id=span_id,
+                    trace_id=trace_id,
+                    is_valid=False,
+                    check_type="vote_counts",
+                    error_msg=error_msg,
+                    validation_checks=validation_checks,
+                    data=data,
                 )
                 return False, error_msg
 
         validation_checks.append({"check": "vote_counts", "passed": True})
 
-        # All validations passed - annotate success
-        if self._llmobs_enabled and DDTRACE_AVAILABLE:
-            LLMObs.annotate(
-                input_data={
-                    "form_info": {
-                        "form_type": data.form_info.form_type if data.form_info else None,
-                        "province": data.form_info.province if data.form_info else None,
-                    },
-                    "vote_results_count": len(data.vote_results) if data.vote_results else 0,
-                    "has_ballot_statistics": data.ballot_statistics is not None,
-                },
-                output_data={
-                    "is_valid": True,
-                    "validation_checks": validation_checks,
-                    "checks_passed": len([c for c in validation_checks if c["passed"]]),
-                    "total_checks": len(validation_checks),
-                },
-                metrics={
-                    "vote_results_count": len(data.vote_results) if data.vote_results else 0,
-                    "checks_passed": len([c for c in validation_checks if c["passed"]]),
-                    "total_checks": len(validation_checks),
-                },
-                tags={
-                    "validation_result": "passed",
-                    "feature": "vote-extraction",
-                    "form_type": data.form_info.form_type if data.form_info else "unknown",
-                },
-            )
+        # All validations passed - submit success evaluation
+        self._submit_validation_evaluation(
+            span_id=span_id,
+            trace_id=trace_id,
+            is_valid=True,
+            check_type="all_checks",
+            error_msg=None,
+            validation_checks=validation_checks,
+            data=data,
+        )
 
         return True, None
 
