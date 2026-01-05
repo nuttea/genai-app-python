@@ -1,5 +1,7 @@
 # AI Agent Instructions
 
+Do not include real secrets or api keys in commit documents
+
 Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
 Use library:
