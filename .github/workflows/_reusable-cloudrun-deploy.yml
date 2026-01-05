@@ -127,7 +127,6 @@ jobs:
           context: ${{ inputs.docker_context }}
           file: ${{ inputs.dockerfile_path }}
           push: true
-          no-cache: true
           tags: |
             gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ github.sha }}
             gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ inputs.service_name }}:${{ inputs.deployment_tag != '' && format('{0}-latest', inputs.deployment_tag) || 'latest' }}
@@ -137,6 +136,8 @@ jobs:
             NEXT_PUBLIC_DD_APPLICATION_ID=${{ vars.DD_RUM_APPLICATION_ID }}
             NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ vars.DD_RUM_CLIENT_TOKEN }}
             ${{ inputs.build_args }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
         id: deploy
