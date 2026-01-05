@@ -14,18 +14,17 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  deploy:
-    name: Deploy to Production with Revision Tag
+  get-backend-url:
+    name: Get Backend Production URL
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
     permissions:
       contents: read
       id-token: write
+    outputs:
+      backend_url: ${{ steps.get-backend-url.outputs.url }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -41,97 +40,92 @@ jobs:
           BACKEND_URL=$(gcloud run services describe genai-fastapi-backend \
             --region ${{ env.REGION }} \
             --format 'value(status.traffic[0].url)' 2>/dev/null || echo "")
-          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
           echo "Backend Production URL: $BACKEND_URL"
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker --quiet
+  deploy:
+    name: Deploy to Production
+    needs: [get-backend-url]
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+    uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
+    with:
+      service_name: genai-streamlit-frontend
+      region: us-central1
+      dockerfile_path: frontend/streamlit/Dockerfile
+      docker_context: frontend/streamlit
+      deployment_tag: 'prod'
+      no_traffic: true
+      port: '8501'
+      memory: '1Gi'
+      cpu: '1'
+      timeout: '300'
+      max_instances: '10'
+      min_instances: '0'
+      environment: 'prod'
+      env_vars: |
+        API_BASE_URL=${{ needs.get-backend-url.outputs.backend_url }}
+        FASTAPI_ENV=production
+        DD_SITE=datadoghq.com
+        DD_SERVICE=genai-streamlit-frontend
+        DD_ENV=prod
+        DD_VERSION=${{ github.sha }}
+        DD_LOGS_ENABLED=true
+        DD_LOGS_INJECTION=true
+        DD_SOURCE=python
+        DD_TRACE_SAMPLE_RATE=1.0
+        DD_PROFILING_ENABLED=true
+        DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true
+        DD_RUM_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
+        DD_RUM_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
+      secrets: |
+        API_KEY=api-key:latest
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+      DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
+      DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  smoke-tests:
+    name: Run Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
 
-      - name: Build and Push to GCR
-        uses: docker/build-push-action@v5
-        with:
-          context: frontend/streamlit
-          file: frontend/streamlit/Dockerfile
-          push: true
-          tags: |
-            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-            gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:prod-latest
-          build-args: |
-            DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
-            DD_GIT_COMMIT_SHA=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Deploy to Cloud Run with 'prod' Tag
+    steps:
+      - name: Test Production Frontend
         run: |
-          gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image gcr.io/${{ vars.GCP_PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
-            --region ${{ env.REGION }} \
-            --platform managed \
-            --allow-unauthenticated \
-            --port 8501 \
-            --memory 1Gi \
-            --cpu 1 \
-            --timeout 300 \
-            --max-instances 10 \
-            --min-instances 0 \
-            --tag prod \
-            --no-traffic \
-            --set-env-vars API_BASE_URL=${{ steps.get-backend-url.outputs.backend_url }} \
-            --set-env-vars FASTAPI_ENV=production \
-            --set-env-vars DD_SITE=datadoghq.com \
-            --set-env-vars DD_SERVICE=${{ env.SERVICE_NAME }} \
-            --set-env-vars DD_ENV=prod \
-            --set-env-vars DD_VERSION=${{ github.sha }} \
-            --set-env-vars DD_LOGS_ENABLED=true \
-            --set-env-vars DD_LOGS_INJECTION=true \
-            --set-env-vars DD_SOURCE=python \
-            --set-env-vars DD_TRACE_SAMPLE_RATE=1.0 \
-            --set-env-vars DD_PROFILING_ENABLED=true \
-            --set-env-vars DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true \
-            --set-env-vars DD_RUM_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }} \
-            --set-env-vars DD_RUM_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }} \
-            --set-secrets API_KEY=api-key:latest
-
-      - name: Get Production URL
-        id: get-prod-url
-        run: |
-          # Get the URL for the 'prod' tagged revision
-          PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-            --region ${{ env.REGION }} \
-            --format 'json' | jq -r '.status.traffic[] | select(.tag=="prod") | .url')
-
-          if [ -z "$PROD_URL" ]; then
-            echo "⚠️  Warning: No URL found for tag 'prod', falling back to service URL"
-            PROD_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
-              --region ${{ env.REGION }} \
-              --format 'value(status.url)')
-          fi
-
-          echo "prod_url=$PROD_URL" >> $GITHUB_OUTPUT
-          echo "🌐 Production URL (tag=prod): $PROD_URL"
-
-      - name: Run Production Smoke Tests
-        run: |
-          PROD_URL="${{ steps.get-prod-url.outputs.prod_url }}"
-
-          echo "Testing production frontend..."
-          # Test health endpoint
+          PROD_URL="${{ needs.deploy.outputs.service_url }}"
+          
+          echo "Testing production frontend at: $PROD_URL"
+          
+          # Test Streamlit health endpoint
           curl -f "${PROD_URL}/_stcore/health" || exit 1
-
+          
           echo "✅ Production smoke tests passed"
 
-      - name: Create Deployment Summary
+  deployment-summary:
+    name: Create Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-tests]
+    if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+
+    steps:
+      - name: Create Summary
         run: |
           echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Service**: ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: prod" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Region**: ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL**: ${{ steps.get-prod-url.outputs.prod_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${{ needs.deploy.outputs.service_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Production traffic: 100% on 'prod' tag" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployed with tag: \`prod\` (no traffic)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "To route traffic to this revision:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "gcloud run services update-traffic ${{ env.SERVICE_NAME }} \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --to-tags prod=100 \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --region ${{ env.REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
