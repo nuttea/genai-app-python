@@ -44,7 +44,7 @@ gcloud auth application-default login
 # 3. Create .env file
 cat > .env <<EOF
 GOOGLE_CLOUD_PROJECT=your-project-id
-VERTEX_AI_LOCATION=us-central1
+VERTEX_AI_LOCATION=global
 EOF
 
 # 4. Start services (uses Poetry)
