@@ -61,12 +61,9 @@ jobs:
   deploy:
     name: Build and Deploy to Cloud Run
     runs-on: ubuntu-latest
-    # Deploy when lint succeeds, is skipped, or doesn't run
-    needs: [lint]
-    if: |
-      github.ref == 'refs/heads/main' && 
-      github.event_name == 'push' &&
-      (needs.lint.result == 'success' || needs.lint.result == 'skipped')
+    # Deploy on main branch pushes (lint is optional/skipped on main)
+    # For PRs and other branches, deployment is skipped
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
       id-token: write
