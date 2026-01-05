@@ -75,15 +75,13 @@ jobs:
         DD_TRACE_SAMPLE_RATE=1.0
         DD_PROFILING_ENABLED=true
         DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true
-        DD_RUM_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
-        DD_RUM_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
+        DD_RUM_CLIENT_TOKEN=${{ vars.DD_RUM_CLIENT_TOKEN }}
+        DD_RUM_APPLICATION_ID=${{ vars.DD_RUM_APPLICATION_ID }}
       secrets: |
         API_KEY=api-key:latest
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       GCP_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-      DD_RUM_APPLICATION_ID: ${{ secrets.DD_RUM_APPLICATION_ID }}
-      DD_RUM_CLIENT_TOKEN: ${{ secrets.DD_RUM_CLIENT_TOKEN }}
 
   smoke-tests:
     name: Run Production Smoke Tests

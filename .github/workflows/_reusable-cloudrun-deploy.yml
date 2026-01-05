@@ -85,10 +85,6 @@ on:
         required: true
       GCP_SERVICE_ACCOUNT_EMAIL:
         required: true
-      DD_RUM_APPLICATION_ID:
-        required: false
-      DD_RUM_CLIENT_TOKEN:
-        required: false
       API_KEY:
         required: false
     outputs:
@@ -135,8 +131,8 @@ jobs:
           build-args: |
             DD_GIT_REPOSITORY_URL=${{ github.repositoryUrl }}
             DD_GIT_COMMIT_SHA=${{ github.sha }}
-            NEXT_PUBLIC_DD_APPLICATION_ID=${{ secrets.DD_RUM_APPLICATION_ID }}
-            NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ secrets.DD_RUM_CLIENT_TOKEN }}
+            NEXT_PUBLIC_DD_APPLICATION_ID=${{ vars.DD_RUM_APPLICATION_ID }}
+            NEXT_PUBLIC_DD_CLIENT_TOKEN=${{ vars.DD_RUM_CLIENT_TOKEN }}
             ${{ inputs.build_args }}
 
       - name: Deploy to Cloud Run
