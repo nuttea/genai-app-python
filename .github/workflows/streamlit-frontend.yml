@@ -23,6 +23,8 @@ jobs:
   lint:
     name: Lint Frontend
     runs-on: ubuntu-latest
+    # Skip lint on main branch pushes (only lint PRs and develop branch)
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
     defaults:
       run:
         working-directory: frontend/streamlit
@@ -59,8 +61,12 @@ jobs:
   deploy:
     name: Build and Deploy to Cloud Run
     runs-on: ubuntu-latest
+    # Deploy when lint succeeds, is skipped, or doesn't run
     needs: [lint]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: |
+      github.ref == 'refs/heads/main' && 
+      github.event_name == 'push' &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped')
     permissions:
       contents: read
       id-token: write
