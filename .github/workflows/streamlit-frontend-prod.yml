@@ -47,6 +47,9 @@ jobs:
     name: Deploy to Production
     needs: [get-backend-url]
     if: github.ref == 'refs/heads/prod' && github.event_name == 'push'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/_reusable-cloudrun-deploy.yml
     with:
       service_name: genai-streamlit-frontend
