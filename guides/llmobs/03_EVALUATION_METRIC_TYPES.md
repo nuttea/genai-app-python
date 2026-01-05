@@ -1,8 +1,15 @@
 # Guide: Evaluation Metric Types in Datadog LLM Observability
 
-**Version**: 1.0  
-**Last Updated**: January 2026  
+**Version**: 1.1  
+**Last Updated**: January 4, 2026  
 **Audience**: Backend developers, ML engineers, data scientists
+
+**What's New in v1.1**:
+- ✨ Added **Example 4: Real-World Vote Extraction (Production)** - Comprehensive production implementation
+- 📊 Demonstrates all three metric types in a real application
+- 🔗 Shows proper Datadog LLMObs URL format and span context management
+- 💬 Includes user feedback system integration
+- ✅ Production-ready code with validation and error handling
 
 ---
 
@@ -15,6 +22,10 @@
 5. [Common Evaluation Labels](#common-evaluation-labels)
 6. [Choosing the Right Metric Type](#choosing-the-right-metric-type)
 7. [Implementation Examples](#implementation-examples)
+   - Example 1: User Feedback System
+   - Example 2: Automated Quality Checks
+   - Example 3: A/B Test Tracking
+   - **Example 4: Real-World Vote Extraction (Production)** ⭐ **NEW**
 8. [Best Practices](#best-practices)
 9. [Visualization and Monitoring](#visualization-and-monitoring)
 10. [Common Patterns and Anti-Patterns](#common-patterns-and-anti-patterns)
@@ -845,6 +856,327 @@ def calculate_accuracy(extracted: dict, truth: dict) -> float:
     total_fields = len(truth)
     correct_fields = sum(1 for k, v in truth.items() if extracted.get(k) == v)
     return correct_fields / total_fields if total_fields > 0 else 0.0
+```
+
+### Example 4: Real-World Vote Extraction (Production)
+
+**Scenario**: Thai election vote extraction with automated validation and user feedback.
+
+This example demonstrates a complete implementation combining:
+- ✅ Automated validation evaluations
+- ✅ User feedback collection
+- ✅ Proper span context management
+- ✅ All three metric types in production
+
+#### Part 1: Automated Validation as Custom Evaluations
+
+```python
+from ddtrace.llmobs import LLMObs
+from typing import Optional
+
+def submit_validation_evaluation(
+    is_valid: bool,
+    check_type: str,
+    error_msg: Optional[str],
+    validation_checks: list,
+    form_index: int,
+) -> None:
+    """
+    Submit validation result as Datadog LLMObs Custom Evaluation.
+    Uses LLMObs.export_span() to automatically get the active span context.
+    """
+    # Get active span context from workflow
+    span_context = LLMObs.export_span(span=None)
+    if not span_context:
+        logger.warning("No active span context found")
+        return
+    
+    tags = {
+        "feature": "vote-extraction",
+        "validation_check": check_type,
+        "form_index": str(form_index),
+    }
+    
+    # 1. Submit overall validation result (categorical: pass/fail)
+    LLMObs.submit_evaluation(
+        span=span_context,
+        ml_app="vote-extractor",
+        label=f"validation_passed_form_{form_index}",  # Unique per form
+        metric_type="categorical",
+        value="pass" if is_valid else "fail",
+        tags=tags,
+        assessment="pass" if is_valid else "fail",
+        reasoning=error_msg if error_msg else "All validation checks passed",
+    )
+    
+    # 2. Submit validation check type (categorical)
+    LLMObs.submit_evaluation(
+        span=span_context,
+        ml_app="vote-extractor",
+        label=f"validation_check_type_form_{form_index}",
+        metric_type="categorical",
+        value=check_type,  # e.g., "ballot_statistics", "vote_results"
+        tags=tags,
+        assessment="pass" if is_valid else "fail",
+        reasoning=f"Validated {check_type} successfully" if is_valid else error_msg,
+    )
+    
+    # 3. Submit validation score (numeric: checks passed / total checks)
+    checks_passed = len([c for c in validation_checks if c.get("passed", False)])
+    total_checks = len(validation_checks)
+    validation_score = checks_passed / total_checks if total_checks > 0 else 1.0
+    
+    LLMObs.submit_evaluation(
+        span=span_context,
+        ml_app="vote-extractor",
+        label=f"validation_score_form_{form_index}",
+        metric_type="score",
+        value=validation_score,
+        tags=tags,
+        assessment="pass" if is_valid else "fail",
+        reasoning=f"Passed {checks_passed}/{total_checks} validation checks",
+    )
+    
+    logger.info(
+        f"✅ Submitted validation evaluation: {check_type} "
+        f"(passed={is_valid}, score={validation_score:.2f})"
+    )
+
+# Example usage in workflow
+@workflow
+async def extract_from_images(image_files: list) -> dict:
+    """Extract vote data with validation."""
+    # ... extraction logic ...
+    
+    # Validate within workflow to ensure active span context
+    for idx, extracted_form in enumerate(extracted_forms):
+        is_valid, error_msg = await validate_extraction(extracted_form, idx)
+        
+        # Submit evaluation happens inside this function
+        submit_validation_evaluation(
+            is_valid=is_valid,
+            check_type="ballot_statistics" if error_msg else "complete",
+            error_msg=error_msg,
+            validation_checks=validation_results,
+            form_index=idx,
+        )
+    
+    # Capture workflow span context before returning
+    workflow_span_context = LLMObs.export_span(span=None)
+    
+    return {
+        "extraction_results": extracted_forms,
+        "span_context": {
+            "span_id": str(workflow_span_context.get("span_id")),
+            "trace_id": str(workflow_span_context.get("trace_id")),
+        }
+    }
+```
+
+#### Part 2: User Feedback System
+
+```python
+from pydantic import BaseModel, Field
+
+class FeedbackRequest(BaseModel):
+    """User feedback model."""
+    span_id: str = Field(..., description="Workflow span ID (decimal string)")
+    trace_id: str = Field(..., description="Workflow trace ID (hex string)")
+    ml_app: str = Field(..., description="Application name")
+    feature: str = Field(..., description="Feature name")
+    
+    # Feedback types
+    feedback_type: str = Field(..., description="thumbs, rating, or comment")
+    thumbs: Optional[str] = Field(None, description="up or down")
+    rating: Optional[int] = Field(None, ge=1, le=5, description="1-5 stars")
+    comment: Optional[str] = Field(None, description="User comment")
+    
+    # Context
+    user_id: Optional[str] = Field(None)
+    session_id: Optional[str] = Field(None)
+
+def submit_user_feedback(feedback: FeedbackRequest) -> dict:
+    """Submit user feedback as Datadog LLMObs evaluations."""
+    span_context = {
+        "span_id": feedback.span_id,  # Use original decimal string
+        "trace_id": feedback.trace_id,  # Use original hex string
+    }
+    
+    tags = {
+        "feature": feedback.feature,
+        "feedback_type": feedback.feedback_type,
+        "user_id": feedback.user_id or "anonymous",
+        "session_id": feedback.session_id or "unknown",
+    }
+    
+    # 1. Submit thumbs feedback (categorical: up/down)
+    if feedback.thumbs:
+        LLMObs.submit_evaluation(
+            span=span_context,
+            ml_app=feedback.ml_app,
+            label="user_thumbs",
+            metric_type="categorical",
+            value=feedback.thumbs,  # "up" or "down"
+            tags=tags,
+        )
+        logger.info(f"✅ Submitted thumbs: {feedback.thumbs}")
+    
+    # 2. Submit rating (score: 1-5)
+    if feedback.rating:
+        LLMObs.submit_evaluation(
+            span=span_context,
+            ml_app=feedback.ml_app,
+            label="user_rating",
+            metric_type="score",
+            value=feedback.rating,
+            tags=tags,
+        )
+        logger.info(f"✅ Submitted rating: {feedback.rating}")
+    
+    # 3. Submit comment (categorical with reasoning field)
+    if feedback.comment:
+        LLMObs.submit_evaluation(
+            span=span_context,
+            ml_app=feedback.ml_app,
+            label="user_feedback",
+            metric_type="categorical",
+            value="to_be_reviewed",  # Indicates comment needs review
+            tags=tags,
+            reasoning=feedback.comment,  # User's actual comment
+        )
+        logger.info(f"✅ Submitted comment: {feedback.comment[:50]}...")
+    
+    return {"success": True, "message": "Feedback submitted successfully"}
+
+# FastAPI endpoint example
+@router.post("/feedback/submit")
+async def submit_feedback_endpoint(feedback: FeedbackRequest):
+    """API endpoint for user feedback submission."""
+    result = submit_user_feedback(feedback)
+    return result
+```
+
+#### Part 3: Frontend Integration (Streamlit)
+
+```python
+import streamlit as st
+from datadog_rum import datadogRum
+
+# After extraction, display trace context
+if extraction_result and extraction_result.get("span_context"):
+    span_context = extraction_result["span_context"]
+    
+    # Display IDs for transparency
+    with st.expander("🔍 Trace Context (for Datadog LLMObs)"):
+        # Backend returns:
+        # - span_id: decimal string (e.g., "5009943010419557822")
+        # - trace_id: hex string (e.g., "69594bf000000000f8bbcd9f0908a20a")
+        
+        span_id_decimal = span_context["span_id"]
+        trace_id_hex = span_context["trace_id"]
+        
+        # Convert span_id to hex for display
+        span_id_hex = format(int(span_id_decimal), "016x")
+        
+        st.text_input("Span ID (Hex)", value=span_id_hex, disabled=True)
+        st.text_input("Span ID (Decimal)", value=span_id_decimal, disabled=True)
+        st.text_input("Trace ID (Hex)", value=trace_id_hex, disabled=True)
+        
+        # Create Datadog LLMObs trace link
+        datadog_url = (
+            f"https://app.datadoghq.com/llm/traces/trace/{trace_id_hex}"
+            f"?selectedTab=overview&spanId={span_id_decimal}"
+        )
+        st.markdown(f"🔗 **[View in Datadog LLMObs]({datadog_url})**")
+    
+    # User feedback section
+    st.markdown("### 💬 Rate this extraction")
+    
+    # Thumbs feedback
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👍 Helpful", key="thumbs_up"):
+            submit_feedback_api(
+                span_id=span_id_decimal,  # Use original values
+                trace_id=trace_id_hex,
+                feedback_type="thumbs",
+                thumbs="up",
+            )
+            st.success("Thanks for your feedback!")
+    
+    with col2:
+        if st.button("👎 Not Helpful", key="thumbs_down"):
+            submit_feedback_api(
+                span_id=span_id_decimal,
+                trace_id=trace_id_hex,
+                feedback_type="thumbs",
+                thumbs="down",
+            )
+            st.success("Thanks for your feedback!")
+    
+    # Star rating
+    rating = st.slider("⭐ Rate 1-5 stars", 1, 5, 3)
+    comment = st.text_area("💭 Optional comment")
+    
+    if st.button("Submit Rating"):
+        submit_feedback_api(
+            span_id=span_id_decimal,
+            trace_id=trace_id_hex,
+            feedback_type="rating",
+            rating=rating,
+            comment=comment if comment else None,
+            session_id=datadogRum.getInternalContext().get("session_id"),
+        )
+        st.success("✅ Rating submitted!")
+```
+
+#### Key Takeaways from Production Example
+
+1. **Span Context Management**:
+   - Use `LLMObs.export_span(span=None)` to auto-detect active span
+   - Capture workflow span context *before* returning from workflow
+   - Pass original values (decimal span_id, hex trace_id) to feedback API
+
+2. **Unique Labels per Form**:
+   - Use `label=f"validation_passed_form_{form_index}"` for multi-form validation
+   - Prevents Datadog from rejecting duplicate evaluations
+
+3. **All Three Metric Types**:
+   - **Score**: `validation_score` (0-1), `user_rating` (1-5)
+   - **Categorical**: `validation_passed` (pass/fail), `user_thumbs` (up/down), `user_feedback` (to_be_reviewed)
+   - **Boolean**: (not used in this example, but could be used for simple yes/no checks)
+
+4. **Reasoning Field**:
+   - Used for validation error messages
+   - Used for user comments (qualitative feedback)
+   - Searchable and filterable in Datadog
+
+5. **Proper URL Format**:
+   - LLMObs URL: `/llm/traces/trace/{trace_id_hex}?spanId={span_id_decimal}`
+   - Not the same as APM URL (`/apm/trace/`)
+
+6. **Real-Time Feedback Loop**:
+   - Users can rate extractions immediately
+   - Feedback linked to specific LLM operations
+   - Enables tracking model quality over time
+
+#### Datadog Queries for Production Monitoring
+
+```
+# View all validation failures
+@label:validation_passed @value:fail
+
+# User ratings distribution
+@label:user_rating @ml_app:vote-extractor
+
+# Comments needing review
+@label:user_feedback @value:to_be_reviewed
+
+# Low validation scores
+@label:validation_score @value:<0.5
+
+# Negative feedback correlation
+(@label:user_thumbs @value:down) OR (@label:user_rating @value:<=2)
 ```
 
 ---

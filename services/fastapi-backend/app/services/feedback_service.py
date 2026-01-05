@@ -63,8 +63,11 @@ class FeedbackService:
             # Prepare tags with context
             tags = self._prepare_tags(feedback)
 
+            # Extract reasoning from tags (if present) to pass as separate parameter
+            reasoning = tags.pop("reasoning", None)
+
             # Submit evaluation to Datadog LLMObs
-            # Note: User comments are submitted using the "reasoning" tag, which is
+            # Note: User comments are submitted using the "reasoning" parameter, which is
             # the Datadog-recommended field for providing explanations/justifications
             # for evaluation scores. This keeps comments structured and queryable.
             LLMObs.submit_evaluation(
@@ -74,6 +77,7 @@ class FeedbackService:
                 metric_type=metric_type,
                 value=value,
                 tags=tags,
+                reasoning=reasoning,  # User comment as reasoning (if provided)
             )
 
             logger.info(

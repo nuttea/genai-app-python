@@ -672,11 +672,18 @@ def display_extraction_results(result):
 
         # Display span context for debugging/transparency
         with st.expander("🔍 Trace Context (for Datadog LLMObs)", expanded=False):
-            # Convert decimal IDs to hex for display (to match Datadog UI)
-            span_id_int = int(span_context["span_id"])
-            trace_id_int = int(span_context["trace_id"])
-            span_id_hex = format(span_id_int, "016x")  # 64-bit = 16 hex chars
-            trace_id_hex = format(trace_id_int, "032x")  # 128-bit = 32 hex chars
+            # Backend returns IDs from LLMObs.export_span()
+            # - span_id: decimal string (e.g., "2670203640094394356")
+            # - trace_id: hex string (e.g., "6959432000000000d1f51f98d49b97c8")
+            span_id_decimal = str(span_context["span_id"])
+            trace_id_hex = str(span_context["trace_id"])
+
+            # Convert span_id to hex for display
+            try:
+                span_id_hex = format(int(span_id_decimal), "016x")  # 64-bit = 16 hex chars
+            except ValueError:
+                # If conversion fails, use as-is
+                span_id_hex = span_id_decimal
 
             # Span ID - both formats
             st.markdown("**Span ID**")
@@ -692,35 +699,28 @@ def display_extraction_results(result):
             with col2:
                 st.text_input(
                     "Decimal (for SDK/API)",
-                    value=span_context["span_id"],
+                    value=span_id_decimal,
                     disabled=True,
                     help="Decimal string format - used internally by ddtrace SDK and API calls",
                     key=f"span_id_dec_{report_idx}",
                 )
 
-            # Trace ID - both formats
+            # Trace ID - hex format (from LLMObs.export_span)
             st.markdown("**Trace ID**")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.text_input(
-                    "Hexadecimal (for Datadog UI)",
-                    value=trace_id_hex,
-                    disabled=True,
-                    help="128-bit hexadecimal format - use this in Datadog UI and trace links",
-                    key=f"trace_id_hex_{report_idx}",
-                )
-            with col2:
-                st.text_input(
-                    "Decimal (for SDK/API)",
-                    value=span_context["trace_id"],
-                    disabled=True,
-                    help="Decimal string format - used internally by ddtrace SDK and API calls",
-                    key=f"trace_id_dec_{report_idx}",
-                )
+            st.text_input(
+                "Hexadecimal (Datadog format)",
+                value=trace_id_hex,
+                disabled=True,
+                help="128-bit hexadecimal format - returned by LLMObs.export_span() and used in Datadog UI",
+                key=f"trace_id_hex_{report_idx}",
+            )
 
-            # Create Datadog trace link (using hex format)
-            # Datadog US1 site format: https://app.datadoghq.com/apm/trace/{trace_id}
-            datadog_url = f"https://app.datadoghq.com/apm/trace/{trace_id_hex}"
+            # Create Datadog LLMObs trace link
+            # URL format: /llm/traces/trace/{trace_id_hex}?spanId={span_id_decimal}
+            datadog_url = (
+                f"https://app.datadoghq.com/llm/traces/trace/{trace_id_hex}"
+                f"?selectedTab=overview&spanId={span_id_decimal}"
+            )
 
             st.markdown(
                 f"🔗 **[View this trace in Datadog LLMObs]({datadog_url})**",
@@ -728,11 +728,11 @@ def display_extraction_results(result):
             )
 
             st.info(
-                "💡 **Trace Context**: Two formats for the same IDs:\n"
-                "- **Hexadecimal**: Displayed in Datadog UI (e.g., trace links)\n"
-                "- **Decimal**: Used by ddtrace SDK and API calls\n\n"
-                "Both represent the same unique identifiers, just in different number systems. "
-                "Click the link above to view the full trace with spans, metrics, and evaluations."
+                "💡 **Trace Context**: Unique identifiers for this LLM operation\n"
+                "- **Span ID**: Decimal from backend (converted to hex for display)\n"
+                "- **Trace ID**: Hex from backend (used directly in Datadog LLMObs URL)\n\n"
+                "These IDs link your feedback to the exact extraction operation. "
+                "Click the link above to view the full trace with spans, metrics, and evaluations in Datadog LLMObs."
             )
 
         # Feedback options in tabs
@@ -745,7 +745,7 @@ def display_extraction_results(result):
             render_feedback_with_comment(
                 span_id=span_context["span_id"],
                 trace_id=span_context["trace_id"],
-                ml_app="vote-extraction-app",
+                ml_app="vote-extractor",
                 feature="vote-extraction",
                 key_suffix=f"vote_extraction_full_{report_idx}",
                 session_id=st.session_state.get("session_id"),
@@ -756,7 +756,7 @@ def display_extraction_results(result):
             render_thumbs_feedback(
                 span_id=span_context["span_id"],
                 trace_id=span_context["trace_id"],
-                ml_app="vote-extraction-app",
+                ml_app="vote-extractor",
                 feature="vote-extraction",
                 key_suffix=f"vote_extraction_thumbs_{report_idx}",
                 session_id=st.session_state.get("session_id"),
@@ -767,7 +767,7 @@ def display_extraction_results(result):
             render_star_rating(
                 span_id=span_context["span_id"],
                 trace_id=span_context["trace_id"],
-                ml_app="vote-extraction-app",
+                ml_app="vote-extractor",
                 feature="vote-extraction",
                 key_suffix=f"vote_extraction_rating_{report_idx}",
                 session_id=st.session_state.get("session_id"),

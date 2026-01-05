@@ -14,6 +14,7 @@ dependencies = [
     "Pillow>=10.2.0",
     "pandas>=2.1.4",
     "python-dotenv>=1.0.0",
+    "ddtrace>=3.18.0",  # Datadog LLMObs SDK for dataset management (requires 3.18+ for LLMObs features)
 ]
 
 [project.optional-dependencies]

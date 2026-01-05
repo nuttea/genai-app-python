@@ -38,31 +38,6 @@ _cache_timestamp: float | None = None
 CACHE_TTL = 3600  # 1 hour cache
 
 
-def _get_span_context() -> SpanContext | None:
-    """
-    Get current span context for feedback submission.
-
-    Captures the current Datadog trace span_id and trace_id for
-    associating user feedback with this specific LLM operation.
-
-    Returns:
-        SpanContext with span_id and trace_id (as decimal strings), or None if not available
-        Note: Frontend will convert to hex for display only
-    """
-    try:
-        from ddtrace import tracer
-
-        span = tracer.current_span()
-        if span:
-            # Store as decimal strings (original format from ddtrace)
-            # Frontend will convert to hex for display to match Datadog UI
-            return SpanContext(span_id=str(span.span_id), trace_id=str(span.trace_id))
-    except (ImportError, AttributeError) as e:
-        logger.debug(f"Could not get span context: {e}")
-
-    return None
-
-
 async def _validate_and_read_files(
     files: list[UploadFile],
 ) -> tuple[list[bytes], list[str]]:
@@ -242,14 +217,10 @@ async def _parse_extraction_results(
 
             extracted_data = ElectionFormData(**report_data)
 
-            # Validate consistency (submits Custom Evaluation to Datadog LLMObs)
-            # Uses LLMObs.export_span() internally to get current span context
-            is_valid, error_msg = await vote_extraction_service.validate_extraction(
-                data=extracted_data
-            )
-            if not is_valid:
-                logger.warning(f"Validation warning for report {idx + 1}: {error_msg}")
-                validation_warnings.append(f"Report {idx + 1}: {error_msg}")
+            # Note: Validation is now done WITHIN the workflow span
+            # (see VoteExtractionService._validate_within_workflow)
+            # to ensure LLMObs.export_span() can find the active span context.
+            # No need to validate here again.
 
             extracted_reports.append(extracted_data)
             logger.info(f"Successfully parsed report {idx + 1}/{len(results_to_process)}")
@@ -362,8 +333,25 @@ async def extract_votes(
                 image_files_count=len(image_files),
             )
 
-            # Capture span context after validation for feedback submission
-            span_context = _get_span_context()
+            # Get workflow span context for feedback submission
+            # This was captured inside the workflow before it closed
+            workflow_span_context = vote_extraction_service.get_workflow_span_context()
+            span_context = None
+            if (
+                workflow_span_context
+                and "span_id" in workflow_span_context
+                and "trace_id" in workflow_span_context
+            ):
+                span_context = SpanContext(
+                    span_id=str(workflow_span_context["span_id"]),
+                    trace_id=str(workflow_span_context["trace_id"]),
+                )
+                logger.info(
+                    f"✅ Retrieved workflow span context: "
+                    f"span_id={span_context.span_id}, trace_id={span_context.trace_id}"
+                )
+            else:
+                logger.warning("⚠️ No workflow span context available for feedback submission")
 
             # Build response with warnings if any
             error_msg = None

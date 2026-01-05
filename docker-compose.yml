@@ -32,6 +32,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       # Datadog APM and LLM Observability (optional)
       - DD_API_KEY=${DD_API_KEY:-}
+      - DD_APP_KEY=${DD_APP_KEY:-}
       - DD_SITE=${DD_SITE:-datadoghq.com}
       - DD_SERVICE=${DD_SERVICE:-genai-fastapi-backend}
       - DD_ENV=${DD_ENV:-development}
@@ -55,12 +56,16 @@ services:
       - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
       # Mount code for development (hot reload)
       - ./services/fastapi-backend/app:/app/app:ro
+      # Mount assets (images) for experiments - READ ONLY
+      - ./assets:/app/assets:ro
+      # Mount datasets directory for experiments - READ ONLY
+      - ./datasets:/app/datasets:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 30s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     restart: unless-stopped
     networks:
       - genai-network
@@ -98,6 +103,7 @@ services:
       - API_KEY=${API_KEY:-}
       # Datadog (optional, but tracing disabled for local dev without serverless-init)
       - DD_API_KEY=${DD_API_KEY:-}
+      - DD_APP_KEY=${DD_APP_KEY:-}
       - DD_SITE=${DD_SITE:-datadoghq.com}
       - DD_SERVICE=${DD_SERVICE:-genai-streamlit-frontend}
       - DD_ENV=${DD_ENV:-development}
@@ -113,7 +119,12 @@ services:
       - DD_RUM_APPLICATION_ID=${DD_RUM_APPLICATION_ID:-}
     volumes:
       # Mount code for development (hot reload)
-      - ./frontend/streamlit:/app:ro
+      # NOTE: Changed from :ro to allow creating mount points for assets/ and datasets/
+      - ./frontend/streamlit:/app
+      # Mount assets (images) as read-only
+      - ./assets:/app/assets:ro
+      # Mount datasets directory as read-write for Dataset Manager
+      - ./datasets:/app/datasets
     depends_on:
       fastapi-backend:
         condition: service_healthy

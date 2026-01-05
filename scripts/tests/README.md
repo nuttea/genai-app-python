@@ -53,6 +53,14 @@ This directory contains test and debugging scripts for various components of the
 - Quick bash script to list models via REST API
 - Requires: `GEMINI_API_KEY` environment variable
 
+**[test_user_feedback.sh](./test_user_feedback.sh)**
+- Test script for user feedback functionality
+- Validates feedback submission and storage
+
+**[test_validation_evaluations.sh](./test_validation_evaluations.sh)**
+- Test script for validation evaluations
+- Checks evaluation metrics and accuracy
+
 ## 🚀 Running Tests
 
 ### Prerequisites
@@ -150,4 +158,4 @@ These scripts are for **local development and debugging only**, not part of the 
 
 ---
 
-**Last Updated:** 2024-12-29
+**Last Updated:** 2026-01-05

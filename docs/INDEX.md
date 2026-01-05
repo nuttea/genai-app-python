@@ -113,6 +113,33 @@ Comprehensive documentation for deep dives:
   - Trace agent configuration
   - Local and Cloud Run settings
 
+### APM Tracing Best Practices
+
+Python-specific best practices for Datadog APM tracing:
+
+- **[DATADOG_TRACING_BEST_PRACTICES.md](../DATADOG_TRACING_BEST_PRACTICES.md)** ✅ **COMPREHENSIVE GUIDE**
+  - Exception handling with trace errors
+  - LLMObs parent-child trace hierarchy
+  - Span tagging best practices (tags vs metrics)
+  - Error handling patterns
+  - LLMObs decorators (`@workflow`, `@task`, `@tool`)
+  - Async tracing
+  - Testing traces
+
+- **[DATADOG_TRACING_QUICK_REF.md](../DATADOG_TRACING_QUICK_REF.md)** ✅ **QUICK REFERENCE**
+  - Copy-paste patterns for common scenarios
+  - LLMObs decorator examples
+  - Error tagging cheat sheet
+  - Helper functions
+  - Implementation checklist
+
+- **[VOTE_EXTRACTION_TRACING_IMPROVEMENTS.md](../VOTE_EXTRACTION_TRACING_IMPROVEMENTS.md)** ✅ **SERVICE-SPECIFIC**
+  - Applied best practices to vote_extraction_service.py
+  - Improved error handling with span tagging
+  - Complete workflow tracing examples
+  - Experiments service tracing
+  - Implementation checklist
+
 ### LLM Observability Guides
 
 Comprehensive guides for implementing Datadog LLMObs:
@@ -137,25 +164,94 @@ Comprehensive guides for implementing Datadog LLMObs:
   - Understanding trace visualization
 
 - **[guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md)** 🆕
-  - Comprehensive guide to evaluation metric types
-  - Score, Boolean, and Categorical types
-  - When to use each type
-  - Best practices and examples
-  - Datadog integration details
-  - Understanding the trace waterfall
-  - Using filters and search
-
-- **[guides/llmobs/03_EVALUATION_METRIC_TYPES.md](../guides/llmobs/03_EVALUATION_METRIC_TYPES.md)** 🆕
-  - Score vs Categorical metric types
+  - Score vs Categorical vs Boolean metric types
   - Common evaluation labels (accuracy, toxicity, relevance, etc.)
   - Choosing the right metric type
   - Implementation examples and best practices
   - Visualization and monitoring strategies
+  - Real-world production example (Vote Extraction)
+
+- **[guides/llmobs/04_EXPERIMENTS_AND_DATASETS.md](../guides/llmobs/04_EXPERIMENTS_AND_DATASETS.md)** ⭐ NEW
+  - Systematic offline testing with curated datasets
+  - Creating projects, datasets, and experiments
+  - Running experiments programmatically
+  - CI/CD integration for regression testing
+  - Comparing models and prompts
+  - Complete examples with code (2,846 lines)
 
 - **[guides/llmobs/sources/99_ADDITIONAL_TOPICS.md](../guides/llmobs/sources/99_ADDITIONAL_TOPICS.md)**
   - Advanced configuration
   - Custom integrations
   - Performance optimization
+
+### Dataset Preparation Tools
+
+Prepare datasets for Datadog LLM Experiments:
+
+- **[DATASET_WORKFLOW_COMPLETE.md](../DATASET_WORKFLOW_COMPLETE.md)** ⭐ COMPLETE WORKFLOW
+  - End-to-end workflow overview
+  - All tools and their purposes
+  - Usage examples and screenshots
+  - Git workflow integration
+  - Troubleshooting guide
+
+- **[Streamlit Dataset Manager App](../frontend/streamlit/pages/2_📊_Dataset_Manager.py)** 🚀 RECOMMENDED
+  - Interactive GUI for ground truth annotation
+  - Visual image browser
+  - Real-time validation
+  - Local JSON storage
+  - ✅ **One-click Datadog push using SDK** (NEW!)
+  - **Launch**: `streamlit run frontend/streamlit/pages/2_📊_Dataset_Manager.py`
+  - **⭐ SDK Success**: See [Dataset Datadog SDK Success](../DATASET_DATADOG_SDK_SUCCESS.md) - ✅ **Successfully pushing datasets directly to Datadog using `LLMObs.create_dataset()` (LATEST!)**
+  - **📤 Upload/Download**: See [Dataset Upload Download Feature](../DATASET_UPLOAD_DOWNLOAD_FEATURE.md) - ✅ **Import/export datasets from/to local machine for backup and sharing (NEW!)**
+  - **Troubleshooting**: See [Dataset Manager Fix Summary](../DATASET_MANAGER_FIX_SUMMARY.md) if you encounter setup issues
+  - **Schema Update**: See [Dataset Manager Schema Update](../DATASET_MANAGER_SCHEMA_UPDATE.md) for complete schema alignment (max candidates 10→100, all fields added)
+  - **📊 Complete Workflow**: See [Dataset Workflow Complete Summary](../DATASET_WORKFLOW_COMPLETE_SUMMARY.md) - ✅ **End-to-end workflow from generation to export (START HERE)**
+  - **LLM Generation**: See [LLM Dataset Generation Summary](../LLM_DATASET_GENERATION_SUMMARY.md) for automated dataset generation from LLM API
+
+- **[notebooks/datasets/01_prepare_vote_extraction_dataset.ipynb](../notebooks/datasets/01_prepare_vote_extraction_dataset.ipynb)** ⭐ COMPLETE NOTEBOOK
+  - Interactive Jupyter notebook
+  - Step-by-step exploration
+  - Dataset loading/viewing
+  - Datadog push examples
+  - ✨ **NEW: Experiments section** (Step 4) - Run systematic LLM evaluations
+  - **Summary**: See [Experiments Notebook Complete](../EXPERIMENTS_NOTEBOOK_COMPLETE.md) - ✅ **Full experiments workflow added!**
+  - **Model Comparison**: See [Experiments Model Comparison](../EXPERIMENTS_MODEL_COMPARISON.md) - ✅ **4 model variations with production strategy!**
+  - **Wrapper Function**: See [Wrapper Function Complete](../WRAPPER_FUNCTION_COMPLETE.md) - ✅ **Easy experiment configuration with run_model_experiments()!**
+  - **Comparison URL**: See [Comparison URL Feature](../COMPARISON_URL_FEATURE.md) - ✅ **Automatic Datadog comparison links for side-by-side experiment view!**
+  - **Tags Fix**: See [Tags Fix Summary](../TAGS_FIX_SUMMARY.md) - ✅ **Fixed: Use `tags` instead of `metadata` in LLMObs.experiment()!**
+  - **Thinking Config**: See [Thinking Config + Docker Fix](../THINKING_CONFIG_DOCKER_FIX.md) - ✅ **Added extended reasoning + fixed Docker health check!**
+  - **Run Experiments**: See [Run Experiments Implementation](../RUN_EXPERIMENTS_IMPLEMENTATION.md) - ✅ **API + UI + CI/CD for running model experiments!**
+    - Quick Reference: [Run Experiments Quick](../RUN_EXPERIMENTS_QUICK.md)
+    - Summary: [Run Experiments Summary](../RUN_EXPERIMENTS_SUMMARY.md)
+    - Architecture: [Run Experiments Overview](../RUN_EXPERIMENTS_OVERVIEW.md)
+    - Tests: [Experiments Tests Summary](../EXPERIMENTS_TESTS_SUMMARY.md) - ✅ **54/57 tests passing (95%)!**
+    - Advanced Features:
+      - **[LLM-as-Judge Evaluator](../LLM_JUDGE_EVALUATOR.md)** - ✅ **Gemini 3 Pro Preview quality assessment with detailed reasoning!**
+      - **[Vertex AI Update](../LLM_JUDGE_VERTEX_AI_UPDATE.md)** - ✅ **LLM Judge now uses Vertex AI (same auth as extraction)**
+      - **[Jupyter Notebook Update](../JUPYTER_NOTEBOOK_LLM_JUDGE_UPDATE.md)** - ✅ **Notebook updated with LLM Judge evaluator**
+    - Troubleshooting:
+      - **[Complete Fix Guide](../EXPERIMENTS_COMPLETE_FIX.md)** - ✅ **All 5 issues resolved!**
+      - **[Image Paths Fix](../EXPERIMENTS_IMAGE_PATHS_FIX.md)** - ✅ **Container-compatible paths with auto-normalization**
+      - [401 Unauthorized Fix](../EXPERIMENTS_401_FIX.md) - ✅ **DD_APP_KEY configuration**
+      - [Task Signature Fix](../EXPERIMENTS_TASK_SIGNATURE_FIX.md) - ✅ **input_data & config parameters**
+
+- **[notebooks/datasets/QUICKSTART.md](../notebooks/datasets/QUICKSTART.md)** 🚀 QUICK START
+  - 10-minute quickstart guide
+  - Step-by-step instructions
+  - Troubleshooting
+
+- **[notebooks/datasets/README.md](../notebooks/datasets/README.md)**
+  - Comprehensive documentation
+  - Prerequisites and setup
+  - Output formats
+  - Tips and best practices
+
+- **[scripts/datasets/prepare_dataset.py](../scripts/datasets/prepare_dataset.py)**
+  - Production-ready Python script
+  - CLI for local or Datadog push
+  - Automatic validation
+  - CI/CD integration ready
 
 ### Features
 - **[features/vote-extractor.md](features/vote-extractor.md)**
@@ -249,6 +345,42 @@ Comprehensive guides for implementing Datadog LLMObs:
 - **[troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)**
   - Recent fixes and improvements
   - Testing instructions
+
+- **[troubleshooting/USER_FEEDBACK_EVALUATIONS_FIX.md](troubleshooting/USER_FEEDBACK_EVALUATIONS_FIX.md)** 🆕
+  - User feedback evaluations not appearing in Datadog
+  - ml_app name consistency fix
+  - reasoning field handling fix
+  - Complete testing guide
+
+- **[troubleshooting/VALIDATION_EVALUATIONS_FIX.md](troubleshooting/VALIDATION_EVALUATIONS_FIX.md)** 🆕
+  - Vote extraction validation evaluations fix
+  - Workflow span context issues
+  - Duplicate label resolution
+  - Unique evaluation labels per form
+
+- **[troubleshooting/DATASET_OBJECT_ATTRIBUTES.md](troubleshooting/DATASET_OBJECT_ATTRIBUTES.md)** 🆕
+  - Dataset object has no attribute 'current_version'
+  - Dataset versioning in Datadog LLMObs SDK
+  - Best practices for manual version tracking
+  - Jupyter notebook fixes
+
+- **[troubleshooting/DDTRACE_IMPORT_ERRORS.md](troubleshooting/DDTRACE_IMPORT_ERRORS.md)** 🆕
+  - ImportError: cannot import name 'workflow' from 'ddtrace.llmobs'
+  - Correct import paths for decorators
+  - Complete import reference guide
+
+- **[troubleshooting/NOTEBOOK_401_API_KEY.md](troubleshooting/NOTEBOOK_401_API_KEY.md)** 🆕
+  - 401 Unauthorized errors in Jupyter notebook experiments
+  - API key configuration and authentication
+  - FastAPI backend security setup
+
+### Testing
+- **[testing/STREAMLIT_BROWSER_TEST_REPORT.md](testing/STREAMLIT_BROWSER_TEST_REPORT.md)** 🆕
+  - Playwright browser automation test results
+  - Streamlit UI verification
+  - Datadog RUM integration testing
+  - User feedback UI components testing
+  - Complete test coverage summary
 
 ### Investigations
 - **[investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)**
@@ -425,9 +557,15 @@ docs/
 │   ├── CORS_IAP_FIX.md                         # 🆕 CORS/IAP redirect errors
 │   ├── TROUBLESHOOTING_MAX_TOKENS.md           # JSON parsing errors
 │   ├── FIX_SUMMARY.md                          # Recent fixes
+│   ├── USER_FEEDBACK_EVALUATIONS_FIX.md        # 🆕 User feedback evaluations fix
+│   ├── VALIDATION_EVALUATIONS_FIX.md           # 🆕 Validation evaluations fix
 │   ├── STREAMING_FIX_SUMMARY.md                # ✅ Streaming fixes
 │   ├── STREAMING_OPTIMIZATION_SUCCESS.md       # ✅ Streaming optimization
 │   └── STREAMING_OPTIMIZATION_V2.md            # ✅ Advanced streaming optimizations
+│
+├── testing/
+│   ├── STREAMLIT_BROWSER_TEST_REPORT.md        # 🆕 Browser automation test report
+│   └── STREAMLIT_TESTING_COMPLETE.md           # 🆕 Complete testing summary
 │
 ├── investigations/
 │   ├── README.md                               # Investigation index
@@ -478,6 +616,7 @@ scripts/tests/
 ├── test_both_sdk_approaches.py         # SDK comparison
 ├── test_gemini_models_api.py           # Vertex AI test
 ├── test_dynamic_models.py              # Dynamic listing test
+├── test_user_feedback.sh               # 🆕 User feedback LLMObs test
 ├── debug_models_api.py                 # Debug script
 └── test_list_all_models.sh             # Shell script
 ```
@@ -534,9 +673,10 @@ scripts/
 - **Quick Starts**: 7 guides
 - **Complete Guides**: 12 guides
 - **Reference**: 5 documents
-- **Troubleshooting**: 2 guides
+- **Troubleshooting**: 4 guides 🆕 +2
+- **Testing**: 1 report 🆕
 - **Investigations**: 4 reports
-- **Test Scripts**: 7 scripts
+- **Test Scripts**: 8 scripts 🆕 +1
 - **Archive**: 5 summaries
 
 ## 🔍 Search by Topic
@@ -546,6 +686,10 @@ scripts/
 - [getting-started/GETTING_STARTED.md](getting-started/GETTING_STARTED.md)
 
 ### Docker
+- **[DOCKERFILE_PYPROJECT_FIX.md](../DOCKERFILE_PYPROJECT_FIX.md)** 🆕
+  - Fixed Dockerfiles to use pyproject.toml (no hardcoded versions)
+  - Single source of truth for dependencies
+  - Consistent build process across frontend and backend
 - [QUICKSTART.md](../QUICKSTART.md)
 - [getting-started/GETTING_STARTED.md](getting-started/GETTING_STARTED.md)
 - [getting-started/DEVELOPMENT.md](getting-started/DEVELOPMENT.md)
@@ -602,14 +746,21 @@ scripts/
 ### Troubleshooting
 - [troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md](troubleshooting/TROUBLESHOOTING_MAX_TOKENS.md)
 - [troubleshooting/FIX_SUMMARY.md](troubleshooting/FIX_SUMMARY.md)
+- [troubleshooting/USER_FEEDBACK_EVALUATIONS_FIX.md](troubleshooting/USER_FEEDBACK_EVALUATIONS_FIX.md) 🆕 - User feedback not appearing
+- [troubleshooting/VALIDATION_EVALUATIONS_FIX.md](troubleshooting/VALIDATION_EVALUATIONS_FIX.md) 🆕 - Validation evaluations fix
+- [troubleshooting/DATASET_OBJECT_ATTRIBUTES.md](troubleshooting/DATASET_OBJECT_ATTRIBUTES.md) 🆕 - Dataset version attribute error
+- [troubleshooting/DDTRACE_IMPORT_ERRORS.md](troubleshooting/DDTRACE_IMPORT_ERRORS.md) 🆕 - ddtrace import errors
+
+### Testing
+- [testing/STREAMLIT_TESTING_COMPLETE.md](testing/STREAMLIT_TESTING_COMPLETE.md) 🆕⭐ - Complete testing summary
+- [testing/STREAMLIT_BROWSER_TEST_REPORT.md](testing/STREAMLIT_BROWSER_TEST_REPORT.md) 🆕 - Browser automation tests
+- [../../scripts/tests/README.md](../../scripts/tests/README.md) - Test scripts index
+- [../../scripts/tests/test_user_feedback.sh](../../scripts/tests/test_user_feedback.sh) 🆕 - User feedback test
 
 ### Model Listing
 - [investigations/MODELS_API_FINDINGS.md](investigations/MODELS_API_FINDINGS.md)
 - [investigations/INVESTIGATION_COMPLETE.md](investigations/INVESTIGATION_COMPLETE.md)
 - [reference/DYNAMIC_MODELS_IMPLEMENTATION.md](reference/DYNAMIC_MODELS_IMPLEMENTATION.md)
-
-### Test Scripts
-- [../../scripts/tests/README.md](../../scripts/tests/README.md)
 
 ## 💡 Tips for Reading
 
@@ -635,6 +786,7 @@ scripts/
 - "How do I deploy to production?" → [getting-started/PRODUCTION_QUICKSTART.md](getting-started/PRODUCTION_QUICKSTART.md)
 - "How do I secure it?" → [security/api-key-quickstart.md](security/api-key-quickstart.md)
 - "How do I monitor?" → [monitoring/quickstart.md](monitoring/quickstart.md)
+- "How do I test?" → [testing/STREAMLIT_BROWSER_TEST_REPORT.md](testing/STREAMLIT_BROWSER_TEST_REPORT.md) 🆕
 - "How does it work?" → [PROJECT_PLAN.md](../PROJECT_PLAN.md)
 - "How do I configure LLMs?" → [getting-started/LLM_CONFIG_QUICKSTART.md](getting-started/LLM_CONFIG_QUICKSTART.md)
 - "CORS errors?" → [troubleshooting/CORS_IAP_FIX.md](troubleshooting/CORS_IAP_FIX.md)

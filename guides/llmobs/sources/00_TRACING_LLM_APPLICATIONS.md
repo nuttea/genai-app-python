@@ -47,7 +47,7 @@ For example, if knowledge base information is poorly chunked, relevant content m
 
 ### How RAG works
 
-![RAG](rag.png)
+![RAG](images/rag.png)
 
 Basic RAG workflow showing 5 steps: user input, embed search query, knowledge base lookup, give KB results to LLM, and generate augmented response.
 

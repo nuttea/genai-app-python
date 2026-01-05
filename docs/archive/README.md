@@ -4,6 +4,62 @@ This directory contains historical implementation summaries, completion reports,
 
 ## 📚 Contents
 
+### 2026 Implementation Summaries (Recent)
+- **Dataset Management**
+  - COMPARISON_URL_FEATURE.md - Dataset comparison URL feature
+  - DATASET_DATADOG_PUSH_READY.md - Dataset push to Datadog
+  - DATASET_DATADOG_SDK_SUCCESS.md - Dataset SDK implementation
+  - DATASET_EXPORT_TEST_RESULTS.md - Dataset export testing
+  - DATASET_MANAGER_FIX_SUMMARY.md - Dataset manager fixes
+  - DATASET_MANAGER_SCHEMA_UPDATE.md - Schema updates
+  - DATASET_PREPARATION_COMPLETE.md - Dataset preparation
+  - DATASET_UPLOAD_DOWNLOAD_FEATURE.md - Upload/download feature
+  - DATASET_UPLOAD_DOWNLOAD_QUICK.md - Quick reference
+  - DATASET_VERSION_ATTRIBUTE_FIX.md - Version attribute fix
+  - DATASET_VERSION_FIX_QUICK_SUMMARY.md - Version fix summary
+  - DATASET_WORKFLOW_COMPLETE_SUMMARY.md - Workflow completion
+  - DATASET_WORKFLOW_COMPLETE.md - Workflow details
+
+- **Experiments & LLM Observability**
+  - EXPERIMENTS_401_FIX.md - Authentication fix
+  - EXPERIMENTS_ADDED_SUMMARY.md - Experiments feature added
+  - EXPERIMENTS_COMPLETE_FIX.md - Complete fix summary
+  - EXPERIMENTS_IMAGE_PATHS_FIX.md - Image paths fix
+  - EXPERIMENTS_MODEL_COMPARISON.md - Model comparison
+  - EXPERIMENTS_NOTEBOOK_COMPLETE.md - Notebook implementation
+  - EXPERIMENTS_TASK_SIGNATURE_FIX.md - Task signature fix
+  - EXPERIMENTS_TESTS_SUMMARY.md - Testing summary
+  - RUN_EXPERIMENTS_IMPLEMENTATION.md - Implementation details
+  - RUN_EXPERIMENTS_OVERVIEW.md - Feature overview
+  - RUN_EXPERIMENTS_QUICK.md - Quick reference
+  - RUN_EXPERIMENTS_SUMMARY.md - Feature summary
+
+- **LLM Judge & Evaluations**
+  - LLM_DATASET_GENERATION_SUMMARY.md - Dataset generation
+  - LLM_JUDGE_EVALUATOR.md - LLM judge implementation
+  - LLM_JUDGE_VERTEX_AI_UPDATE.md - Vertex AI integration
+  - JUPYTER_NOTEBOOK_LLM_JUDGE_UPDATE.md - Notebook update
+  - WRAPPER_FUNCTION_COMPLETE.md - Wrapper function
+  - WRAPPER_FUNCTION_QUICK.md - Quick reference
+
+- **Docker & Infrastructure**
+  - DOCKERFILE_FIX_SUMMARY.md - Dockerfile fixes
+  - DOCKERFILE_PYPROJECT_FIX.md - pyproject.toml fix
+  - THINKING_CONFIG_DOCKER_FIX.md - Thinking config fix
+
+- **Datadog & Tracing**
+  - DDTRACE_IMPORT_FIX.md - DDTrace import fix
+  - TAGS_FIX_SUMMARY.md - Tags fix
+  - VOTE_EXTRACTION_TRACING_IMPROVEMENTS.md - Tracing improvements
+  - DATADOG_TRACING_BEST_PRACTICES.md - Best practices
+  - DATADOG_TRACING_QUICK_REF.md - Quick reference
+
+- **Testing & Validation**
+  - NOTEBOOK_401_FIX.md - Notebook authentication fix
+  - STREAMLIT_TESTING_COMPLETE.md - Streamlit testing
+  - TEST_RESULTS_COMPLETE.md - Test results
+  - VALIDATION_EVALUATIONS_FIX.md - Validation fix
+
 ### Implementation Summaries (Historical)
 - **[SETUP_COMPLETE.md](./SETUP_COMPLETE.md)** - Initial setup completion summary
 - **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Feature implementation summary
@@ -49,6 +105,7 @@ Most recent archives at the top:
 
 | Date | Document | Milestone |
 |------|----------|-----------|
+| Jan 5, 2026 | 41 implementation summaries | Dataset, Experiments, LLM Judge, Docker, Testing |
 | Dec 29, 2024 | ORGANIZATION_COMPLETE.md | Documentation reorganization |
 | Dec 29, 2024 | DOCUMENTATION_SUMMARY.md | Documentation structure |
 | Dec 27, 2024 | PRODUCTION_READY_SUMMARY.md | Production deployment ready |
@@ -95,6 +152,6 @@ These archived documents are:
 
 ---
 
-**Last Updated:** December 29, 2024
+**Last Updated:** January 5, 2026
 
 **Note:** This archive preserves project history. For current information, always refer to the main documentation.

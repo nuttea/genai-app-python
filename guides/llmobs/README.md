@@ -24,16 +24,25 @@ This directory contains comprehensive guides for implementing and using Datadog 
    - Analyzing span performance
    - Using filters and search
 
-4. **[Evaluation Metric Types](./03_EVALUATION_METRIC_TYPES.md)** ⭐ NEW
-   - Understanding `score` vs `categorical` metric types
+4. **[Evaluation Metric Types](./03_EVALUATION_METRIC_TYPES.md)**
+   - Understanding `score` vs `categorical` vs `boolean` metric types
    - Common evaluation labels (accuracy, toxicity, relevance, etc.)
    - Choosing the right metric type for your use case
    - Implementation examples and best practices
    - Visualization and monitoring strategies
+   - Real-world production example (Vote Extraction)
+
+5. **[Experiments and Datasets](./04_EXPERIMENTS_AND_DATASETS.md)** ⭐ NEW
+   - Systematic offline testing with curated datasets
+   - Creating projects, datasets, and experiments
+   - Running experiments programmatically
+   - CI/CD integration for regression testing
+   - Comparing models and prompts
+   - Complete examples with code
 
 ### Advanced Topics
 
-5. **[Additional Topics](./sources/99_ADDITIONAL_TOPICS.md)**
+6. **[Additional Topics](./sources/99_ADDITIONAL_TOPICS.md)**
    - Advanced configuration
    - Custom integrations
    - Performance optimization
@@ -56,11 +65,12 @@ Focus on evaluation and quality metrics:
 2. [Instrumenting Spans](./sources/01_INSTRUMENTING_SPANS.md) - Add evaluation annotations
 3. [Visualizing Traces](./sources/02_VISUALIZING_TRACES_AND_SPANS.md) - Monitor model performance
 
-### For Data Scientists
+### For Data Scientists & QA Engineers
 
-Understand how to track experiments:
-1. [Evaluation Metric Types](./03_EVALUATION_METRIC_TYPES.md) - Define quality metrics
-2. [Additional Topics](./sources/99_ADDITIONAL_TOPICS.md) - Prompt versioning and A/B testing
+Systematic testing and experimentation:
+1. [Experiments and Datasets](./04_EXPERIMENTS_AND_DATASETS.md) - Offline testing with curated datasets
+2. [Evaluation Metric Types](./03_EVALUATION_METRIC_TYPES.md) - Define quality metrics
+3. [Additional Topics](./sources/99_ADDITIONAL_TOPICS.md) - Advanced patterns
 
 ## 🔗 Related Documentation
 
@@ -113,6 +123,6 @@ All guides should include:
 
 ---
 
-**Last Updated**: January 2026  
+**Last Updated**: January 4, 2026  
 **Maintained By**: GenAI App Team
 

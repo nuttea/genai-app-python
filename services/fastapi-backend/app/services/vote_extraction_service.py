@@ -138,10 +138,25 @@ class VoteExtractionService:
         """Initialize the vote extraction service."""
         self._client: genai.Client | None = None
         self._llmobs_enabled = False
+        self._last_workflow_span_context: dict[str, str] | None = (
+            None  # Store span context from workflow
+        )
         self._initialize_llmobs()
 
+    def get_workflow_span_context(self) -> dict[str, str] | None:
+        """
+        Get the most recent workflow span context.
+
+        This returns the span context captured from the last workflow execution.
+        Used to associate user feedback with the correct LLMObs workflow span.
+
+        Returns:
+            Dictionary with 'span_id' and 'trace_id' as strings, or None if not available
+        """
+        return self._last_workflow_span_context
+
     def _initialize_llmobs(self) -> None:
-        """Initialize Datadog LLM Observability if available."""
+        """Initialize Datadog LLMObs if available."""
         if not DDTRACE_AVAILABLE:
             return
 
@@ -149,6 +164,7 @@ class VoteExtractionService:
         ml_app = os.getenv("DD_LLMOBS_ML_APP")
         api_key = os.getenv("DD_API_KEY")
         service = os.getenv("DD_SERVICE", "vote-extraction-service")
+        project_name = os.getenv("DD_PROJECT_NAME", "vote-extraction-project")
 
         if ml_app and api_key:
             try:
@@ -157,6 +173,7 @@ class VoteExtractionService:
                     api_key=api_key,
                     service=service,
                     agentless_enabled=True,
+                    project_name=project_name,
                 )
                 self._llmobs_enabled = True
                 logger.info(f"Datadog LLMObs enabled for service: {service}")
@@ -214,6 +231,54 @@ class VoteExtractionService:
                 raise ExtractionException(f"Failed to process image {filename}: {e}") from e
 
         return content_parts
+
+    async def _validate_within_workflow(self, result: dict | list) -> None:
+        """
+        Validate extracted data within the workflow span context.
+
+        This method is called BEFORE the workflow returns, ensuring that
+        LLMObs.export_span() can find the active workflow context for
+        submitting custom evaluations.
+
+        Args:
+            result: Raw extraction result (dict or list of dicts)
+        """
+        # Import here to avoid circular dependency
+        from app.models.vote_extraction import ElectionFormData
+
+        # Normalize result to list
+        results_to_validate = [result] if isinstance(result, dict) else result
+
+        # Validate each form
+        for idx, report_data in enumerate(results_to_validate):
+            if not isinstance(report_data, dict):
+                logger.warning(f"Skipping non-dict element at index {idx} during validation")
+                continue
+
+            try:
+                # Parse into Pydantic model
+                extracted_data = ElectionFormData(**report_data)
+
+                # Validate and submit custom evaluation
+                # Pass form_index to make evaluation labels unique per form
+                is_valid, error_msg = await self.validate_extraction(
+                    data=extracted_data, form_index=idx
+                )
+
+                if is_valid:
+                    logger.info(f"✅ Form {idx + 1}/{len(results_to_validate)} passed validation")
+                else:
+                    logger.warning(
+                        f"⚠️ Form {idx + 1}/{len(results_to_validate)} validation warning: {error_msg}"
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"❌ Failed to validate form {idx + 1}/{len(results_to_validate)}: {e}",
+                    exc_info=True,
+                )
+                # Continue with other forms even if one fails
+                continue
 
     def _annotate_extraction_success(
         self,
@@ -288,6 +353,132 @@ class VoteExtractionService:
             },
         )
 
+    def _build_prompt_and_metadata(self) -> tuple[str, str, str, dict]:
+        """
+        Build extraction prompt and metadata for LLMObs tracking.
+
+        Returns:
+            Tuple of (prompt_text, schema_version, schema_hash, prompt_metadata)
+        """
+        prompt_text = """
+        You are an expert data entry assistant for Thai Election documents (Form S.S. 5/18).
+
+        Instructions:
+        1. Analyze the sequence of images labeled Page 1, Page 2, etc. provided above. These pages belong to the SAME single report.
+        2. Extract information strictly according to the JSON schema provided.
+        3. Consolidate data from all pages.
+           - The header information (District, Date) is usually on Page 1.
+           - The 'Vote Results' table often spans across multiple pages. Merge them into a single list.
+        4. Validation: Ensure the 'total ballots used' matches the sum of 'good', 'bad', and 'no vote' ballots.
+        5. Form Type: Detect if this is a 'Constituency' form (candidates with names) or 'PartyList' form (party names only).
+        """
+
+        # Schema version for tracking
+        schema_version = "1.0.0"
+        schema_hash = str(hash(json.dumps(ELECTION_DATA_SCHEMA, sort_keys=True)))[:8]
+
+        # Prompt metadata for Datadog LLMObs tracking
+        prompt_metadata = {
+            "id": "thai-election-form-extraction",
+            "template": prompt_text.strip(),
+            "variables": {
+                "model": "gemini-2.5-flash",
+                "schema_version": schema_version,
+                "schema_hash": schema_hash,
+                "form_type": "Form S.S. 5/18",
+                "temperature": 0.0,
+                "response_format": "application/json",
+            },
+            "tags": {
+                "feature": "vote-extraction",
+                "document_type": "thai-election-form",
+                "schema_version": schema_version,
+                "model": "gemini-2.5-flash",
+                "language": "thai",
+            },
+        }
+
+        return prompt_text, schema_version, schema_hash, prompt_metadata
+
+    def _call_gemini_api(
+        self,
+        client: Any,
+        content_parts: list,
+        llm_config: "LLMConfig",
+        prompt_metadata: dict,
+    ) -> Any:
+        """
+        Call Gemini API with prompt tracking.
+
+        Args:
+            client: Gemini client
+            content_parts: Content parts (images + prompt)
+            llm_config: LLM configuration
+            prompt_metadata: Prompt metadata for tracking
+
+        Returns:
+            Gemini API response
+        """
+        generation_config = types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=ELECTION_DATA_SCHEMA,
+            temperature=llm_config.temperature,
+            max_output_tokens=llm_config.max_tokens,
+            top_p=llm_config.top_p,
+            top_k=llm_config.top_k,
+            thinking_config=types.ThinkingConfig(
+                thinking_budget=-1,
+            ),
+        )
+
+        # Attach prompt metadata to the LLM span if LLMObs is enabled
+        if self._llmobs_enabled and DDTRACE_AVAILABLE:
+            with LLMObs.annotation_context(prompt=prompt_metadata):
+                return client.models.generate_content(
+                    model=llm_config.model,
+                    contents=content_parts,
+                    config=generation_config,
+                )
+        else:
+            # Call without prompt tracking if LLMObs not available
+            return client.models.generate_content(
+                model=llm_config.model,
+                contents=content_parts,
+                config=generation_config,
+            )
+
+    def _capture_workflow_span_context(self) -> None:
+        """Capture workflow span context for user feedback submission."""
+        if self._llmobs_enabled and DDTRACE_AVAILABLE:
+            try:
+                self._last_workflow_span_context = LLMObs.export_span(span=None)
+                if self._last_workflow_span_context:
+                    logger.debug(
+                        f"📊 Captured workflow span context: "
+                        f"span_id={self._last_workflow_span_context.get('span_id')}, "
+                        f"trace_id={self._last_workflow_span_context.get('trace_id')}"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to capture workflow span context: {e}")
+                self._last_workflow_span_context = None
+
+    def _handle_extraction_error(self, error: Exception, error_type: str) -> None:
+        """
+        Handle extraction errors with LLMObs annotation.
+
+        Args:
+            error: The exception that occurred
+            error_type: Type of error for classification
+        """
+        if self._llmobs_enabled and DDTRACE_AVAILABLE:
+            LLMObs.annotate(
+                output_data={"error": error_type, "error_details": str(error)},
+                tags={
+                    "extraction_success": "false",
+                    "error_type": error_type,
+                },
+            )
+
     @workflow
     async def extract_from_images(
         self,
@@ -308,11 +499,10 @@ class VoteExtractionService:
         Returns:
             Extracted data as dictionary, or None if extraction fails
         """
-        # Set up LLM configuration (use provided config or defaults)
+        # Set up LLM configuration
         if llm_config is None:
-            llm_config = LLMConfig()  # Use defaults
+            llm_config = LLMConfig()
 
-        # For now, only Vertex AI is supported
         if llm_config.provider != "vertex_ai":
             logger.warning(f"Provider {llm_config.provider} not yet supported, using vertex_ai")
             llm_config.provider = "vertex_ai"
@@ -324,89 +514,25 @@ class VoteExtractionService:
 
         client = self._get_client()
 
-        # A. Process Images into content parts
+        # Process images into content parts
         try:
             content_parts = self._process_images_to_content_parts(image_files, image_filenames)
         except ExtractionException:
             return None
 
-        # B. Main Text Prompt (Placed AFTER all images)
-        # Note: This is a template for prompt tracking
-        prompt_text = """
-        You are an expert data entry assistant for Thai Election documents (Form S.S. 5/18).
-
-        Instructions:
-        1. Analyze the sequence of images labeled Page 1, Page 2, etc. provided above. These pages belong to the SAME single report.
-        2. Extract information strictly according to the JSON schema provided.
-        3. Consolidate data from all pages.
-           - The header information (District, Date) is usually on Page 1.
-           - The 'Vote Results' table often spans across multiple pages. Merge them into a single list.
-        4. Validation: Ensure the 'total ballots used' matches the sum of 'good', 'bad', and 'no vote' ballots.
-        5. Form Type: Detect if this is a 'Constituency' form (candidates with names) or 'PartyList' form (party names only).
-        6. Schema Version: {{schema_version}}
-        """
+        # Build prompt and metadata
+        prompt_text, schema_version, schema_hash, prompt_metadata = (
+            self._build_prompt_and_metadata()
+        )
         content_parts.append(prompt_text)
 
-        # C. Send Request to Gemini with Prompt Tracking
+        # Send request to Gemini
         try:
             logger.info(f"Sending {len(image_files)} pages to Gemini for extraction...")
 
-            # Schema version for tracking (increment when schema changes)
-            schema_version = "1.0.0"
-            schema_hash = str(hash(json.dumps(ELECTION_DATA_SCHEMA, sort_keys=True)))[:8]
-
-            # Prompt metadata for Datadog LLMObs tracking
-            prompt_metadata = {
-                "id": "thai-election-form-extraction",
-                # Auto Versioning, by omitting the version field
-                # "version": f"v{schema_version}",
-                "template": prompt_text.strip(),
-                "variables": {
-                    "model": "gemini-2.5-flash",
-                    "schema_version": schema_version,
-                    "schema_hash": schema_hash,
-                    "form_type": "Form S.S. 5/18",
-                    "temperature": 0.0,
-                    "response_format": "application/json",
-                },
-                "tags": {
-                    "feature": "vote-extraction",
-                    "document_type": "thai-election-form",
-                    "schema_version": schema_version,
-                    "model": "gemini-2.5-flash",
-                    "language": "thai",
-                },
-            }
-
-            # Prepare generation config
-            generation_config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ELECTION_DATA_SCHEMA,
-                temperature=llm_config.temperature,
-                max_output_tokens=llm_config.max_tokens,
-                top_p=llm_config.top_p,
-                top_k=llm_config.top_k,
-            )
-
-            # Attach prompt metadata to the LLM span if LLMObs is enabled
-            if self._llmobs_enabled and DDTRACE_AVAILABLE:
-                with LLMObs.annotation_context(prompt=prompt_metadata):
-                    response = client.models.generate_content(
-                        model=llm_config.model,
-                        contents=content_parts,
-                        config=generation_config,
-                    )
-            else:
-                # Call without prompt tracking if LLMObs not available
-                response = client.models.generate_content(
-                    model=llm_config.model,
-                    contents=content_parts,
-                    config=generation_config,
-                )
-
+            response = self._call_gemini_api(client, content_parts, llm_config, prompt_metadata)
             result = json.loads(response.text)
 
-            # Debug log: Write full LLM response
             logger.debug(
                 "LLM Response received",
                 extra={
@@ -421,9 +547,7 @@ class VoteExtractionService:
                 extra={
                     "pages_processed": len(image_files),
                     "prompt_id": prompt_metadata["id"],
-                    "prompt_version": prompt_metadata.get(
-                        "version", "auto"
-                    ),  # Auto-versioned by Datadog
+                    "prompt_version": prompt_metadata.get("version", "auto"),
                     "result_type": type(result).__name__,
                     "result_keys": list(result.keys()) if isinstance(result, dict) else "list",
                 },
@@ -442,42 +566,24 @@ class VoteExtractionService:
                 prompt_metadata,
             )
 
+            # Validate extracted data within workflow span
+            await self._validate_within_workflow(result)
+
+            # Capture workflow span context for user feedback
+            self._capture_workflow_span_context()
+
             return result
 
         except ExtractionException:
-            # Annotate workflow span with error context
-            if self._llmobs_enabled and DDTRACE_AVAILABLE:
-                LLMObs.annotate(
-                    tags={
-                        "extraction_success": "false",
-                        "error_type": "ExtractionException",
-                    },
-                )
-            # Re-raise extraction exceptions
+            self._handle_extraction_error(ExtractionException(), "ExtractionException")
             raise
         except (ValueError, TypeError, json.JSONDecodeError) as e:
             logger.error(f"Invalid response format from Gemini: {e}")
-            # Annotate workflow span with parse error context
-            if self._llmobs_enabled and DDTRACE_AVAILABLE:
-                LLMObs.annotate(
-                    output_data={"error": "Invalid JSON response", "error_details": str(e)},
-                    tags={
-                        "extraction_success": "false",
-                        "error_type": "ParseError",
-                    },
-                )
+            self._handle_extraction_error(e, "ParseError")
             raise ExtractionException(f"Invalid extraction response: {e}") from e
         except Exception as e:
             logger.critical(f"Unexpected error calling Gemini: {e}", exc_info=True)
-            # Annotate workflow span with unexpected error context
-            if self._llmobs_enabled and DDTRACE_AVAILABLE:
-                LLMObs.annotate(
-                    output_data={"error": "Unexpected error", "error_details": str(e)},
-                    tags={
-                        "extraction_success": "false",
-                        "error_type": type(e).__name__,
-                    },
-                )
+            self._handle_extraction_error(e, type(e).__name__)
             raise ExtractionException(f"Extraction failed: {e}") from e
 
     def _submit_validation_evaluation(
@@ -487,6 +593,7 @@ class VoteExtractionService:
         error_msg: str | None,
         validation_checks: list,
         data: ElectionFormData,
+        form_index: int = 0,
     ) -> None:
         """
         Submit validation result as a Datadog LLMObs Custom Evaluation.
@@ -500,6 +607,7 @@ class VoteExtractionService:
             error_msg: Error message if validation failed
             validation_checks: List of all validation checks performed
             data: Extracted election form data
+            form_index: Index of the form being validated (for unique labels)
         """
         if not self._llmobs_enabled or not DDTRACE_AVAILABLE:
             return
@@ -513,14 +621,24 @@ class VoteExtractionService:
                 logger.warning("Cannot submit validation evaluation: no active span context")
                 return
 
-            # Prepare tags with context
+            # Debug: Log the span context to verify it's correct
+            logger.debug(
+                f"📊 Span context for evaluation: span_id={span_context.get('span_id')}, "
+                f"trace_id={span_context.get('trace_id')}, type={type(span_context)}"
+            )
+
+            # Prepare tags with context (include form_index for traceability)
             tags = {
                 "feature": "vote-extraction",
                 "validation_check": check_type,
                 "form_type": data.form_info.form_type if data.form_info else "unknown",
+                "form_index": str(form_index),
                 "vote_results_count": str(len(data.vote_results) if data.vote_results else 0),
                 "has_ballot_statistics": str(data.ballot_statistics is not None),
             }
+
+            # Make labels unique per form to avoid duplicates when multiple forms are extracted
+            label_suffix = f"_form_{form_index}"
 
             # Submit overall validation result as categorical (pass/fail)
             # Note: SDK only supports "score" and "categorical" metric types
@@ -528,7 +646,7 @@ class VoteExtractionService:
             LLMObs.submit_evaluation(
                 span=span_context,
                 ml_app="vote-extractor",
-                label="validation_passed",
+                label=f"validation_passed{label_suffix}",
                 metric_type="categorical",
                 value="pass" if is_valid else "fail",
                 tags=tags,
@@ -540,7 +658,7 @@ class VoteExtractionService:
             LLMObs.submit_evaluation(
                 span=span_context,
                 ml_app="vote-extractor",
-                label="validation_check_type",
+                label=f"validation_check_type{label_suffix}",
                 metric_type="categorical",
                 value=check_type,
                 tags=tags,
@@ -556,7 +674,7 @@ class VoteExtractionService:
             LLMObs.submit_evaluation(
                 span=span_context,
                 ml_app="vote-extractor",
-                label="validation_score",
+                label=f"validation_score{label_suffix}",
                 metric_type="score",
                 value=validation_score,
                 tags=tags,
@@ -565,7 +683,7 @@ class VoteExtractionService:
             )
 
             logger.info(
-                f"✅ Submitted validation evaluation: {check_type} "
+                f"✅ Submitted validation evaluation: {check_type} for form {form_index} "
                 f"(passed={is_valid}, score={validation_score:.2f})"
             )
 
@@ -601,6 +719,7 @@ class VoteExtractionService:
     async def validate_extraction(
         self,
         data: ElectionFormData,
+        form_index: int = 0,
     ) -> tuple[bool, str | None]:
         """
         Validate extracted vote data for consistency and submit as Custom Evaluation.
@@ -613,6 +732,7 @@ class VoteExtractionService:
 
         Args:
             data: Extracted election form data
+            form_index: Index of the form being validated (for unique evaluation labels)
 
         Returns:
             Tuple of (is_valid, error_message)
@@ -631,6 +751,7 @@ class VoteExtractionService:
                     error_msg=error_msg,
                     validation_checks=validation_checks,
                     data=data,
+                    form_index=form_index,
                 )
                 return False, error_msg
 
@@ -644,6 +765,7 @@ class VoteExtractionService:
                 error_msg=error_msg,
                 validation_checks=validation_checks,
                 data=data,
+                form_index=form_index,
             )
             return False, error_msg
 
@@ -661,6 +783,7 @@ class VoteExtractionService:
                     error_msg=error_msg,
                     validation_checks=validation_checks,
                     data=data,
+                    form_index=form_index,
                 )
                 return False, error_msg
 
@@ -673,6 +796,7 @@ class VoteExtractionService:
             error_msg=None,
             validation_checks=validation_checks,
             data=data,
+            form_index=form_index,
         )
 
         return True, None
