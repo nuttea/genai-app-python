@@ -1,12 +1,49 @@
 """API client for submitting user feedback to Datadog LLMObs."""
 
 import logging
+import os
 from typing import Any, Dict, Literal, Optional
 
 import httpx
 import streamlit as st
 
 logger = logging.getLogger(__name__)
+
+
+def _get_config(key: str, default: str = "") -> str:
+    """
+    Get configuration from environment or secrets, with graceful fallback.
+
+    Priority:
+    1. Environment variable (Cloud Run, Docker Compose)
+    2. Streamlit secrets.toml (local development, optional)
+    3. Default value
+
+    Args:
+        key: Configuration key name
+        default: Default value if not found
+
+    Returns:
+        Configuration value
+    """
+    # First try environment variable (preferred)
+    env_value = os.getenv(key)
+    if env_value:
+        return env_value
+
+    # Then try secrets.toml (for local development only)
+    if hasattr(st, "secrets") and st.secrets:
+        try:
+            # Check if secrets file exists and has content
+            secrets_dict = dict(st.secrets)
+            if key in secrets_dict:
+                return secrets_dict[key]
+        except Exception:
+            # No secrets file or error accessing it (normal for Docker/Cloud Run)
+            pass
+
+    # Return default if nothing found
+    return default
 
 
 class FeedbackAPIClient:
@@ -77,8 +114,8 @@ class FeedbackAPIClient:
             payload["session_id"] = session_id
 
         try:
-            # Get API key from secrets (optional for feedback endpoint)
-            api_key = st.secrets.get("api", {}).get("key")
+            # Get API key from environment or secrets (optional for feedback endpoint)
+            api_key = _get_config("API_KEY", "")
 
             headers = {"Content-Type": "application/json"}
             if api_key:
@@ -106,5 +143,5 @@ def get_feedback_client() -> FeedbackAPIClient:
     Returns:
         FeedbackAPIClient instance
     """
-    api_base_url = st.secrets.get("api", {}).get("url", "http://localhost:8000")
+    api_base_url = _get_config("API_BASE_URL", "http://localhost:8000")
     return FeedbackAPIClient(api_base_url)

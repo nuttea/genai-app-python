@@ -24,7 +24,7 @@ def get_config(key: str, default: str = "") -> str:
 
     Priority:
     1. Environment variable (Cloud Run, Docker Compose)
-    2. Streamlit secrets.toml (local development)
+    2. Streamlit secrets.toml (local development, optional)
     3. Default value
 
     Args:
@@ -34,17 +34,25 @@ def get_config(key: str, default: str = "") -> str:
     Returns:
         Configuration value
     """
-    # First try environment variable
+    # First try environment variable (preferred)
     env_value = os.getenv(key)
     if env_value:
         return env_value
 
-    # Then try secrets.toml (for local development)
-    try:
-        return st.secrets.get(key, default)
-    except Exception:
-        # No secrets file (normal for Cloud Run deployment)
-        return default
+    # Then try secrets.toml (for local development only)
+    # Use hasattr to check if secrets is available before accessing
+    if hasattr(st, "secrets") and st.secrets:
+        try:
+            # Check if secrets file exists and has content
+            secrets_dict = dict(st.secrets)
+            if key in secrets_dict:
+                return secrets_dict[key]
+        except Exception:
+            # No secrets file or error accessing it (normal for Docker/Cloud Run)
+            pass
+
+    # Return default if nothing found
+    return default
 
 
 # Configuration - prioritize environment variable over secrets
