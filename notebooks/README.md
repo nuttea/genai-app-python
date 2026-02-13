@@ -47,22 +47,7 @@ export GOOGLE_CLOUD_PROJECT="your-project-id"
 
 #### Option 3: Google Colab Input (Recommended for Colab)
 
-Add this cell at the beginning of your Colab notebook:
-
-```python
-import os
-from getpass import getpass
-
-# Set Gemini API Key (hidden input)
-if 'GEMINI_API_KEY' not in os.environ:
-    os.environ['GEMINI_API_KEY'] = getpass('Enter your Gemini API Key: ')
-
-# Set Google Cloud Project ID
-if 'GOOGLE_CLOUD_PROJECT' not in os.environ:
-    os.environ['GOOGLE_CLOUD_PROJECT'] = input('Enter your Google Cloud Project ID: ')
-
-print("✅ Environment variables set!")
-```
+Input GEMINI_API_KEY and GOOGLE_CLOUD_PROJECT in Colab notebook
 
 **Alternative:** Use Colab Secrets
 1. Click the 🔑 key icon in the left sidebar
