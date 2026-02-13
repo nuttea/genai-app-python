@@ -124,13 +124,6 @@ gcloud auth application-default login
 gcloud config set project your-project-id
 ```
 
-## 📚 Available Notebooks
-
-| Notebook | Use Case | Features |
-|----------|----------|----------|
-| **[gemini-ss5_18_bigquery_drive.ipynb](gemini-ss5_18_bigquery_drive.ipynb)** ⭐ | Production | BigQuery, Drive URLs, Evaluation, Batch |
-| [gemini-ss5_18_pdf_extractor.ipynb](gemini-ss5_18_pdf_extractor.ipynb) | Testing | Simple Drive URL method |
-
 ## 🎯 Features
 
 ### 1. Enhanced Data Schema
