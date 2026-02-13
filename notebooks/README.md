@@ -236,10 +236,10 @@ GOOGLE_CLOUD_PROJECT=your-project-id
 
 The notebooks support Gemini models via API:
 
-- **`gemini-exp-1206`** - Latest experimental (recommended)
-- **`gemini-2.0-flash-exp`** - Fast experimental
-- **`gemini-1.5-pro-002`** - Stable production
-- **`gemini-1.5-flash-002`** - Fast production
+- **`gemini-3-pro-preview`** - Latest experimental
+- **`gemini-3-flash-preview`** - Fast experimental
+- **`gemini-2.5-pro`** - Stable production
+- **`gemini-2.5-flash`** - Fast production
 
 **Note:** Currently configured to use Gemini API (not Vertex AI). Set `GEMINI_API_KEY` in your environment.
 
