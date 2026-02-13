@@ -45,13 +45,28 @@ export GEMINI_API_KEY="your-api-key-here"
 export GOOGLE_CLOUD_PROJECT="your-project-id"
 ```
 
-#### Option 3: Google Colab Secrets
+#### Option 3: Google Colab Input (Recommended for Colab)
 
-In Google Colab:
+Add this cell at the beginning of your Colab notebook:
+
+```python
+import os
+from getpass import getpass
+
+# Set Gemini API Key (hidden input)
+if 'GEMINI_API_KEY' not in os.environ:
+    os.environ['GEMINI_API_KEY'] = getpass('Enter your Gemini API Key: ')
+
+# Set Google Cloud Project ID
+if 'GOOGLE_CLOUD_PROJECT' not in os.environ:
+    os.environ['GOOGLE_CLOUD_PROJECT'] = input('Enter your Google Cloud Project ID: ')
+
+print("✅ Environment variables set!")
+```
+
+**Alternative:** Use Colab Secrets
 1. Click the 🔑 key icon in the left sidebar
-2. Add secrets:
-   - Name: `GEMINI_API_KEY`, Value: your-api-key
-   - Name: `GOOGLE_CLOUD_PROJECT`, Value: your-project-id
+2. Add secrets: `GEMINI_API_KEY`, `GOOGLE_CLOUD_PROJECT`
 
 ### Installation
 
@@ -70,14 +85,51 @@ jupyter notebook gemini-ss5_18_bigquery_drive.ipynb
 
 #### Google Colab
 
-1. Click the **"Open in Colab"** badge above
-2. Run the first cell to install dependencies
-3. Set your secrets (see "Option 3" above)
-4. Run all cells!
+1. **Click** the "Open in Colab" badge above [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nuttea/genai-app-python/blob/main/notebooks/gemini-ss5_18_bigquery_drive.ipynb)
 
-### Authentication
+2. **Add configuration cell** at the top:
+   ```python
+   import os
+   from getpass import getpass
 
-#### For Local Development
+   # Set your credentials
+   os.environ['GEMINI_API_KEY'] = getpass('Gemini API Key: ')
+   os.environ['GOOGLE_CLOUD_PROJECT'] = input('Project ID: ')
+   ```
+
+3. **Run the configuration cell** - Enter your API key and project ID
+
+4. **Run all cells** - Process starts automatically!
+
+### Google Colab Quick Setup
+
+When running in Colab, add this cell **before Cell 2 (Configuration)**:
+
+```python
+# ═══════════════════════════════════════════════════════════
+# 🔑 COLAB CONFIGURATION - Run this cell first!
+# ═══════════════════════════════════════════════════════════
+
+import os
+from getpass import getpass
+
+# 1. Set Gemini API Key (get from: https://aistudio.google.com/app/apikey)
+if 'GEMINI_API_KEY' not in os.environ:
+    os.environ['GEMINI_API_KEY'] = getpass('🔑 Enter your Gemini API Key: ')
+
+# 2. Set Google Cloud Project ID
+if 'GOOGLE_CLOUD_PROJECT' not in os.environ:
+    os.environ['GOOGLE_CLOUD_PROJECT'] = input('📦 Enter your Google Cloud Project ID: ')
+
+# Verify
+print("\n✅ Configuration complete!")
+print(f"   Project: {os.environ['GOOGLE_CLOUD_PROJECT']}")
+print(f"   API Key: {'*' * 20}...{os.environ['GEMINI_API_KEY'][-8:]}")
+```
+
+Then run the rest of the notebook normally!
+
+### Local Development Authentication
 
 ```bash
 # Authenticate with Google Cloud
@@ -86,10 +138,6 @@ gcloud auth application-default login
 # Set your project
 gcloud config set project your-project-id
 ```
-
-#### For Google Colab
-
-Authentication is handled automatically via Colab secrets.
 
 ## 📚 Available Notebooks
 
