@@ -1,0 +1,16 @@
+# Requirements for gemini-ss5_18_pdf_extractor.ipynb
+# Google Drive URL method - NO PDF conversion needed!
+
+# Google GenAI SDK
+google-genai>=0.2.0
+
+# Data validation and processing
+pydantic>=2.0.0
+pandas>=2.0.0
+
+# Jupyter
+jupyter>=1.0.0
+ipython>=8.0.0
+
+# Optional: For BigQuery integration (use gemini-ss5_18_bigquery_drive.ipynb)
+# google-cloud-bigquery>=3.0.0
