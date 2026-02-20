@@ -82,8 +82,9 @@ st.markdown(
 
     Use the sidebar menu to navigate between different tools:
 
-    - **🗳️ Vote Extractor** - Extract data from Thai election forms (Form S.S. 5/18)
-    - More tools coming soon...
+    - **🗳️ Vote Extractor** - Extract data from Thai election forms (Form S.S. 5/18) via image upload
+    - **📄 Single File Extractor** - Query BigQuery for PDF files, extract with Gemini, preview side-by-side
+    - **📦 Batch Extractor** - Batch process multiple PDFs filtered by province and constituency
 
     ### 🚀 Features
 

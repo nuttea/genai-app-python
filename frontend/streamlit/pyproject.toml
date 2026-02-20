@@ -15,6 +15,9 @@ dependencies = [
     "pandas>=2.1.4",
     "python-dotenv>=1.0.0",
     "ddtrace>=3.18.0",  # Datadog LLMObs SDK for dataset management (requires 3.18+ for LLMObs features)
+    "google-cloud-bigquery[pandas]>=3.25.0",  # BigQuery client for querying SS5/18 file metadata
+    "google-genai>=1.0.0",  # Gemini API client for PDF extraction
+    "pydantic>=2.0.0",  # Data validation models for election form data
 ]
 
 [project.optional-dependencies]
