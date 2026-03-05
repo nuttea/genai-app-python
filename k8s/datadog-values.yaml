@@ -1,0 +1,65 @@
+datadog:
+  apiKey: <DD_API_KEY>   # replace with your real key; never commit secrets
+  site: us5.datadoghq.com
+
+  # ── Logs collection ────────────────────────────────────────────────────────
+  logs:
+    enabled: true
+    containerCollectAll: true        # collect from all containers in allowed namespaces
+    containerCollectUsingFiles: true # efficient file-based collection from /var/log/pods
+
+  # ── Namespace filter ───────────────────────────────────────────────────────
+  # Strategy: exclude everything by default, then include specific namespaces.
+  # Include takes precedence over exclude per Datadog docs.
+  containerExcludeLogs: "kube_namespace:.*"
+  containerIncludeLogs: >-
+    kube_namespace:^datadog$
+    kube_namespace:^datadog-operator$
+    kube_namespace:^datadog-test-a$
+    kube_namespace:^datadog-test-b$
+
+  # ── Disable infra / metrics collection ────────────────────────────────────
+  collectEvents: false
+
+  apm:
+    portEnabled: false
+    enabled: false
+
+  processAgent:
+    enabled: false
+    processCollection: false
+    processDiscovery: false
+
+  networkMonitoring:
+    enabled: false
+
+  kubeStateMetricsCore:
+    enabled: false
+
+  orchestratorExplorer:
+    enabled: false
+
+  containerImageCollection:
+    enabled: false
+
+  containerLifecycle:
+    enabled: false
+
+  sbom:
+    enabled: false
+
+  securityAgent:
+    compliance:
+      enabled: false
+    runtime:
+      enabled: false
+
+# ── Cluster Agent (kept for Kubernetes metadata enrichment in logs) ──────────
+clusterAgent:
+  enabled: true
+  metricsProvider:
+    enabled: false
+
+# ── Disable kube-state-metrics sub-chart ─────────────────────────────────────
+kube-state-metrics:
+  enabled: false

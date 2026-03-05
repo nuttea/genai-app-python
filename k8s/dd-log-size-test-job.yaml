@@ -1,0 +1,98 @@
+---
+# ConfigMap with the test script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dd-log-size-test-script
+  namespace: datadog-test-a
+data:
+  test.py: |
+    #!/usr/bin/env python3
+    """
+    Datadog Log Size Limit Test
+    Tests behavior at key size thresholds:
+      - 100 KB  : normal log, passes through
+      - 800 KB  : under 900 KB agent threshold, passes through
+      - 950 KB  : over 900 KB agent threshold → agent splits with ...TRUNCATED...
+      - 1.1 MB  : over 1 MB backend limit → message truncated to 90 chars + "- trunc"
+      - 2 MB    : well over limit → truncated or dropped
+    """
+    import json, sys, time, os
+
+    def emit(test_id, size_label, target_bytes):
+        # Build a payload that fills the target size.
+        # The JSON envelope {"test_id":...,"size_label":...,"payload":"<DATA>"} adds ~80 bytes overhead.
+        overhead = len(json.dumps({"test_id": test_id, "size_label": size_label, "payload": ""}))
+        fill = "X" * max(0, target_bytes - overhead)
+        log = json.dumps({
+            "test_id":    test_id,
+            "size_label": size_label,
+            "target_bytes": target_bytes,
+            "actual_bytes": overhead + len(fill),
+            "payload":    fill,
+        })
+        # flush immediately so each line is a separate log event
+        print(log, flush=True)
+
+    tests = [
+        ("test_100KB",   "100 KB",   100  * 1024),
+        ("test_800KB",   "800 KB",   800  * 1024),
+        ("test_950KB",   "950 KB",   950  * 1024),
+        ("test_1100KB",  "1.1 MB",  1100  * 1024),
+        ("test_2MB",     "2 MB",    2048  * 1024),
+    ]
+
+    print(json.dumps({"event": "test_start", "total_cases": len(tests)}), flush=True)
+    time.sleep(2)
+
+    for test_id, size_label, target_bytes in tests:
+        print(json.dumps({"event": "before_emit", "test_id": test_id,
+                          "size_label": size_label, "target_bytes": target_bytes}), flush=True)
+        time.sleep(1)
+        emit(test_id, size_label, target_bytes)
+        time.sleep(3)   # gap so logs are easy to separate in Datadog
+
+    print(json.dumps({"event": "test_done"}), flush=True)
+
+---
+# Job that runs the test script once
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dd-log-size-test
+  namespace: datadog-test-a
+  labels:
+    app: dd-log-size-test
+spec:
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: dd-log-size-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: dd-log-size-test
+          image: python:3.12-alpine
+          command: ["python3", "/scripts/test.py"]
+          env:
+            - name: DD_SERVICE
+              value: "dd-log-size-test"
+            - name: DD_ENV
+              value: "test"
+            - name: DD_VERSION
+              value: "1.0.0"
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+        - name: scripts
+          configMap:
+            name: dd-log-size-test-script
