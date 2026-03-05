@@ -1,4 +1,5 @@
 schema-version: v1
+
 rulesets:
   # Python — backend services (FastAPI, ADK, Streamlit)
   - python-best-practices
@@ -9,5 +10,27 @@ rulesets:
   - javascript-best-practices
   - javascript-inclusive
   - typescript-best-practices
-  # Docker — all Dockerfiles in the repo
+  # Docker — all Dockerfiles and docker-compose files
   - docker-best-practices
+
+# ── Path exclusions ──────────────────────────────────────────────────────────
+# Keep CI signal clean: exclude paths that are inherently noisy or low-risk.
+ignore-paths:
+  # Ad-hoc test and investigation scripts — not production code
+  - scripts/tests/
+  # Notebooks — auto-generated output cells skew results
+  - notebooks/
+
+# ── Rule-level overrides ─────────────────────────────────────────────────────
+# Suppress individual rules that produce excessive false-positives for this
+# project's coding patterns.
+rules:
+  # console.log / console.error are standard in a Next.js TypeScript frontend.
+  # This rule generated 62 findings across lib/api/ and app/ — all intentional.
+  typescript-best-practices/no-console:
+    severity: none
+
+  # TypeScript 'any' is acceptable in integration/glue code that wraps
+  # third-party APIs without full type definitions.
+  typescript-best-practices/no-explicit-any:
+    severity: none
