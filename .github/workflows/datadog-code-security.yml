@@ -1,0 +1,62 @@
+name: Datadog Code Security
+
+# IMPORTANT: Both SAST and SCA GitHub Actions only support the 'push' event trigger.
+# Using 'pull_request' triggers will cause issues with the Datadog product.
+# For PR-level blocking, configure Datadog PR Gates in the Datadog UI after results
+# have been uploaded from at least one push to the default branch.
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # SAST — Static Code Analysis
+  # Scans first-party Python code for security vulnerabilities,
+  # code-style violations, and best-practice issues.
+  # Docs: https://docs.datadoghq.com/security/code_security/static_analysis/github_actions/
+  # ─────────────────────────────────────────────────────────────
+  datadog-sast:
+    name: SAST (Static Code Analysis)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Datadog Static Analyzer
+        id: datadog-static-analysis
+        uses: DataDog/datadog-static-analyzer-github-action@v3
+        with:
+          dd_api_key: ${{ secrets.DD_API_KEY }}
+          dd_app_key: ${{ secrets.DD_APP_KEY }}
+          dd_site: "us5.datadoghq.com"
+          cpu_count: 2
+          enable_performance_statistics: false
+          # diff_aware is true by default — only scans files changed in the commit
+          # on feature branches, keeping CI fast.
+          diff_aware: true
+
+  # ─────────────────────────────────────────────────────────────
+  # SCA — Software Composition Analysis
+  # Generates an SBOM from dependency lock files and uploads it
+  # to Datadog to detect known CVEs in open-source libraries.
+  # Docs: https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/?tab=github
+  # ─────────────────────────────────────────────────────────────
+  datadog-sca:
+    name: SCA (Software Composition Analysis)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Datadog SCA — SBOM Generation and Upload
+        id: datadog-sca
+        uses: DataDog/datadog-sca-github-action@main
+        with:
+          dd_api_key: ${{ secrets.DD_API_KEY }}
+          dd_app_key: ${{ secrets.DD_APP_KEY }}
+          dd_site: "us5.datadoghq.com"

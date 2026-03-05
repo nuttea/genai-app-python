@@ -1,9 +1,13 @@
 schema-version: v1
 rulesets:
+  # Python — backend services (FastAPI, ADK, Streamlit)
   - python-best-practices
   - python-code-style
-  - python-django
-  - python-flask
   - python-inclusive
-  - python-pandas
   - python-security
+  # JavaScript / TypeScript — Next.js frontend
+  - javascript-best-practices
+  - javascript-inclusive
+  - typescript-best-practices
+  # Docker — all Dockerfiles in the repo
+  - docker-best-practices
