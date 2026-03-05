@@ -1,57 +1,168 @@
 name: Datadog Code Security
 
 # ── Trigger design ────────────────────────────────────────────────────────────
-# SAST and SCA actions ONLY support the 'push' event (Datadog requirement).
-# Running them on 'pull_request' is not supported and will break the product.
+# This workflow has two concerns handled by separate jobs:
 #
-# ── How Datadog PR Gates work ─────────────────────────────────────────────────
-# PR Gates are configured in the Datadog UI and enforced via the GitHub App —
-# no additional CI step is required here.
+# 1. QUALITY GATE (sast-quality-gate)
+#    Runs on push AND pull_request.
+#    Uses ghcr.io/datadog/datadog-static-analyzer directly — this is the same
+#    binary the Git Hook uses (see https://docs.datadoghq.com/security/code_security/dev_tool_int/git_hooks/).
+#    It generates a SARIF file, applies a severity threshold, and exits non-zero
+#    if blocking violations are found, failing the CI job immediately.
+#    The SARIF is also uploaded to GitHub Code Scanning for inline PR annotations.
 #
-# The flow is:
-#   1. Developer pushes a feature branch  →  this workflow runs SAST + SCA
-#      and uploads results to Datadog for that branch/commit.
-#   2. Developer opens a PR               →  Datadog evaluates the configured
-#      PR Gate rules against the uploaded results.
-#   3. Datadog posts a GitHub Check       →  pass ✓ or fail ✗ on the PR.
-#   4. GitHub branch protection           →  can block merge if the check fails.
+# 2. DATADOG UPLOAD (datadog-sast, datadog-sca)
+#    Runs on push ONLY — Datadog's own GitHub Actions do not support
+#    pull_request triggers. These jobs upload results to the Datadog platform
+#    for the Code Security dashboard and power Datadog PR Gates.
+#    Datadog PR Gates are configured in the Datadog UI and enforced via the
+#    GitHub App; they post a GitHub Check on the PR (pass/fail) separately
+#    from this workflow.
 #
-# For step 1 to work on feature branches, this workflow must trigger on ALL
-# pushes (no branch filter), not just main/develop.
-#
-# Setup checklist (one-time, done in the Datadog UI):
-#   1. Install the Datadog GitHub App with permissions:
-#        Checks: Read & Write
-#        Pull Requests: Read & Write
-#        Contents: Read
-#   2. Go to Security → Code Security → Settings → Repository Settings
-#   3. Configure PR Gate rules (severity threshold, scan types, etc.)
-#   4. In GitHub: Settings → Branches → add a branch protection rule for
-#      'main' that requires the "Datadog Code Security" check to pass.
-#
-# Docs: https://docs.datadoghq.com/quality_gates/?tab=staticanalysis
+# Combined, you get:
+#   ✅ Immediate pass/fail gate on every PR (sast-quality-gate)
+#   ✅ Inline SARIF annotations directly on changed lines in the PR
+#   ✅ Datadog Code Security dashboard tracking (datadog-sast + datadog-sca)
+#   ✅ Datadog PR Gates (configured in UI, powered by the push jobs above)
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # SAST — Static Code Analysis
-  # Scans first-party Python, JS/TS, and Docker code for security
-  # vulnerabilities using rulesets in static-analysis.datadog.yml.
-  # Docs: https://docs.datadoghq.com/security/code_security/static_analysis/github_actions/
-  # ─────────────────────────────────────────────────────────────
-  datadog-sast:
-    name: SAST (Static Code Analysis)
+  # ── 1. Quality Gate ───────────────────────────────────────────────────────
+  # Runs the static analyzer container directly to:
+  #   a) Generate a SARIF file from static-analysis.datadog.yml rulesets
+  #   b) Parse the SARIF and apply a severity threshold (error by default)
+  #   c) Exit non-zero (fail the job) if blocking violations exist
+  #   d) Upload SARIF to GitHub Code Scanning for inline PR annotations
+  #
+  # This mirrors the Git Hook approach from:
+  # https://docs.datadoghq.com/security/code_security/dev_tool_int/git_hooks/
+  # ─────────────────────────────────────────────────────────────────────────
+  sast-quality-gate:
+    name: SAST Quality Gate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # required to upload SARIF to GitHub Code Scanning
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Datadog Static Analyzer — generate SARIF
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/code" \
+            ghcr.io/datadog/datadog-static-analyzer:latest \
+            -i /code \
+            -o /code/static-analysis-results.sarif \
+            -f sarif
+        # The analyzer reads static-analysis.datadog.yml automatically.
+        # Exit code reflects analysis errors (not violation counts) — the
+        # quality gate threshold is enforced by the next step.
+
+      - name: Evaluate Quality Gate
+        # Parse the SARIF and fail the job if blocking violations are found.
+        # Set GATE_SEVERITY_THRESHOLD to 'warning' to be stricter.
+        env:
+          GATE_SEVERITY_THRESHOLD: error
+        run: |
+          python3 - << 'PYEOF'
+          import json, sys, os
+
+          threshold = os.environ.get("GATE_SEVERITY_THRESHOLD", "error").lower()
+          # SARIF levels: error | warning | note | none
+          # 'none' means the tool did not assign a level — treated as error.
+          blocking_levels = {"error", "none"}
+          if threshold == "warning":
+              blocking_levels.add("warning")
+          elif threshold == "note":
+              blocking_levels.update({"warning", "note"})
+
+          sarif_path = "static-analysis-results.sarif"
+          if not os.path.exists(sarif_path):
+              print("::error::SARIF file not found — static analyzer may have failed")
+              sys.exit(1)
+
+          with open(sarif_path) as f:
+              sarif = json.load(f)
+
+          blocking = []
+          informational = []
+
+          for run in sarif.get("runs", []):
+              for result in run.get("results", []):
+                  level     = result.get("level", "none")
+                  rule_id   = result.get("ruleId", "unknown")
+                  msg       = result.get("message", {}).get("text", "")[:150]
+                  locs      = result.get("locations", [])
+                  phys      = locs[0].get("physicalLocation", {}) if locs else {}
+                  uri       = phys.get("artifactLocation", {}).get("uri", "unknown")
+                  line      = phys.get("region", {}).get("startLine", "?")
+                  finding   = f"  [{level.upper():8}] {rule_id}\n    {uri}:{line} — {msg}"
+                  if level in blocking_levels:
+                      blocking.append(finding)
+                  else:
+                      informational.append(finding)
+
+          print(f"Quality Gate  severity threshold: {threshold}")
+          print(f"  Blocking violations  : {len(blocking)}")
+          print(f"  Informational        : {len(informational)}")
+
+          if informational:
+              print("\nInformational (not blocking):")
+              for f in informational[:5]:
+                  print(f)
+              if len(informational) > 5:
+                  print(f"  … and {len(informational) - 5} more")
+
+          if blocking:
+              print(f"\n🚫 Blocking violations (severity >= {threshold}):")
+              for f in blocking[:10]:
+                  print(f)
+              if len(blocking) > 10:
+                  print(f"  … and {len(blocking) - 10} more")
+              print(f"\n❌ Quality Gate FAILED — {len(blocking)} blocking violation(s)")
+              sys.exit(1)
+
+          print("\n✅ Quality Gate PASSED")
+          PYEOF
+
+      - name: Upload SARIF to GitHub Code Scanning
+        # Always upload so annotations appear on the PR even when the gate fails.
+        # GitHub Code Scanning will show inline comments on the changed lines.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: static-analysis-results.sarif
+          category: datadog-sast
+
+      - name: Upload SARIF as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: datadog-sast-sarif-${{ github.sha }}
+          path: static-analysis-results.sarif
+          retention-days: 30
+
+  # ── 2a. Upload SAST results to Datadog ───────────────────────────────────
+  # Push-only: Datadog's action does not support pull_request triggers.
+  # Results populate the Code Security dashboard and power Datadog PR Gates.
+  # Docs: https://docs.datadoghq.com/security/code_security/static_analysis/github_actions/
+  # ─────────────────────────────────────────────────────────────────────────
+  datadog-sast:
+    name: SAST → Datadog Upload
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Datadog Static Analyzer
-        id: datadog-static-analysis
         uses: DataDog/datadog-static-analyzer-github-action@v3
         with:
           dd_api_key: ${{ secrets.DD_API_KEY }}
@@ -59,28 +170,25 @@ jobs:
           dd_site: "datadoghq.com"
           cpu_count: 2
           enable_performance_statistics: false
-          # diff_aware=true (default): on feature branches only the files
-          # changed in this commit are scanned, keeping CI fast.
+          # diff_aware=true: on feature branches only changed files are scanned.
           # On the default branch a full scan always runs.
           diff_aware: true
 
-  # ─────────────────────────────────────────────────────────────
-  # SCA — Software Composition Analysis
-  # Generates an SBOM from all lock files (poetry.lock,
-  # package-lock.json, uv.lock …) and uploads it to Datadog to
-  # detect known CVEs in open-source dependencies.
+  # ── 2b. Upload SCA results to Datadog ────────────────────────────────────
+  # Push-only: generates an SBOM from all lock files and uploads to Datadog
+  # to detect CVEs in open-source dependencies.
   # Docs: https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/?tab=github
-  # ─────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────
   datadog-sca:
-    name: SCA (Software Composition Analysis)
+    name: SCA → Datadog Upload
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Datadog SCA — SBOM Generation and Upload
-        id: datadog-sca
         uses: DataDog/datadog-sca-github-action@main
         with:
           dd_api_key: ${{ secrets.DD_API_KEY }}
