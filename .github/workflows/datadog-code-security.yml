@@ -65,23 +65,85 @@ jobs:
         # quality gate threshold is enforced by the next step.
 
       - name: Evaluate Quality Gate
-        # Parse the SARIF and fail the job if blocking violations are found.
-        # Set GATE_SEVERITY_THRESHOLD to 'warning' to be stricter.
+        # Parses the SARIF, resolves each finding's Datadog severity
+        # (CRITICAL › HIGH › MEDIUM › LOW › INFO), prints a full report, then
+        # exits non-zero if any findings at or above GATE_SEVERITY_THRESHOLD exist.
+        #
+        # Severity resolution order per finding:
+        #   1. result.properties.severity           (Datadog explicit field)
+        #   2. result.properties.tags               (e.g. ["CRITICAL", "SECURITY"])
+        #   3. rule.properties.severity             (rule-level override)
+        #   4. rule.properties.tags                 (e.g. ["HIGH"])
+        #   5. SARIF level mapping:
+        #        error   → HIGH
+        #        warning → MEDIUM
+        #        note    → LOW
+        #        none    → INFO
         env:
-          GATE_SEVERITY_THRESHOLD: error
+          GATE_SEVERITY_THRESHOLD: CRITICAL
         run: |
           python3 - << 'PYEOF'
           import json, sys, os
+          from collections import Counter, defaultdict
 
-          threshold = os.environ.get("GATE_SEVERITY_THRESHOLD", "error").lower()
-          # SARIF levels: error | warning | note | none
-          # 'none' means the tool did not assign a level — treated as error.
-          blocking_levels = {"error", "none"}
-          if threshold == "warning":
-              blocking_levels.add("warning")
-          elif threshold == "note":
-              blocking_levels.update({"warning", "note"})
+          # ── Severity ordering ──────────────────────────────────────────────
+          SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+          SARIF_LEVEL_MAP = {
+              "error":   "HIGH",
+              "warning": "MEDIUM",
+              "note":    "LOW",
+              "none":    "INFO",
+          }
 
+          def normalize_severity(raw: str) -> str:
+              """Map any raw string to a canonical severity label."""
+              mapping = {
+                  "critical": "CRITICAL",
+                  "high":     "HIGH",
+                  "error":    "HIGH",
+                  "medium":   "MEDIUM",
+                  "warning":  "MEDIUM",
+                  "low":      "LOW",
+                  "note":     "LOW",
+                  "notice":   "LOW",
+                  "info":     "INFO",
+                  "none":     "INFO",
+              }
+              return mapping.get(raw.lower(), "INFO")
+
+          def severity_from_tags(tags: list) -> str | None:
+              """Return the highest severity found in a tags list, or None."""
+              found = []
+              for tag in tags:
+                  n = normalize_severity(tag)
+                  if n in SEVERITY_ORDER:
+                      found.append(n)
+              if not found:
+                  return None
+              return min(found, key=lambda s: SEVERITY_ORDER.index(s))
+
+          def resolve_severity(result: dict, rule: dict, sarif_level: str) -> str:
+              """Determine the Datadog severity for a single result."""
+              props = result.get("properties", {})
+              # 1. Explicit severity on the result
+              if "severity" in props:
+                  return normalize_severity(str(props["severity"]))
+              # 2. Tags on the result
+              tags_sev = severity_from_tags(props.get("tags", []))
+              if tags_sev:
+                  return tags_sev
+              # 3. Explicit severity on the rule
+              rule_props = rule.get("properties", {})
+              if "severity" in rule_props:
+                  return normalize_severity(str(rule_props["severity"]))
+              # 4. Tags on the rule
+              tags_sev = severity_from_tags(rule_props.get("tags", []))
+              if tags_sev:
+                  return tags_sev
+              # 5. Fall back to SARIF level mapping
+              return SARIF_LEVEL_MAP.get(sarif_level.lower(), "INFO")
+
+          # ── Load SARIF ────────────────────────────────────────────────────
           sarif_path = "static-analysis-results.sarif"
           if not os.path.exists(sarif_path):
               print("::error::SARIF file not found — static analyzer may have failed")
@@ -90,45 +152,126 @@ jobs:
           with open(sarif_path) as f:
               sarif = json.load(f)
 
-          blocking = []
-          informational = []
+          threshold = os.environ.get("GATE_SEVERITY_THRESHOLD", "CRITICAL").upper()
+          if threshold not in SEVERITY_ORDER:
+              print(f"::warning::Unknown threshold '{threshold}', defaulting to CRITICAL")
+              threshold = "CRITICAL"
+
+          blocking_severities = set(
+              SEVERITY_ORDER[: SEVERITY_ORDER.index(threshold) + 1]
+          )
+
+          # ── Parse findings ────────────────────────────────────────────────
+          findings = []  # list of dicts
 
           for run in sarif.get("runs", []):
+              # Build rule lookup: rule_id → rule object
+              rules = {
+                  r["id"]: r
+                  for r in run.get("tool", {}).get("driver", {}).get("rules", [])
+              }
               for result in run.get("results", []):
-                  level     = result.get("level", "none")
-                  rule_id   = result.get("ruleId", "unknown")
-                  msg       = result.get("message", {}).get("text", "")[:150]
-                  locs      = result.get("locations", [])
-                  phys      = locs[0].get("physicalLocation", {}) if locs else {}
-                  uri       = phys.get("artifactLocation", {}).get("uri", "unknown")
-                  line      = phys.get("region", {}).get("startLine", "?")
-                  finding   = f"  [{level.upper():8}] {rule_id}\n    {uri}:{line} — {msg}"
-                  if level in blocking_levels:
-                      blocking.append(finding)
-                  else:
-                      informational.append(finding)
+                  sarif_level = result.get("level", "none")
+                  rule_id     = result.get("ruleId", "unknown")
+                  rule        = rules.get(rule_id, {})
+                  severity    = resolve_severity(result, rule, sarif_level)
+                  msg         = result.get("message", {}).get("text", "").strip()
+                  locs        = result.get("locations", [])
+                  phys        = locs[0].get("physicalLocation", {}) if locs else {}
+                  uri         = phys.get("artifactLocation", {}).get("uri", "unknown")
+                  line        = phys.get("region", {}).get("startLine", "?")
+                  category    = (rule.get("properties", {}).get("tags") or [""])[0]
+                  findings.append({
+                      "severity": severity,
+                      "rule_id":  rule_id,
+                      "uri":      uri,
+                      "line":     line,
+                      "msg":      msg[:160],
+                      "category": category,
+                  })
 
-          print(f"Quality Gate  severity threshold: {threshold}")
-          print(f"  Blocking violations  : {len(blocking)}")
-          print(f"  Informational        : {len(informational)}")
+          blocking     = [f for f in findings if f["severity"] in blocking_severities]
+          informational = [f for f in findings if f["severity"] not in blocking_severities]
+
+          # ── Severity breakdown ────────────────────────────────────────────
+          sev_counts = Counter(f["severity"] for f in findings)
+          rule_counts = Counter(f["rule_id"] for f in findings)
+          file_counts = Counter(f["uri"] for f in findings)
+
+          SEP = "─" * 64
+
+          print()
+          print("╔══════════════════════════════════════════════════════════════╗")
+          print("║              SAST Quality Gate Report                       ║")
+          print("╚══════════════════════════════════════════════════════════════╝")
+          print()
+          print(f"  Threshold : {threshold}  (blocking: {', '.join(sorted(blocking_severities, key=lambda s: SEVERITY_ORDER.index(s)))})")
+          print(f"  Total     : {len(findings)} finding(s) across {len(file_counts)} file(s)")
+          print()
+
+          print(SEP)
+          print("  Severity Breakdown")
+          print(SEP)
+          for sev in SEVERITY_ORDER:
+              count = sev_counts.get(sev, 0)
+              bar   = "█" * min(count, 40)
+              flag  = "  ← BLOCKING" if sev in blocking_severities and count > 0 else ""
+              print(f"  {sev:<10} {count:>4}  {bar}{flag}")
+          print()
+
+          if rule_counts:
+              print(SEP)
+              print("  Top Violation Rules")
+              print(SEP)
+              for rule_id, count in rule_counts.most_common(10):
+                  print(f"  {count:>4}  {rule_id}")
+              if len(rule_counts) > 10:
+                  print(f"         … and {len(rule_counts) - 10} more rule(s)")
+              print()
+
+          if file_counts:
+              print(SEP)
+              print("  Most Affected Files")
+              print(SEP)
+              for uri, count in file_counts.most_common(8):
+                  print(f"  {count:>4}  {uri}")
+              if len(file_counts) > 8:
+                  print(f"         … and {len(file_counts) - 8} more file(s)")
+              print()
 
           if informational:
-              print("\nInformational (not blocking):")
+              print(SEP)
+              print(f"  Non-Blocking Findings ({len(informational)} total — below threshold)")
+              print(SEP)
               for f in informational[:5]:
-                  print(f)
+                  print(f"  [{f['severity']:<10}] {f['rule_id']}")
+                  print(f"             {f['uri']}:{f['line']}")
               if len(informational) > 5:
                   print(f"  … and {len(informational) - 5} more")
+              print()
 
           if blocking:
-              print(f"\n🚫 Blocking violations (severity >= {threshold}):")
-              for f in blocking[:10]:
-                  print(f)
-              if len(blocking) > 10:
-                  print(f"  … and {len(blocking) - 10} more")
-              print(f"\n❌ Quality Gate FAILED — {len(blocking)} blocking violation(s)")
+              print(SEP)
+              print(f"  BLOCKING Violations ({len(blocking)} total — at or above {threshold})")
+              print(SEP)
+              for f in blocking[:15]:
+                  print(f"  [{f['severity']:<10}] {f['rule_id']}")
+                  print(f"             {f['uri']}:{f['line']}")
+                  print(f"             {f['msg']}")
+                  print()
+              if len(blocking) > 15:
+                  print(f"  … and {len(blocking) - 15} more blocking violation(s)")
+
+              print(SEP)
+              print(f"  ❌ Quality Gate FAILED — {len(blocking)} violation(s) at severity >= {threshold}")
+              print(SEP)
+              print()
               sys.exit(1)
 
-          print("\n✅ Quality Gate PASSED")
+          print(SEP)
+          print(f"  ✅ Quality Gate PASSED — no violations at severity >= {threshold}")
+          print(SEP)
+          print()
           PYEOF
 
       - name: Upload SARIF to GitHub Code Scanning
