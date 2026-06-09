@@ -4,7 +4,7 @@ name: Datadog Code Security
 # This workflow has two concerns handled by separate jobs:
 #
 # 1. QUALITY GATE (sast-quality-gate)
-#    Runs on push AND pull_request.
+#    Runs on push (default branch) AND pull_request.
 #    Uses ghcr.io/datadog/datadog-static-analyzer directly — this is the same
 #    binary the Git Hook uses (see https://docs.datadoghq.com/security/code_security/dev_tool_int/git_hooks/).
 #    It generates a SARIF file, applies a severity threshold, and exits non-zero
@@ -12,9 +12,9 @@ name: Datadog Code Security
 #    The SARIF is also uploaded to GitHub Code Scanning for inline PR annotations.
 #
 # 2. DATADOG UPLOAD (datadog-sast, datadog-sca)
-#    Runs on push ONLY — Datadog's own GitHub Actions do not support
-#    pull_request triggers. These jobs upload results to the Datadog platform
-#    for the Code Security dashboard and power Datadog PR Gates.
+#    Runs on push to the default branch ONLY — Datadog's own GitHub Actions do
+#    not support pull_request triggers. These jobs upload results to the Datadog
+#    platform for the Code Security dashboard and power Datadog PR Gates.
 #    Datadog PR Gates are configured in the Datadog UI and enforced via the
 #    GitHub App; they post a GitHub Check on the PR (pass/fail) separately
 #    from this workflow.
@@ -27,14 +27,25 @@ name: Datadog Code Security
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      severity_threshold:
+        description: 'Quality gate blocking threshold (CRITICAL | HIGH | MEDIUM | LOW)'
+        default: CRITICAL
+        required: false
+
+# Cancel any in-progress run for the same ref to avoid redundant work.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ── 1. Quality Gate ───────────────────────────────────────────────────────
   # Runs the static analyzer container directly to:
   #   a) Generate a SARIF file from static-analysis.datadog.yml rulesets
-  #   b) Parse the SARIF and apply a severity threshold (error by default)
+  #   b) Parse the SARIF and apply a severity threshold (CRITICAL by default)
   #   c) Exit non-zero (fail the job) if blocking violations exist
   #   d) Upload SARIF to GitHub Code Scanning for inline PR annotations
   #
@@ -44,19 +55,21 @@ jobs:
   sast-quality-gate:
     name: SAST Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write  # required to upload SARIF to GitHub Code Scanning
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Run Datadog Static Analyzer — generate SARIF
         run: |
           docker run --rm \
+            --memory=2g --cpus=2 \
             -v "${{ github.workspace }}:/code" \
-            ghcr.io/datadog/datadog-static-analyzer:latest \
+            ghcr.io/datadog/datadog-static-analyzer:0.8.6 \
             -i /code \
             -o /code/static-analysis-results.sarif \
             -f sarif
@@ -65,234 +78,24 @@ jobs:
         # quality gate threshold is enforced by the next step.
 
       - name: Evaluate Quality Gate
-        # ── How Datadog severity maps to this gate ──────────────────────────
-        # Datadog SARIF does NOT use explicit severity fields. Instead it uses:
-        #   - SARIF `level`  (error | warning | note | none)  — primary signal
-        #   - result.properties.tags containing DATADOG_CATEGORY:* — elevates severity
-        #
-        # Resolved 5-tier severity model:
-        #   CRITICAL  = DATADOG_CATEGORY:SECURITY  + level error/none  (CWE-tagged rules)
-        #   HIGH      = DATADOG_CATEGORY:SECURITY  + level warning
-        #             | DATADOG_CATEGORY:ERROR_PRONE + level error
-        #             | any other category           + level error
-        #   MEDIUM    = level warning (non-security)
-        #   LOW       = level note
-        #   INFO      = level none (non-security)
-        #
-        # Default threshold CRITICAL → only real security errors block the build.
-        # Change to HIGH to also block on all error-level findings.
         env:
-          GATE_SEVERITY_THRESHOLD: CRITICAL
-        run: |
-          python3 - << 'PYEOF'
-          import json, sys, os
-          from collections import Counter, defaultdict
-
-          SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
-
-          def resolve_severity(result: dict, rule: dict, sarif_level: str) -> str:
-              """
-              Map a Datadog SARIF result to a 5-tier severity using
-              DATADOG_CATEGORY tags + SARIF level as the authoritative signals.
-              """
-              r_tags = result.get("properties", {}).get("tags", [])
-              is_security   = "DATADOG_CATEGORY:SECURITY"   in r_tags
-              is_error_prone= "DATADOG_CATEGORY:ERROR_PRONE" in r_tags
-              level = sarif_level.lower()
-
-              if is_security:
-                  # Security violations at error/none are the most dangerous
-                  if level in ("error", "none"):
-                      return "CRITICAL"
-                  if level == "warning":
-                      return "HIGH"
-                  return "MEDIUM"
-
-              if level == "error":
-                  return "HIGH" if not is_error_prone else "HIGH"
-              if level == "warning":
-                  return "MEDIUM"
-              if level == "note":
-                  return "LOW"
-              return "INFO"
-
-          def get_category(result: dict) -> str:
-              """Extract the human-readable DATADOG_CATEGORY from result tags."""
-              for tag in result.get("properties", {}).get("tags", []):
-                  if tag.startswith("DATADOG_CATEGORY:"):
-                      return tag.split(":", 1)[1]
-              return "UNCATEGORIZED"
-
-          # ── Load SARIF ────────────────────────────────────────────────────
-          sarif_path = "static-analysis-results.sarif"
-          if not os.path.exists(sarif_path):
-              print("::error::SARIF file not found — static analyzer may have failed")
-              sys.exit(1)
-
-          with open(sarif_path) as f:
-              sarif = json.load(f)
-
-          threshold = os.environ.get("GATE_SEVERITY_THRESHOLD", "CRITICAL").upper()
-          if threshold not in SEVERITY_ORDER:
-              print(f"::warning::Unknown threshold '{threshold}', defaulting to CRITICAL")
-              threshold = "CRITICAL"
-
-          blocking_severities = set(SEVERITY_ORDER[: SEVERITY_ORDER.index(threshold) + 1])
-
-          # ── Parse all findings ────────────────────────────────────────────
-          findings = []
-          for run in sarif.get("runs", []):
-              rules = {r["id"]: r for r in run.get("tool", {}).get("driver", {}).get("rules", [])}
-              for result in run.get("results", []):
-                  sarif_level = result.get("level", "none")
-                  rule_id     = result.get("ruleId", "unknown")
-                  rule        = rules.get(rule_id, {})
-                  severity    = resolve_severity(result, rule, sarif_level)
-                  category    = get_category(result)
-                  rule_tags   = rule.get("properties", {}).get("tags", [])
-                  cwe         = next((t for t in rule_tags if t.startswith("CWE:")), "")
-                  msg         = result.get("message", {}).get("text", "").strip()
-                  locs        = result.get("locations", [])
-                  phys        = locs[0].get("physicalLocation", {}) if locs else {}
-                  uri         = phys.get("artifactLocation", {}).get("uri", "unknown")
-                  line        = phys.get("region", {}).get("startLine", "?")
-                  findings.append({
-                      "severity": severity, "sarif_level": sarif_level,
-                      "category": category, "cwe": cwe,
-                      "rule_id": rule_id, "uri": uri, "line": line,
-                      "msg": msg[:160],
-                  })
-
-          blocking      = [f for f in findings if f["severity"] in blocking_severities]
-          informational = [f for f in findings if f["severity"] not in blocking_severities]
-
-          SEP  = "─" * 66
-          SEP2 = "═" * 66
-
-          # ── Header ────────────────────────────────────────────────────────
-          print()
-          print(SEP2)
-          print("  SAST Quality Gate Report")
-          print(SEP2)
-          bl_str = " › ".join(SEVERITY_ORDER[:SEVERITY_ORDER.index(threshold)+1])
-          print(f"  Threshold  : {threshold}  (blocking: {bl_str})")
-          print(f"  Total      : {len(findings)} finding(s)  |  "
-                f"Blocking: {len(blocking)}  |  Non-blocking: {len(informational)}")
-          print(f"  Files      : {len(set(f['uri'] for f in findings))}  |  "
-                f"Unique rules: {len(set(f['rule_id'] for f in findings))}")
-          print()
-
-          # ── Severity breakdown ────────────────────────────────────────────
-          print(SEP)
-          print("  Severity Breakdown")
-          print(SEP)
-          sev_counts = Counter(f["severity"] for f in findings)
-          for sev in SEVERITY_ORDER:
-              count = sev_counts.get(sev, 0)
-              bar   = "█" * min(count, 36)
-              flag  = "  ◄ BLOCKING" if sev in blocking_severities and count > 0 else ""
-              print(f"  {sev:<10} {count:>4}  {bar}{flag}")
-          print()
-
-          # ── Category breakdown ────────────────────────────────────────────
-          print(SEP)
-          print("  Category Breakdown  (DATADOG_CATEGORY)")
-          print(SEP)
-          cat_counts = Counter(f["category"] for f in findings)
-          for cat, count in cat_counts.most_common():
-              blocking_in_cat = sum(1 for f in findings if f["category"] == cat and f["severity"] in blocking_severities)
-              flag = f"  ({blocking_in_cat} blocking)" if blocking_in_cat else ""
-              print(f"  {cat:<20} {count:>4}{flag}")
-          print()
-
-          # ── Top rules ─────────────────────────────────────────────────────
-          print(SEP)
-          print("  Top Violation Rules")
-          print(f"  {'COUNT':>5}  {'SEVERITY':<10}  {'CATEGORY':<16}  RULE")
-          print(SEP)
-          rule_meta = {}
-          for f in findings:
-              if f["rule_id"] not in rule_meta:
-                  rule_meta[f["rule_id"]] = {"severity": f["severity"], "category": f["category"], "cwe": f["cwe"]}
-          rule_counts = Counter(f["rule_id"] for f in findings)
-          for rule_id, count in rule_counts.most_common(15):
-              m   = rule_meta[rule_id]
-              cwe = f"  {m['cwe']}" if m["cwe"] else ""
-              print(f"  {count:>5}  {m['severity']:<10}  {m['category']:<16}  {rule_id}{cwe}")
-          if len(rule_counts) > 15:
-              print(f"         … and {len(rule_counts) - 15} more rule(s)")
-          print()
-
-          # ── Most affected files ───────────────────────────────────────────
-          print(SEP)
-          print("  Most Affected Files")
-          print(SEP)
-          file_counts = Counter(f["uri"] for f in findings)
-          for uri, count in file_counts.most_common(10):
-              has_blocking = any(f["uri"] == uri and f["severity"] in blocking_severities for f in findings)
-              flag = "  ◄ has blocking" if has_blocking else ""
-              print(f"  {count:>4}  {uri}{flag}")
-          if len(file_counts) > 10:
-              print(f"         … and {len(file_counts) - 10} more file(s)")
-          print()
-
-          # ── Non-blocking sample ───────────────────────────────────────────
-          if informational:
-              print(SEP)
-              print(f"  Non-Blocking Findings  ({len(informational)} total — below {threshold})")
-              print(SEP)
-              shown = {}
-              printed = 0
-              for f in informational:
-                  if f["rule_id"] not in shown:
-                      shown[f["rule_id"]] = 0
-                  if shown[f["rule_id"]] < 2 and printed < 10:
-                      print(f"  [{f['severity']:<10}] [{f['category']:<16}] {f['rule_id']}")
-                      print(f"               {f['uri']}:{f['line']}")
-                      shown[f["rule_id"]] += 1
-                      printed += 1
-              if len(informational) > printed:
-                  print(f"  … and {len(informational) - printed} more non-blocking finding(s)")
-              print()
-
-          # ── Blocking violations ───────────────────────────────────────────
-          if blocking:
-              print(SEP)
-              print(f"  BLOCKING Violations  ({len(blocking)} total — severity >= {threshold})")
-              print(SEP)
-              for f in blocking[:20]:
-                  cwe = f"  {f['cwe']}" if f["cwe"] else ""
-                  print(f"  [{f['severity']:<10}] [{f['category']:<16}]{cwe}")
-                  print(f"    Rule : {f['rule_id']}")
-                  print(f"    File : {f['uri']}:{f['line']}")
-                  print(f"    Msg  : {f['msg']}")
-                  print()
-              if len(blocking) > 20:
-                  print(f"  … and {len(blocking) - 20} more blocking violation(s)")
-              print(SEP2)
-              print(f"  ❌ Quality Gate FAILED — {len(blocking)} violation(s) at severity >= {threshold}")
-              print(SEP2)
-              print()
-              sys.exit(1)
-
-          print(SEP2)
-          print(f"  ✅ Quality Gate PASSED — no violations at severity >= {threshold}")
-          print(SEP2)
-          print()
-          PYEOF
+          # Override via workflow_dispatch input; falls back to CRITICAL.
+          GATE_SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || 'CRITICAL' }}
+          SARIF_PATH: static-analysis-results.sarif
+        run: python3 .github/scripts/quality_gate.py
 
       - name: Upload SARIF to GitHub Code Scanning
         # Always upload so annotations appear on the PR even when the gate fails.
         # GitHub Code Scanning will show inline comments on the changed lines.
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@8272c299f21ca24af15dfe9ac0971ba969e5e0d5  # v3.36.2
         with:
           sarif_file: static-analysis-results.sarif
           category: datadog-sast
 
       - name: Upload SARIF as workflow artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: datadog-sast-sarif-${{ github.sha }}
           path: static-analysis-results.sarif
@@ -306,14 +109,17 @@ jobs:
   datadog-sast:
     name: SAST → Datadog Upload
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Datadog Static Analyzer
-        uses: DataDog/datadog-static-analyzer-github-action@v3
+        uses: DataDog/datadog-static-analyzer-github-action@dff864d244a1fa571bbbaf7674fb651ea9fa8fb6  # v3.0.0
         with:
           dd_api_key: ${{ secrets.DD_API_KEY }}
           dd_app_key: ${{ secrets.DD_APP_KEY }}
@@ -332,14 +138,17 @@ jobs:
   datadog-sca:
     name: SCA → Datadog Upload
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Datadog SCA — SBOM Generation and Upload
-        uses: DataDog/datadog-sca-github-action@main
+        uses: DataDog/datadog-sca-github-action@feed84467007892dabcbec6d01e49ac623d3b086  # v4.5.0
         with:
           dd_api_key: ${{ secrets.DD_API_KEY }}
           dd_app_key: ${{ secrets.DD_APP_KEY }}

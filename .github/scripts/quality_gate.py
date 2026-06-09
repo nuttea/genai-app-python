@@ -1,0 +1,248 @@
+"""
+SAST Quality Gate — parses a Datadog SARIF file, applies a severity threshold,
+prints a structured report, and exits non-zero if blocking violations are found.
+
+Usage:
+    python3 quality_gate.py [--sarif PATH] [--threshold SEVERITY]
+
+Environment (fallbacks when flags are omitted):
+    SARIF_PATH                path to SARIF file  (default: static-analysis-results.sarif)
+    GATE_SEVERITY_THRESHOLD   blocking threshold   (default: CRITICAL)
+
+Severity model:
+    CRITICAL  = DATADOG_CATEGORY:SECURITY  + level error/none
+    HIGH      = DATADOG_CATEGORY:SECURITY  + level warning
+              | any category               + level error
+    MEDIUM    = level warning (non-security)
+    LOW       = level note
+    INFO      = level none (non-security)
+"""
+
+import argparse
+import json
+import os
+import sys
+from collections import Counter
+
+SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+
+
+def resolve_severity(result: dict, sarif_level: str) -> str:
+    r_tags = result.get("properties", {}).get("tags", [])
+    is_security = "DATADOG_CATEGORY:SECURITY" in r_tags
+    level = sarif_level.lower()
+
+    if is_security:
+        if level in ("error", "none"):
+            return "CRITICAL"
+        if level == "warning":
+            return "HIGH"
+        return "MEDIUM"
+
+    if level == "error":
+        return "HIGH"
+    if level == "warning":
+        return "MEDIUM"
+    if level == "note":
+        return "LOW"
+    return "INFO"
+
+
+def get_category(result: dict) -> str:
+    for tag in result.get("properties", {}).get("tags", []):
+        if tag.startswith("DATADOG_CATEGORY:"):
+            return tag.split(":", 1)[1]
+    return "UNCATEGORIZED"
+
+
+def parse_findings(sarif: dict) -> list[dict]:
+    findings = []
+    for run in sarif.get("runs", []):
+        rules = {
+            r["id"]: r
+            for r in run.get("tool", {}).get("driver", {}).get("rules", [])
+        }
+        for result in run.get("results", []):
+            sarif_level = result.get("level", "none")
+            rule_id = result.get("ruleId", "unknown")
+            rule = rules.get(rule_id, {})
+            rule_tags = rule.get("properties", {}).get("tags", [])
+            cwe = next((t for t in rule_tags if t.startswith("CWE:")), "")
+            msg = result.get("message", {}).get("text", "").strip()
+            locs = result.get("locations", [])
+            phys = locs[0].get("physicalLocation", {}) if locs else {}
+            uri = phys.get("artifactLocation", {}).get("uri", "unknown")
+            line = phys.get("region", {}).get("startLine", "?")
+            findings.append(
+                {
+                    "severity": resolve_severity(result, sarif_level),
+                    "sarif_level": sarif_level,
+                    "category": get_category(result),
+                    "cwe": cwe,
+                    "rule_id": rule_id,
+                    "uri": uri,
+                    "line": line,
+                    "msg": msg[:160],
+                }
+            )
+    return findings
+
+
+def print_report(findings: list[dict], threshold: str, blocking_severities: set) -> None:
+    blocking = [f for f in findings if f["severity"] in blocking_severities]
+    informational = [f for f in findings if f["severity"] not in blocking_severities]
+
+    SEP = "─" * 66
+    SEP2 = "═" * 66
+
+    print()
+    print(SEP2)
+    print("  SAST Quality Gate Report")
+    print(SEP2)
+    bl_str = " › ".join(SEVERITY_ORDER[: SEVERITY_ORDER.index(threshold) + 1])
+    print(f"  Threshold  : {threshold}  (blocking: {bl_str})")
+    print(
+        f"  Total      : {len(findings)} finding(s)  |  "
+        f"Blocking: {len(blocking)}  |  Non-blocking: {len(informational)}"
+    )
+    print(
+        f"  Files      : {len(set(f['uri'] for f in findings))}  |  "
+        f"Unique rules: {len(set(f['rule_id'] for f in findings))}"
+    )
+    print()
+
+    print(SEP)
+    print("  Severity Breakdown")
+    print(SEP)
+    sev_counts = Counter(f["severity"] for f in findings)
+    for sev in SEVERITY_ORDER:
+        count = sev_counts.get(sev, 0)
+        bar = "█" * min(count, 36)
+        flag = "  ◄ BLOCKING" if sev in blocking_severities and count > 0 else ""
+        print(f"  {sev:<10} {count:>4}  {bar}{flag}")
+    print()
+
+    print(SEP)
+    print("  Category Breakdown  (DATADOG_CATEGORY)")
+    print(SEP)
+    cat_counts = Counter(f["category"] for f in findings)
+    for cat, count in cat_counts.most_common():
+        blocking_in_cat = sum(
+            1
+            for f in findings
+            if f["category"] == cat and f["severity"] in blocking_severities
+        )
+        flag = f"  ({blocking_in_cat} blocking)" if blocking_in_cat else ""
+        print(f"  {cat:<20} {count:>4}{flag}")
+    print()
+
+    print(SEP)
+    print("  Top Violation Rules")
+    print(f"  {'COUNT':>5}  {'SEVERITY':<10}  {'CATEGORY':<16}  RULE")
+    print(SEP)
+    rule_meta = {}
+    for f in findings:
+        if f["rule_id"] not in rule_meta:
+            rule_meta[f["rule_id"]] = {
+                "severity": f["severity"],
+                "category": f["category"],
+                "cwe": f["cwe"],
+            }
+    rule_counts = Counter(f["rule_id"] for f in findings)
+    for rule_id, count in rule_counts.most_common(15):
+        m = rule_meta[rule_id]
+        cwe = f"  {m['cwe']}" if m["cwe"] else ""
+        print(
+            f"  {count:>5}  {m['severity']:<10}  {m['category']:<16}  {rule_id}{cwe}"
+        )
+    if len(rule_counts) > 15:
+        print(f"         … and {len(rule_counts) - 15} more rule(s)")
+    print()
+
+    print(SEP)
+    print("  Most Affected Files")
+    print(SEP)
+    file_counts = Counter(f["uri"] for f in findings)
+    for uri, count in file_counts.most_common(10):
+        has_blocking = any(
+            f["uri"] == uri and f["severity"] in blocking_severities for f in findings
+        )
+        flag = "  ◄ has blocking" if has_blocking else ""
+        print(f"  {count:>4}  {uri}{flag}")
+    if len(file_counts) > 10:
+        print(f"         … and {len(file_counts) - 10} more file(s)")
+    print()
+
+    if informational:
+        print(SEP)
+        print(f"  Non-Blocking Findings  ({len(informational)} total — below {threshold})")
+        print(SEP)
+        shown: dict[str, int] = {}
+        printed = 0
+        for f in informational:
+            shown.setdefault(f["rule_id"], 0)
+            if shown[f["rule_id"]] < 2 and printed < 10:
+                print(f"  [{f['severity']:<10}] [{f['category']:<16}] {f['rule_id']}")
+                print(f"               {f['uri']}:{f['line']}")
+                shown[f["rule_id"]] += 1
+                printed += 1
+        if len(informational) > printed:
+            print(f"  … and {len(informational) - printed} more non-blocking finding(s)")
+        print()
+
+    if blocking:
+        print(SEP)
+        print(f"  BLOCKING Violations  ({len(blocking)} total — severity >= {threshold})")
+        print(SEP)
+        for f in blocking[:20]:
+            cwe = f"  {f['cwe']}" if f["cwe"] else ""
+            print(f"  [{f['severity']:<10}] [{f['category']:<16}]{cwe}")
+            print(f"    Rule : {f['rule_id']}")
+            print(f"    File : {f['uri']}:{f['line']}")
+            print(f"    Msg  : {f['msg']}")
+            print()
+        if len(blocking) > 20:
+            print(f"  … and {len(blocking) - 20} more blocking violation(s)")
+        print(SEP2)
+        print(f"  ❌ Quality Gate FAILED — {len(blocking)} violation(s) at severity >= {threshold}")
+        print(SEP2)
+        print()
+        sys.exit(1)
+
+    print(SEP2)
+    print(f"  ✅ Quality Gate PASSED — no violations at severity >= {threshold}")
+    print(SEP2)
+    print()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="SAST Quality Gate")
+    parser.add_argument(
+        "--sarif",
+        default=os.environ.get("SARIF_PATH", "static-analysis-results.sarif"),
+    )
+    parser.add_argument(
+        "--threshold",
+        default=os.environ.get("GATE_SEVERITY_THRESHOLD", "CRITICAL").upper(),
+    )
+    args = parser.parse_args()
+
+    threshold = args.threshold.upper()
+    if threshold not in SEVERITY_ORDER:
+        print(f"::warning::Unknown threshold '{threshold}', defaulting to CRITICAL")
+        threshold = "CRITICAL"
+
+    if not os.path.exists(args.sarif):
+        print("::error::SARIF file not found — static analyzer may have failed")
+        sys.exit(1)
+
+    with open(args.sarif) as f:
+        sarif = json.load(f)
+
+    findings = parse_findings(sarif)
+    blocking_severities = set(SEVERITY_ORDER[: SEVERITY_ORDER.index(threshold) + 1])
+    print_report(findings, threshold, blocking_severities)
+
+
+if __name__ == "__main__":
+    main()
