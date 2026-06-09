@@ -84,11 +84,13 @@ jobs:
         run: python3 .github/scripts/quality_gate.py
 
       - name: Detect-Only Gate  [DETECT — HIGH+]
-        # Runs even when the blocking gate above fails so HIGH findings are
-        # always surfaced as inline PR annotations. Never exits non-zero.
-        if: always()
+        # Controlled by the repository variable DETECT_ONLY (Settings → Variables).
+        # Set to true  → runs after the blocking gate (even on failure), surfaces
+        #                 HIGH+ findings as warnings without failing CI.
+        # Set to false → step is skipped entirely.
+        if: always() && vars.DETECT_ONLY == 'true'
         env:
-          DETECT_ONLY: "true"
+          DETECT_ONLY: ${{ vars.DETECT_ONLY }}
           GATE_SEVERITY_THRESHOLD: HIGH
           SARIF_PATH: static-analysis-results.sarif
         run: python3 .github/scripts/quality_gate.py --detect-only
