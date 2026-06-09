@@ -83,7 +83,7 @@ false → block mode: exits non-zero when violations at or above threshold exist
                     # Download and extract the static analyzer native binary
                     ANALYZER_ZIP="/tmp/ddog-static-analyzer-\${BUILD_NUMBER}.zip"
                     curl -fsSL \\
-                        "https://github.com/DataDog/datadog-static-analyzer/releases/download/v${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \\
+                        "https://github.com/DataDog/datadog-static-analyzer/releases/download/${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \\
                         -o "\${ANALYZER_ZIP}"
                     unzip -o "\${ANALYZER_ZIP}" -d /tmp/ddog-analyzer-\${BUILD_NUMBER}
                     chmod +x /tmp/ddog-analyzer-\${BUILD_NUMBER}/datadog-static-analyzer

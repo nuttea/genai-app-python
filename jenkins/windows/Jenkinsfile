@@ -84,7 +84,7 @@ false → block mode: exits non-zero when violations at or above threshold exist
                     # Download and extract the static analyzer native Windows binary
                     \$analyzerZip  = "\$env:TEMP\\ddog-static-analyzer-\${env:BUILD_NUMBER}.zip"
                     \$analyzerDir  = "\$env:TEMP\\ddog-analyzer-\${env:BUILD_NUMBER}"
-                    \$analyzerUrl  = "https://github.com/DataDog/datadog-static-analyzer/releases/download/v${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-pc-windows-msvc.zip"
+                    \$analyzerUrl  = "https://github.com/DataDog/datadog-static-analyzer/releases/download/${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-pc-windows-msvc.zip"
 
                     Write-Host "Downloading static analyzer v${STATIC_ANALYZER_VERSION}..."
                     Invoke-WebRequest -Uri \$analyzerUrl -OutFile \$analyzerZip -UseBasicParsing

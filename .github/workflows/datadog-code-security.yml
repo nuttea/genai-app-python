@@ -59,7 +59,7 @@ jobs:
       - name: Run Datadog Static Analyzer — generate SARIF
         run: |
           curl -fsSL \
-            "https://github.com/DataDog/datadog-static-analyzer/releases/download/v${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \
+            "https://github.com/DataDog/datadog-static-analyzer/releases/download/${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \
             -o /tmp/ddog-analyzer.zip
           unzip /tmp/ddog-analyzer.zip -d /tmp/ddog-analyzer
           chmod +x /tmp/ddog-analyzer/datadog-static-analyzer
