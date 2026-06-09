@@ -1,0 +1,316 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Datadog Code Security — Jenkins Pipeline (Windows Server)
+//
+// Mirrors the GitHub Actions workflow at:
+//   .github/workflows/datadog-code-security.yml
+//
+// Stages:
+//   1. SAST Scan          — runs datadog-static-analyzer container via Docker Desktop
+//   2. Quality Gate       — parses SARIF with the Python quality gate script
+//   3. SARIF → GitHub     — uploads SARIF to GitHub Code Scanning (optional)
+//   4. SAST → Datadog  ┐  — runs in parallel, push/main branch only
+//   5. SCA  → Datadog  ┘
+//
+// Required Jenkins credentials (Manage Jenkins → Credentials):
+//   dd-api-key     Secret Text  — Datadog API key
+//   dd-app-key     Secret Text  — Datadog Application key
+//   github-token   Secret Text  — GitHub token with security_events scope
+//                                 (optional, only needed for SARIF upload)
+//
+// Required Jenkins plugins:
+//   Pipeline, Credentials Binding, Git, Timestamper
+//
+// Agent requirements:
+//   - Docker Desktop installed and running in Linux-container mode
+//   - Python 3 installed and on PATH  (python or py -3)
+//   - curl.exe or PowerShell 5.1+ (Invoke-WebRequest)
+//   - internet access to pull ghcr.io/datadog/datadog-static-analyzer
+//
+// Note: This pipeline uses PowerShell (`powershell`) blocks throughout.
+//       Adjust to `bat` if your environment restricts PowerShell execution policy.
+// ─────────────────────────────────────────────────────────────────────────────
+
+pipeline {
+    agent { label 'windows && docker' }
+
+    // ── Build-level options ───────────────────────────────────────────────────
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '50'))
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    // ── Run-time parameters ───────────────────────────────────────────────────
+    parameters {
+        booleanParam(
+            name: 'DETECT_ONLY',
+            defaultValue: true,
+            description: '''true  → virtual-fail mode: HIGH+ findings emitted as warnings, CI never blocked
+false → block mode: exits non-zero when violations at or above threshold exist'''
+        )
+        choice(
+            name: 'GATE_SEVERITY_THRESHOLD',
+            choices: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+            description: 'Severity level that triggers the gate (block or detect). Default: CRITICAL'
+        )
+        booleanParam(
+            name: 'UPLOAD_TO_DATADOG',
+            defaultValue: true,
+            description: 'Upload SAST + SCA results to Datadog (requires dd-api-key / dd-app-key credentials)'
+        )
+        booleanParam(
+            name: 'UPLOAD_SARIF_TO_GITHUB',
+            defaultValue: true,
+            description: 'Upload SARIF to GitHub Code Scanning (requires github-token credential)'
+        )
+    }
+
+    // ── Static environment ────────────────────────────────────────────────────
+    environment {
+        DD_SITE                  = 'datadoghq.com'
+        DD_SERVICE               = "${env.JOB_NAME.tokenize('/').first()}"
+        SARIF_FILE               = 'static-analysis-results.sarif'
+        STATIC_ANALYZER_VERSION  = '0.8.6'
+        DATADOG_CI_VERSION       = '2.45.1'
+        SBOM_GENERATOR_VERSION   = '1.14.0'
+    }
+
+    stages {
+
+        // ── Stage 1: SAST Scan ────────────────────────────────────────────────
+        stage('SAST Scan') {
+            steps {
+                echo "Running Datadog Static Analyzer v${STATIC_ANALYZER_VERSION} on Windows"
+                powershell """
+                    # Docker Desktop on Windows: use forward slashes for bind mount paths.
+                    # Convert Windows workspace path (C:\\...) to Docker-compatible form (//c/...).
+                    \$wsPath = "\${env:WORKSPACE}" -replace '\\\\', '/'
+                    \$wsPath = \$wsPath -replace '^([A-Za-z]):', { '/' + \$_.Value[0].ToString().ToLower() }
+
+                    docker run --rm `
+                        --memory=2g --cpus=2 `
+                        -v "\${wsPath}:/code" `
+                        ghcr.io/datadog/datadog-static-analyzer:${STATIC_ANALYZER_VERSION} `
+                        -i /code `
+                        -o /code/${SARIF_FILE} `
+                        -f sarif
+
+                    if (\$LASTEXITCODE -ne 0) {
+                        Write-Error "Static analyzer exited with code \$LASTEXITCODE"
+                        exit 1
+                    }
+                    if (-not (Test-Path "${SARIF_FILE}")) {
+                        Write-Error "SARIF not produced — static analyzer may have failed"
+                        exit 1
+                    }
+                    Write-Host "SARIF produced at ${SARIF_FILE}"
+                """
+            }
+        }
+
+        // ── Stage 2: Quality Gate ─────────────────────────────────────────────
+        stage('Quality Gate') {
+            steps {
+                script {
+                    def flag = params.DETECT_ONLY ? '--detect-only' : ''
+                    withEnv([
+                        "DETECT_ONLY=${params.DETECT_ONLY}",
+                        "GATE_SEVERITY_THRESHOLD=${params.GATE_SEVERITY_THRESHOLD}",
+                        "SARIF_PATH=${SARIF_FILE}",
+                    ]) {
+                        // Use `python` (Windows default) or `py -3` if python3 is not on PATH
+                        powershell "python .github/scripts/quality_gate.py ${flag}"
+                    }
+                }
+            }
+        }
+
+        // ── Stage 3 + 4 + 5: Uploads (parallel) ─────────────────────────────
+        stage('Upload Results') {
+            parallel {
+
+                // 3. SARIF → GitHub Code Scanning
+                stage('SARIF → GitHub Code Scanning') {
+                    when {
+                        expression { return params.UPLOAD_SARIF_TO_GITHUB }
+                    }
+                    steps {
+                        withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                            script {
+                                def remoteUrl = powershell(
+                                    script: "git remote get-url origin",
+                                    returnStdout: true
+                                ).trim()
+                                def matcher = remoteUrl =~ /github\.com[:/]([^/]+)\/(.+?)(\.git)?$/
+                                if (!matcher) {
+                                    error "Cannot parse GitHub owner/repo from remote URL: ${remoteUrl}"
+                                }
+                                def owner = matcher[0][1]
+                                def repo  = matcher[0][2]
+                                def ref   = env.CHANGE_ID
+                                    ? "refs/pull/${env.CHANGE_ID}/merge"
+                                    : "refs/heads/${env.GIT_BRANCH?.replaceAll('^origin/', '')}"
+
+                                withEnv(["GH_OWNER=${owner}", "GH_REPO=${repo}", "GH_REF=${ref}"]) {
+                                    powershell """
+                                        \$sarifBytes  = [System.IO.File]::ReadAllBytes("${SARIF_FILE}")
+                                        \$memStream   = [System.IO.MemoryStream]::new()
+                                        \$gzipStream  = [System.IO.Compression.GZipStream]::new(\$memStream, [System.IO.Compression.CompressionMode]::Compress)
+                                        \$gzipStream.Write(\$sarifBytes, 0, \$sarifBytes.Length)
+                                        \$gzipStream.Close()
+                                        \$sarifB64    = [Convert]::ToBase64String(\$memStream.ToArray())
+
+                                        \$body = @{
+                                            commit_sha = "\${env:GIT_COMMIT}"
+                                            ref        = "\${env:GH_REF}"
+                                            sarif      = \$sarifB64
+                                            tool_name  = "Datadog SAST"
+                                        } | ConvertTo-Json -Depth 5
+
+                                        \$headers = @{
+                                            Authorization        = "token \${env:GITHUB_TOKEN}"
+                                            Accept               = "application/vnd.github+json"
+                                            "X-GitHub-Api-Version" = "2022-11-28"
+                                        }
+
+                                        Invoke-RestMethod `
+                                            -Method POST `
+                                            -Uri "https://api.github.com/repos/\${env:GH_OWNER}/\${env:GH_REPO}/code-scanning/sarifs" `
+                                            -Headers \$headers `
+                                            -Body \$body `
+                                            -ContentType "application/json" `
+                                            -ErrorAction Stop
+
+                                        Write-Host "SARIF uploaded to GitHub Code Scanning"
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. SAST → Datadog
+                stage('SAST → Datadog Upload') {
+                    when {
+                        allOf {
+                            expression { return params.UPLOAD_TO_DATADOG }
+                            anyOf {
+                                branch 'main'
+                                branch 'master'
+                                triggeredBy 'UserIdCause'
+                            }
+                        }
+                    }
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'dd-api-key', variable: 'DD_API_KEY'),
+                            string(credentialsId: 'dd-app-key', variable: 'DD_APP_KEY'),
+                        ]) {
+                            powershell """
+                                \$ddCi = "datadog-ci-sast.exe"
+                                \$ddCiUrl = "https://github.com/DataDog/datadog-ci/releases/download/v${DATADOG_CI_VERSION}/datadog-ci-win-x64.exe"
+
+                                Invoke-WebRequest -Uri \$ddCiUrl -OutFile \$ddCi -UseBasicParsing
+                                Write-Host "Downloaded \$ddCi"
+
+                                \$env:DD_API_KEY = "\${env:DD_API_KEY}"
+                                \$env:DD_APP_KEY = "\${env:DD_APP_KEY}"
+                                \$env:DD_SITE    = "${DD_SITE}"
+
+                                # Upload git metadata for PR commit linking
+                                & ".\\\${ddCi}" git-metadata upload
+                                if (\$LASTEXITCODE -ne 0) { Write-Warning "git-metadata upload failed (exit \$LASTEXITCODE) — continuing" }
+
+                                # Upload the SARIF already produced in SAST Scan stage
+                                \$branch = "\${env:GIT_BRANCH}" -replace '^origin/', ''
+                                & ".\\\${ddCi}" sarif upload "${SARIF_FILE}" `
+                                    --service "${DD_SERVICE}" `
+                                    --env "\$branch"
+                                if (\$LASTEXITCODE -ne 0) {
+                                    Write-Error "SARIF upload to Datadog failed (exit \$LASTEXITCODE)"
+                                    exit \$LASTEXITCODE
+                                }
+                            """
+                        }
+                    }
+                }
+
+                // 5. SCA → Datadog
+                stage('SCA → Datadog Upload') {
+                    when {
+                        allOf {
+                            expression { return params.UPLOAD_TO_DATADOG }
+                            anyOf {
+                                branch 'main'
+                                branch 'master'
+                                triggeredBy 'UserIdCause'
+                            }
+                        }
+                    }
+                    steps {
+                        withCredentials([
+                            string(credentialsId: 'dd-api-key', variable: 'DD_API_KEY'),
+                            string(credentialsId: 'dd-app-key', variable: 'DD_APP_KEY'),
+                        ]) {
+                            powershell """
+                                \$sbomGen = "datadog-sbom-generator.exe"
+                                \$sbomUrl = "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-windows-amd64.exe"
+
+                                \$ddCi    = "datadog-ci-sca.exe"
+                                \$ddCiUrl = "https://github.com/DataDog/datadog-ci/releases/download/v${DATADOG_CI_VERSION}/datadog-ci-win-x64.exe"
+
+                                Invoke-WebRequest -Uri \$sbomUrl -OutFile \$sbomGen -UseBasicParsing
+                                Invoke-WebRequest -Uri \$ddCiUrl -OutFile \$ddCi    -UseBasicParsing
+                                Write-Host "Downloaded \$sbomGen and \$ddCi"
+
+                                # Generate SBOM
+                                & ".\\\${sbomGen}" -p "\${env:WORKSPACE}" -o sbom.json
+                                if (\$LASTEXITCODE -ne 0) {
+                                    Write-Error "SBOM generation failed (exit \$LASTEXITCODE)"
+                                    exit \$LASTEXITCODE
+                                }
+
+                                \$env:DD_API_KEY = "\${env:DD_API_KEY}"
+                                \$env:DD_APP_KEY = "\${env:DD_APP_KEY}"
+                                \$env:DD_SITE    = "${DD_SITE}"
+
+                                \$branch = "\${env:GIT_BRANCH}" -replace '^origin/', ''
+                                & ".\\\${ddCi}" sbom upload sbom.json `
+                                    --service "${DD_SERVICE}" `
+                                    --env "\$branch"
+                                if (\$LASTEXITCODE -ne 0) {
+                                    Write-Error "SBOM upload to Datadog failed (exit \$LASTEXITCODE)"
+                                    exit \$LASTEXITCODE
+                                }
+                            """
+                        }
+                    }
+                }
+
+            } // end parallel
+        } // end Upload Results
+
+    } // end stages
+
+    // ── Post-build actions ────────────────────────────────────────────────────
+    post {
+        always {
+            archiveArtifacts(
+                artifacts: "${SARIF_FILE}",
+                allowEmptyArchive: true,
+                fingerprint: true,
+            )
+            powershell "Remove-Item -Force -ErrorAction SilentlyContinue datadog-ci-sast.exe, datadog-ci-sca.exe, datadog-sbom-generator.exe, sbom.json"
+        }
+        success {
+            echo "SUCCESS: Datadog Code Security pipeline PASSED"
+        }
+        failure {
+            echo "FAILED: Datadog Code Security pipeline FAILED — check Quality Gate output above"
+        }
+        unstable {
+            echo "UNSTABLE: Datadog Code Security pipeline UNSTABLE"
+        }
+    }
+}
