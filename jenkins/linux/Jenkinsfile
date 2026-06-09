@@ -229,10 +229,12 @@ false → block mode: exits non-zero when violations at or above threshold exist
                                     -d /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}
                                 chmod +x /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}/datadog-sbom-generator
 
-                                # Generate SBOM from all lock files
-                                /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}/datadog-sbom-generator \\
-                                    -p "\${WORKSPACE}" \\
-                                    -o sbom.json
+                                # Generate SBOM from the workspace
+                                cd "\${WORKSPACE}"
+                                /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}/datadog-sbom-generator scan \\
+                                    --verbosity info \\
+                                    --output="\${WORKSPACE}/sbom.json" \\
+                                    .
 
                                 export DD_API_KEY="\${DD_API_KEY}"
                                 export DD_APP_KEY="\${DD_APP_KEY}"

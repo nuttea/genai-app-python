@@ -150,7 +150,11 @@ jobs:
           unzip /tmp/datadog-sbom-generator.zip -d /tmp/datadog-sbom-generator-dir
           chmod +x /tmp/datadog-sbom-generator-dir/datadog-sbom-generator
 
-          /tmp/datadog-sbom-generator-dir/datadog-sbom-generator -p "$GITHUB_WORKSPACE" -o /tmp/sbom.json
+          cd "$GITHUB_WORKSPACE"
+          /tmp/datadog-sbom-generator-dir/datadog-sbom-generator scan \
+            --verbosity info \
+            --output=/tmp/sbom.json \
+            .
 
           datadog-ci sbom upload /tmp/sbom.json \
             --service "${{ github.event.repository.name }}" \

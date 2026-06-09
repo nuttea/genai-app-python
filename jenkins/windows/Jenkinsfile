@@ -285,8 +285,10 @@ false → block mode: exits non-zero when violations at or above threshold exist
                                 Expand-Archive -Path \$sbomZip -DestinationPath \$sbomDir -Force
                                 \$sbomExe = Join-Path \$sbomDir "datadog-sbom-generator.exe"
 
-                                # Generate SBOM from all lock files
-                                & \$sbomExe -p "\${env:WORKSPACE}" -o sbom.json
+                                # Generate SBOM from the workspace
+                                Push-Location "\${env:WORKSPACE}"
+                                & \$sbomExe scan --verbosity info --output=sbom.json .
+                                Pop-Location
                                 if (\$LASTEXITCODE -ne 0) {
                                     Write-Error "SBOM generation failed (exit \$LASTEXITCODE)"
                                     exit \$LASTEXITCODE
