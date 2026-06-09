@@ -77,12 +77,21 @@ jobs:
         # Exit code reflects analysis errors (not violation counts) — the
         # quality gate threshold is enforced by the next step.
 
-      - name: Evaluate Quality Gate
+      - name: Evaluate Quality Gate  [BLOCK — CRITICAL+]
         env:
-          # Override via workflow_dispatch input; falls back to CRITICAL.
           GATE_SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || 'CRITICAL' }}
           SARIF_PATH: static-analysis-results.sarif
         run: python3 .github/scripts/quality_gate.py
+
+      - name: Detect-Only Gate  [DETECT — HIGH+]
+        # Runs even when the blocking gate above fails so HIGH findings are
+        # always surfaced as inline PR annotations. Never exits non-zero.
+        if: always()
+        env:
+          DETECT_ONLY: "true"
+          GATE_SEVERITY_THRESHOLD: HIGH
+          SARIF_PATH: static-analysis-results.sarif
+        run: python3 .github/scripts/quality_gate.py --detect-only
 
       - name: Upload SARIF to GitHub Code Scanning
         # Always upload so annotations appear on the PR even when the gate fails.
