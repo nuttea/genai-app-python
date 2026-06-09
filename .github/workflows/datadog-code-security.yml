@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
       - name: Run Datadog Static Analyzer — generate SARIF
         run: |
@@ -88,7 +88,7 @@ jobs:
         # Always upload so annotations appear on the PR even when the gate fails.
         # GitHub Code Scanning will show inline comments on the changed lines.
         if: always()
-        uses: github/codeql-action/upload-sarif@8272c299f21ca24af15dfe9ac0971ba969e5e0d5  # v3.36.2
+        uses: github/codeql-action/upload-sarif@1a818fd5f97ed0ee9a823421bd5b171add01227f  # v4.36.2
         with:
           sarif_file: static-analysis-results.sarif
           category: datadog-sast
@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
       - name: Datadog Static Analyzer
         uses: DataDog/datadog-static-analyzer-github-action@dff864d244a1fa571bbbaf7674fb651ea9fa8fb6  # v3.0.0
@@ -145,7 +145,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
       - name: Datadog SCA — SBOM Generation and Upload
         uses: DataDog/datadog-sca-github-action@feed84467007892dabcbec6d01e49ac623d3b086  # v4.5.0
