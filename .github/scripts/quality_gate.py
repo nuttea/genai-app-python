@@ -106,6 +106,55 @@ def emit_annotations(violations: list[dict]) -> None:
         print(f"::warning file={f['uri']},line={f['line']},title={title}::{msg}")
 
 
+def emit_verdict_annotation(
+    violations: list[dict],
+    threshold: str,
+    blocking_severities: set,
+    detect_only: bool,
+) -> None:
+    """Emit a single summary annotation for the gate verdict.
+
+    GitHub renders these in the Annotations panel and (on PRs) as a check
+    run summary, making the final decision immediately visible without having
+    to read the full log.
+
+    Levels used:
+      ::error::  — BLOCK mode with violations  (red, fails check)
+      ::warning:: — DETECT_ONLY with violations (yellow, passes check)
+      ::notice:: — gate passed cleanly          (blue, informational)
+    """
+    from collections import Counter
+
+    sev_counts = Counter(f["severity"] for f in violations)
+    breakdown = ", ".join(
+        f"{sev}: {sev_counts[sev]}"
+        for sev in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+        if sev_counts.get(sev)
+    )
+
+    if violations and not detect_only:
+        # Hard failure — BLOCK mode
+        detail = f"{len(violations)} violation(s) at severity ≥ {threshold}"
+        if breakdown:
+            detail += f" ({breakdown})"
+        print(f"::error title=❌ Quality Gate FAILED [{threshold}+]::{detail}")
+
+    elif violations and detect_only:
+        # Soft / virtual failure — DETECT_ONLY mode
+        detail = f"{len(violations)} violation(s) detected at severity ≥ {threshold} — CI not failed"
+        if breakdown:
+            detail += f" ({breakdown})"
+        print(f"::warning title=⚠️ Detect-Only Gate [{threshold}+] — Virtual Fail::{detail}")
+
+    else:
+        # Clean pass
+        mode = "Detect-Only" if detect_only else "Block"
+        print(
+            f"::notice title=✅ Quality Gate PASSED [{mode} / {threshold}+]::"
+            f"No violations found at severity ≥ {threshold}"
+        )
+
+
 def print_report(
     findings: list[dict],
     threshold: str,
@@ -239,8 +288,10 @@ def print_report(
             print(f"  … and {len(violations) - 20} more violation(s)")
 
         if detect_only:
-            # Emit inline GitHub annotations so violations appear on the PR diff
+            # Emit per-finding inline annotations pinned to file + line
             emit_annotations(violations)
+            # Emit summary verdict annotation for the Annotations panel
+            emit_verdict_annotation(violations, threshold, blocking_severities, detect_only=True)
             print(SEP2)
             print(
                 f"  ⚠️  DETECT ONLY — {len(violations)} violation(s) at severity >= {threshold}"
@@ -250,15 +301,16 @@ def print_report(
             print()
             # exit 0 — intentionally no sys.exit(1)
         else:
+            emit_verdict_annotation(violations, threshold, blocking_severities, detect_only=False)
             print(SEP2)
             print(f"  ❌ Quality Gate FAILED — {len(violations)} violation(s) at severity >= {threshold}")
             print(SEP2)
             print()
             sys.exit(1)
     else:
-        verdict = "✅ PASSED" if not detect_only else "✅ PASSED"
+        emit_verdict_annotation([], threshold, blocking_severities, detect_only=detect_only)
         print(SEP2)
-        print(f"  {verdict} — no violations at severity >= {threshold}")
+        print(f"  ✅ Quality Gate PASSED — no violations at severity >= {threshold}")
         print(SEP2)
         print()
 
