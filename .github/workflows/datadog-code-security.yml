@@ -1,29 +1,22 @@
 name: Datadog Code Security
 
 # ── Trigger design ────────────────────────────────────────────────────────────
-# This workflow has two concerns handled by separate jobs:
+# Generic CI approach — native binaries only, no Docker, no Datadog GitHub Actions.
+# Docs: https://docs.datadoghq.com/security/code_security/static_analysis/setup/generic_ci_providers/
+#       https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/generic_ci_providers/
 #
-# 1. QUALITY GATE (sast-quality-gate)
-#    Runs on push (default branch) AND pull_request.
-#    Uses ghcr.io/datadog/datadog-static-analyzer directly — this is the same
-#    binary the Git Hook uses (see https://docs.datadoghq.com/security/code_security/dev_tool_int/git_hooks/).
-#    It generates a SARIF file, applies a severity threshold, and exits non-zero
-#    if blocking violations are found, failing the CI job immediately.
-#    The SARIF is also uploaded to GitHub Code Scanning for inline PR annotations.
+# Single job mirrors the Jenkins pipeline structure:
+#   1. SAST Scan          — native datadog-static-analyzer binary, produces SARIF
+#   2. Quality Gate       — quality_gate.py parses SARIF, enforces threshold
+#   3. SARIF → GitHub     — uploads SARIF to GitHub Code Scanning (always)
+#   4. SARIF → Datadog    — datadog-ci sarif upload (push/workflow_dispatch only)
+#   5. SCA  → Datadog     — sbom-generator + datadog-ci sbom upload (push/workflow_dispatch only)
 #
-# 2. DATADOG UPLOAD (datadog-sast, datadog-sca)
-#    Runs on push to the default branch ONLY — Datadog's own GitHub Actions do
-#    not support pull_request triggers. These jobs upload results to the Datadog
-#    platform for the Code Security dashboard and power Datadog PR Gates.
-#    Datadog PR Gates are configured in the Datadog UI and enforced via the
-#    GitHub App; they post a GitHub Check on the PR (pass/fail) separately
-#    from this workflow.
+# Using a single job avoids running the static analyzer twice (once for the
+# gate and once for the Datadog upload) by sharing the SARIF within the job.
 #
-# Combined, you get:
-#   ✅ Immediate pass/fail gate on every PR (sast-quality-gate)
-#   ✅ Inline SARIF annotations directly on changed lines in the PR
-#   ✅ Datadog Code Security dashboard tracking (datadog-sast + datadog-sca)
-#   ✅ Datadog PR Gates (configured in UI, powered by the push jobs above)
+# Datadog upload steps are skipped on pull_request triggers per Datadog docs:
+#   "only supports workflows triggered by direct code commits (push event)"
 # ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
@@ -36,62 +29,61 @@ on:
         default: CRITICAL
         required: false
 
-# Cancel any in-progress run for the same ref to avoid redundant work.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Tool versions — update here to upgrade all downstream references
+env:
+  STATIC_ANALYZER_VERSION: '0.8.6'
+  DATADOG_CI_VERSION: '2.45.1'
+  SBOM_GENERATOR_VERSION: '1.14.0'
+  SARIF_FILE: 'static-analysis-results.sarif'
+
 jobs:
-  # ── 1. Quality Gate ───────────────────────────────────────────────────────
-  # Runs the static analyzer container directly to:
-  #   a) Generate a SARIF file from static-analysis.datadog.yml rulesets
-  #   b) Parse the SARIF and apply a severity threshold (CRITICAL by default)
-  #   c) Exit non-zero (fail the job) if blocking violations exist
-  #   d) Upload SARIF to GitHub Code Scanning for inline PR annotations
-  #
-  # This mirrors the Git Hook approach from:
-  # https://docs.datadoghq.com/security/code_security/dev_tool_int/git_hooks/
-  # ─────────────────────────────────────────────────────────────────────────
-  sast-quality-gate:
-    name: SAST Quality Gate
+  code-security:
+    name: Datadog Code Security
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
-      security-events: write  # required to upload SARIF to GitHub Code Scanning
+      security-events: write   # required to upload SARIF to GitHub Code Scanning
 
     steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
 
+      # ── 2. SAST Scan ─────────────────────────────────────────────────────────
+      # Downloads the native Linux x86_64 binary and runs it against the workspace.
       - name: Run Datadog Static Analyzer — generate SARIF
         run: |
-          docker run --rm \
-            --memory=2g --cpus=2 \
-            -v "${{ github.workspace }}:/code" \
-            ghcr.io/datadog/datadog-static-analyzer:0.8.6 \
-            -i /code \
-            -o /code/static-analysis-results.sarif \
-            -f sarif
-        # The analyzer reads static-analysis.datadog.yml automatically.
-        # Exit code reflects analysis errors (not violation counts) — the
-        # quality gate threshold is enforced by the next step.
+          curl -fsSL \
+            "https://github.com/DataDog/datadog-static-analyzer/releases/download/v${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \
+            -o /tmp/ddog-analyzer.zip
+          unzip /tmp/ddog-analyzer.zip -d /tmp/ddog-analyzer
+          chmod +x /tmp/ddog-analyzer/datadog-static-analyzer
 
+          /tmp/ddog-analyzer/datadog-static-analyzer \
+            -i "$GITHUB_WORKSPACE" \
+            -o "$GITHUB_WORKSPACE/${SARIF_FILE}" \
+            -f sarif
+
+          test -f "${SARIF_FILE}" || (echo "::error::SARIF not produced"; exit 1)
+          echo "SARIF produced: $(wc -c < ${SARIF_FILE}) bytes"
+
+      # ── 3. Quality Gate ───────────────────────────────────────────────────────
+      # Mode and threshold are driven by repository variables (Settings → Variables):
+      #   DETECT_ONLY=true              → virtual-fail: findings logged, CI never blocked
+      #   DETECT_ONLY=false (default)   → block mode: exits non-zero on violations
+      #   GATE_SEVERITY_THRESHOLD       → severity level that triggers the gate
+      #
+      # Priority for threshold: workflow_dispatch input → repo variable → built-in default
       - name: Evaluate Quality Gate
-        # Single gate — mode and threshold controlled by repository variables
-        # (Settings → Secrets and variables → Actions → Variables):
-        #
-        #   DETECT_ONLY=true   → virtual-fail mode: annotations emitted, CI never blocked
-        #   DETECT_ONLY=false  → block mode: exits non-zero when violations found (default)
-        #
-        #   GATE_SEVERITY_THRESHOLD → severity level that triggers the gate
-        #                             (default: CRITICAL in block, HIGH in detect-only)
-        #
-        # Priority for threshold: workflow_dispatch input → repo variable → built-in default
         env:
           DETECT_ONLY: ${{ vars.DETECT_ONLY }}
           GATE_SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || vars.GATE_SEVERITY_THRESHOLD }}
-          SARIF_PATH: static-analysis-results.sarif
+          SARIF_PATH: ${{ env.SARIF_FILE }}
         run: |
           if [ "$DETECT_ONLY" = "true" ]; then
             python3 .github/scripts/quality_gate.py --detect-only
@@ -99,13 +91,13 @@ jobs:
             python3 .github/scripts/quality_gate.py
           fi
 
+      # ── 4. Upload SARIF to GitHub Code Scanning ───────────────────────────────
+      # Runs even when the quality gate fails so annotations appear on the PR.
       - name: Upload SARIF to GitHub Code Scanning
-        # Always upload so annotations appear on the PR even when the gate fails.
-        # GitHub Code Scanning will show inline comments on the changed lines.
         if: always()
         uses: github/codeql-action/upload-sarif@1a818fd5f97ed0ee9a823421bd5b171add01227f  # v4.36.2
         with:
-          sarif_file: static-analysis-results.sarif
+          sarif_file: ${{ env.SARIF_FILE }}
           category: datadog-sast
 
       - name: Upload SARIF as workflow artifact
@@ -113,58 +105,52 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: datadog-sast-sarif-${{ github.sha }}
-          path: static-analysis-results.sarif
+          path: ${{ env.SARIF_FILE }}
           retention-days: 30
 
-  # ── 2a. Upload SAST results to Datadog ───────────────────────────────────
-  # Push-only: Datadog's action does not support pull_request triggers.
-  # Results populate the Code Security dashboard and power Datadog PR Gates.
-  # Docs: https://docs.datadoghq.com/security/code_security/static_analysis/github_actions/
-  # ─────────────────────────────────────────────────────────────────────────
-  datadog-sast:
-    name: SAST → Datadog Upload
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    permissions:
-      contents: read
+      # ── 5. Install datadog-ci (push / workflow_dispatch only) ─────────────────
+      # Skipped on pull_request — Datadog's platform only indexes push events.
+      - name: Install datadog-ci
+        if: >-
+          always() &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: npm install -g "@datadog/datadog-ci@${DATADOG_CI_VERSION}"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      # ── 6. SAST → Datadog Upload ──────────────────────────────────────────────
+      # Reuses the SARIF produced in step 2 — no second scan needed.
+      - name: SAST → Datadog Upload
+        if: >-
+          always() &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DD_SITE: datadoghq.com
+        run: |
+          # Upload git metadata — enables diff-aware scanning and PR commit linking in Datadog
+          datadog-ci git-metadata upload
 
-      - name: Datadog Static Analyzer
-        uses: DataDog/datadog-static-analyzer-github-action@dff864d244a1fa571bbbaf7674fb651ea9fa8fb6  # v3.0.0
-        with:
-          dd_api_key: ${{ secrets.DD_API_KEY }}
-          dd_app_key: ${{ secrets.DD_APP_KEY }}
-          dd_site: "datadoghq.com"
-          cpu_count: 2
-          enable_performance_statistics: false
-          # diff_aware=true: on feature branches only changed files are scanned.
-          # On the default branch a full scan always runs.
-          diff_aware: true
+          datadog-ci sarif upload "${SARIF_FILE}" \
+            --service "${{ github.event.repository.name }}" \
+            --env "${{ github.ref_name }}"
 
-  # ── 2b. Upload SCA results to Datadog ────────────────────────────────────
-  # Push-only: generates an SBOM from all lock files and uploads to Datadog
-  # to detect CVEs in open-source dependencies.
-  # Docs: https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/?tab=github
-  # ─────────────────────────────────────────────────────────────────────────
-  datadog-sca:
-    name: SCA → Datadog Upload
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    permissions:
-      contents: read
+      # ── 7. SCA → Datadog Upload ───────────────────────────────────────────────
+      - name: SCA → Datadog Upload
+        if: >-
+          always() &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DD_SITE: datadoghq.com
+        run: |
+          curl -fsSL \
+            "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-linux-amd64" \
+            -o /tmp/datadog-sbom-generator
+          chmod +x /tmp/datadog-sbom-generator
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+          /tmp/datadog-sbom-generator -p "$GITHUB_WORKSPACE" -o /tmp/sbom.json
 
-      - name: Datadog SCA — SBOM Generation and Upload
-        uses: DataDog/datadog-sca-github-action@feed84467007892dabcbec6d01e49ac623d3b086  # v4.5.0
-        with:
-          dd_api_key: ${{ secrets.DD_API_KEY }}
-          dd_app_key: ${{ secrets.DD_APP_KEY }}
-          dd_site: "datadoghq.com"
+          datadog-ci sbom upload /tmp/sbom.json \
+            --service "${{ github.event.repository.name }}" \
+            --env "${{ github.ref_name }}"
