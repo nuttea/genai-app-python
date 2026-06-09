@@ -1,36 +1,36 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Datadog Code Security — Jenkins Pipeline (Linux)
+// Generic CI approach: https://docs.datadoghq.com/security/code_security/static_analysis/setup/generic_ci_providers/
+//                      https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/generic_ci_providers/
 //
-// Mirrors the GitHub Actions workflow at:
-//   .github/workflows/datadog-code-security.yml
+// No Docker required. Uses native binaries for both the static analyzer and
+// datadog-ci (via npm), following Datadog's official generic CI guide.
 //
 // Stages:
-//   1. SAST Scan          — runs datadog-static-analyzer container, writes SARIF
-//   2. Quality Gate       — parses SARIF, enforces severity threshold
+//   1. SAST Scan          — native binary, writes SARIF
+//   2. Quality Gate       — parses SARIF with quality_gate.py
 //   3. SARIF → GitHub     — uploads SARIF to GitHub Code Scanning (optional)
-//   4. SAST → Datadog  ┐  — runs in parallel, push/main branch only
+//   4. SAST → Datadog  ┐  — parallel, push/main branch only
 //   5. SCA  → Datadog  ┘
 //
 // Required Jenkins credentials (Manage Jenkins → Credentials):
 //   dd-api-key     Secret Text  — Datadog API key
-//   dd-app-key     Secret Text  — Datadog Application key
-//   github-token   Secret Text  — GitHub token with security_events scope
-//                                 (optional, only needed for SARIF upload)
+//   dd-app-key     Secret Text  — Datadog Application key (code_analysis_read scope)
+//   github-token   Secret Text  — GitHub token with security_events scope (optional)
 //
 // Required Jenkins plugins:
-//   Pipeline, Credentials Binding, Git, Timestamper, AnsiColor (optional)
+//   Pipeline, Credentials Binding, Git, Timestamper
 //
 // Agent requirements:
-//   - Docker Engine installed and the Jenkins user in the 'docker' group
-//   - Python 3 installed  (python3, pip3)
-//   - curl installed
-//   - internet access to pull ghcr.io/datadog/datadog-static-analyzer
+//   - Python 3.9+     (python3)
+//   - Node.js 14+     (for npm install -g @datadog/datadog-ci)
+//   - curl, unzip
+//   - NO Docker required
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
-    agent { label 'linux && docker' }
+    agent { label 'linux' }
 
-    // ── Build-level options ───────────────────────────────────────────────────
     options {
         timeout(time: 30, unit: 'MINUTES')
         buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '50'))
@@ -38,12 +38,11 @@ pipeline {
         timestamps()
     }
 
-    // ── Run-time parameters (mirrors GitHub Actions repo variables) ───────────
     parameters {
         booleanParam(
             name: 'DETECT_ONLY',
             defaultValue: true,
-            description: '''true  → virtual-fail mode: HIGH+ findings emitted as warnings, CI never blocked
+            description: '''true  → virtual-fail mode: findings logged as warnings, CI never blocked
 false → block mode: exits non-zero when violations at or above threshold exist'''
         )
         choice(
@@ -54,21 +53,20 @@ false → block mode: exits non-zero when violations at or above threshold exist
         booleanParam(
             name: 'UPLOAD_TO_DATADOG',
             defaultValue: true,
-            description: 'Upload SAST + SCA results to Datadog (requires dd-api-key / dd-app-key credentials)'
+            description: 'Upload SAST + SCA results to Datadog'
         )
         booleanParam(
             name: 'UPLOAD_SARIF_TO_GITHUB',
             defaultValue: true,
-            description: 'Upload SARIF to GitHub Code Scanning (requires github-token credential)'
+            description: 'Upload SARIF to GitHub Code Scanning'
         )
     }
 
-    // ── Static environment ────────────────────────────────────────────────────
     environment {
         DD_SITE                  = 'datadoghq.com'
-        // Service name used in Datadog — defaults to repo/folder name
         DD_SERVICE               = "${env.JOB_NAME.tokenize('/').first()}"
         SARIF_FILE               = 'static-analysis-results.sarif'
+        // Pin versions — update here to upgrade all downstream references
         STATIC_ANALYZER_VERSION  = '0.8.6'
         DATADOG_CI_VERSION       = '2.45.1'
         SBOM_GENERATOR_VERSION   = '1.14.0'
@@ -77,20 +75,29 @@ false → block mode: exits non-zero when violations at or above threshold exist
     stages {
 
         // ── Stage 1: SAST Scan ────────────────────────────────────────────────
+        // Downloads the native Linux binary and runs it against the workspace.
+        // Docs: https://docs.datadoghq.com/security/code_security/static_analysis/setup/generic_ci_providers/
         stage('SAST Scan') {
             steps {
-                echo "Running Datadog Static Analyzer v${STATIC_ANALYZER_VERSION}"
                 sh """
-                    docker run --rm \\
-                        --memory=2g --cpus=2 \\
-                        -v "\${WORKSPACE}:/code" \\
-                        ghcr.io/datadog/datadog-static-analyzer:${STATIC_ANALYZER_VERSION} \\
-                        -i /code \\
-                        -o /code/${SARIF_FILE} \\
+                    # Download and extract the static analyzer native binary
+                    ANALYZER_ZIP="/tmp/ddog-static-analyzer-\${BUILD_NUMBER}.zip"
+                    curl -fsSL \\
+                        "https://github.com/DataDog/datadog-static-analyzer/releases/download/v${STATIC_ANALYZER_VERSION}/datadog-static-analyzer-x86_64-unknown-linux-gnu.zip" \\
+                        -o "\${ANALYZER_ZIP}"
+                    unzip -o "\${ANALYZER_ZIP}" -d /tmp/ddog-analyzer-\${BUILD_NUMBER}
+                    chmod +x /tmp/ddog-analyzer-\${BUILD_NUMBER}/datadog-static-analyzer
+
+                    # Run analysis — output is a SARIF file in the workspace
+                    /tmp/ddog-analyzer-\${BUILD_NUMBER}/datadog-static-analyzer \\
+                        -i "\${WORKSPACE}" \\
+                        -o "\${WORKSPACE}/${SARIF_FILE}" \\
                         -f sarif
+
+                    # Verify SARIF was produced
+                    test -f "${SARIF_FILE}" || (echo "ERROR: SARIF not produced"; exit 1)
+                    echo "SARIF produced: \$(wc -c < ${SARIF_FILE}) bytes"
                 """
-                // Fail fast if SARIF was not produced (analyzer error)
-                sh "test -f '${SARIF_FILE}' || (echo '::error::SARIF not produced'; exit 1)"
             }
         }
 
@@ -122,9 +129,8 @@ false → block mode: exits non-zero when violations at or above threshold exist
                     steps {
                         withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                             script {
-                                // Parse owner/repo from Git remote URL
                                 def remoteUrl = sh(script: "git remote get-url origin", returnStdout: true).trim()
-                                def matcher = remoteUrl =~ /github\.com[:/]([^/]+)\/(.+?)(\.git)?$/
+                                def matcher   = remoteUrl =~ /github\.com[:/]([^/]+)\/(.+?)(\.git)?$/
                                 if (!matcher) {
                                     error "Cannot parse GitHub owner/repo from remote URL: ${remoteUrl}"
                                 }
@@ -155,7 +161,8 @@ false → block mode: exits non-zero when violations at or above threshold exist
                 }
 
                 // 4. SAST → Datadog
-                // Reuses the SARIF produced in Stage 1 — no need to re-run the container.
+                // Installs datadog-ci via npm (official recommendation), uploads git metadata
+                // and the SARIF produced in Stage 1.
                 stage('SAST → Datadog Upload') {
                     when {
                         allOf {
@@ -173,21 +180,21 @@ false → block mode: exits non-zero when violations at or above threshold exist
                             string(credentialsId: 'dd-app-key', variable: 'DD_APP_KEY'),
                         ]) {
                             sh """
-                                # Download datadog-ci binary
-                                curl -sfL \\
-                                    "https://github.com/DataDog/datadog-ci/releases/download/v${DATADOG_CI_VERSION}/datadog-ci_linux-x64" \\
-                                    -o datadog-ci-sast
-                                chmod +x datadog-ci-sast
+                                # Install datadog-ci via npm (requires Node.js 14+)
+                                npm install -g @datadog/datadog-ci@${DATADOG_CI_VERSION} --silent
 
-                                # Upload git metadata (powers PR commit linking in Datadog)
-                                DD_API_KEY="\${DD_API_KEY}" DD_SITE="${DD_SITE}" \\
-                                    ./datadog-ci-sast git-metadata upload
+                                export DD_API_KEY="\${DD_API_KEY}"
+                                export DD_APP_KEY="\${DD_APP_KEY}"
+                                export DD_SITE="${DD_SITE}"
+
+                                # Upload git metadata — enables diff-aware scanning and PR commit linking
+                                datadog-ci git-metadata upload
 
                                 # Upload the SARIF already produced in SAST Scan stage
-                                DD_API_KEY="\${DD_API_KEY}" DD_APP_KEY="\${DD_APP_KEY}" DD_SITE="${DD_SITE}" \\
-                                    ./datadog-ci-sast sarif upload "${SARIF_FILE}" \\
+                                BRANCH="\$(echo "\${GIT_BRANCH:-}" | sed 's|^origin/||')"
+                                datadog-ci sarif upload "${SARIF_FILE}" \\
                                     --service "${DD_SERVICE}" \\
-                                    --env "${env.GIT_BRANCH?.replaceAll('^origin/', '') ?: 'unknown'}"
+                                    --env "\${BRANCH:-unknown}"
                             """
                         }
                     }
@@ -211,26 +218,28 @@ false → block mode: exits non-zero when violations at or above threshold exist
                             string(credentialsId: 'dd-app-key', variable: 'DD_APP_KEY'),
                         ]) {
                             sh """
-                                # Download SBOM generator
-                                curl -sfL \\
-                                    "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-linux-amd64" \\
-                                    -o datadog-sbom-generator
-                                chmod +x datadog-sbom-generator
+                                # Install datadog-ci via npm
+                                npm install -g @datadog/datadog-ci@${DATADOG_CI_VERSION} --silent
 
-                                # Download datadog-ci binary (separate filename to avoid race with SAST stage)
-                                curl -sfL \\
-                                    "https://github.com/DataDog/datadog-ci/releases/download/v${DATADOG_CI_VERSION}/datadog-ci_linux-x64" \\
-                                    -o datadog-ci-sca
-                                chmod +x datadog-ci-sca
+                                # Download SBOM generator native binary
+                                curl -fsSL \\
+                                    "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-linux-amd64" \\
+                                    -o /tmp/datadog-sbom-generator-\${BUILD_NUMBER}
+                                chmod +x /tmp/datadog-sbom-generator-\${BUILD_NUMBER}
 
                                 # Generate SBOM from all lock files
-                                ./datadog-sbom-generator -p "\${WORKSPACE}" -o sbom.json
+                                /tmp/datadog-sbom-generator-\${BUILD_NUMBER} \\
+                                    -p "\${WORKSPACE}" \\
+                                    -o sbom.json
 
-                                # Upload SBOM to Datadog
-                                DD_API_KEY="\${DD_API_KEY}" DD_APP_KEY="\${DD_APP_KEY}" DD_SITE="${DD_SITE}" \\
-                                    ./datadog-ci-sca sbom upload sbom.json \\
+                                export DD_API_KEY="\${DD_API_KEY}"
+                                export DD_APP_KEY="\${DD_APP_KEY}"
+                                export DD_SITE="${DD_SITE}"
+
+                                BRANCH="\$(echo "\${GIT_BRANCH:-}" | sed 's|^origin/||')"
+                                datadog-ci sbom upload sbom.json \\
                                     --service "${DD_SERVICE}" \\
-                                    --env "${env.GIT_BRANCH?.replaceAll('^origin/', '') ?: 'unknown'}"
+                                    --env "\${BRANCH:-unknown}"
                             """
                         }
                     }
@@ -241,26 +250,25 @@ false → block mode: exits non-zero when violations at or above threshold exist
 
     } // end stages
 
-    // ── Post-build actions ────────────────────────────────────────────────────
     post {
         always {
-            // Archive SARIF regardless of gate outcome
             archiveArtifacts(
                 artifacts: "${SARIF_FILE}",
                 allowEmptyArchive: true,
                 fingerprint: true,
             )
-            // Clean up downloaded binaries
-            sh "rm -f datadog-ci-sast datadog-ci-sca datadog-sbom-generator sbom.json || true"
+            // Clean up temp files
+            sh """
+                rm -f sbom.json || true
+                rm -rf /tmp/ddog-analyzer-\${BUILD_NUMBER} /tmp/ddog-static-analyzer-\${BUILD_NUMBER}.zip \\
+                       /tmp/datadog-sbom-generator-\${BUILD_NUMBER} || true
+            """
         }
         success {
-            echo "✅ Datadog Code Security pipeline PASSED"
+            echo "SUCCESS: Datadog Code Security pipeline PASSED"
         }
         failure {
-            echo "❌ Datadog Code Security pipeline FAILED — check Quality Gate output above"
-        }
-        unstable {
-            echo "⚠️  Datadog Code Security pipeline UNSTABLE"
+            echo "FAILED: Datadog Code Security pipeline FAILED — check Quality Gate output above"
         }
     }
 }

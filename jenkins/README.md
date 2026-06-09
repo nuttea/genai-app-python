@@ -2,10 +2,16 @@
 
 This directory contains Jenkins declarative pipeline equivalents of the GitHub Actions workflow at `.github/workflows/datadog-code-security.yml`.
 
+**Official Datadog docs used as the basis for these pipelines:**
+- SAST Generic CI: https://docs.datadoghq.com/security/code_security/static_analysis/setup/generic_ci_providers/
+- SCA Generic CI: https://docs.datadoghq.com/security/code_security/software_composition_analysis/setup_static/generic_ci_providers/
+
 | Platform | File |
 |---|---|
-| Linux (Docker Engine) | `linux/Jenkinsfile` |
-| Windows Server (Docker Desktop) | `windows/Jenkinsfile` |
+| Linux | `linux/Jenkinsfile` |
+| Windows Server | `windows/Jenkinsfile` |
+
+> **No Docker required.** Both pipelines follow Datadog's Generic CI approach: they download the native `datadog-static-analyzer` binary for the agent's platform and install `datadog-ci` via npm.
 
 ---
 
@@ -13,8 +19,8 @@ This directory contains Jenkins declarative pipeline equivalents of the GitHub A
 
 | GitHub Actions job | Jenkins stage |
 |---|---|
-| `sast-quality-gate` → Run Datadog Static Analyzer | Stage 1: SAST Scan |
-| `sast-quality-gate` → Evaluate Quality Gate | Stage 2: Quality Gate |
+| `sast-quality-gate` → Run Datadog Static Analyzer | Stage 1: SAST Scan (native binary) |
+| `sast-quality-gate` → Evaluate Quality Gate | Stage 2: Quality Gate (same Python script) |
 | `sast-quality-gate` → Upload SARIF to GitHub Code Scanning | Stage 3 (parallel): SARIF → GitHub Code Scanning |
 | `datadog-sast` | Stage 4 (parallel): SAST → Datadog Upload |
 | `datadog-sca` | Stage 5 (parallel): SCA → Datadog Upload |
@@ -33,29 +39,111 @@ The quality gate uses the same Python script (`.github/scripts/quality_gate.py`)
 | [Pipeline plugin](https://plugins.jenkins.io/workflow-aggregator/) | Bundled in most distributions |
 | [Credentials Binding plugin](https://plugins.jenkins.io/credentials-binding/) | For `withCredentials {}` |
 | [Git plugin](https://plugins.jenkins.io/git/) | For `git remote get-url origin` |
-| Python 3.9+ | Must be on the agent's `PATH` |
-| Internet access from the agent | Pulls Docker images and downloads binaries from GitHub Releases |
+| Python 3.9+ | On the agent's `PATH` |
+| **Node.js 14+** | Required by Datadog's official guide; `npm` is used to install `datadog-ci` |
+| Internet access from the agent | Downloads binaries from GitHub Releases and npm registry |
 
-### Linux agent
+---
+
+### Node.js Installation Guide
+
+`datadog-ci` is installed per build via `npm install -g @datadog/datadog-ci`. Node.js must be present on the Jenkins agent before the pipeline runs.
+
+#### Linux agent — Node.js setup
+
+**Option A: via NodeSource (recommended for LTS)**
+
+```bash
+# As root or sudo on the Jenkins agent
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+# Verify
+node --version && npm --version
+```
+
+For RPM-based systems (RHEL, Amazon Linux, CentOS):
+
+```bash
+curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
+yum install -y nodejs
+```
+
+**Option B: via nvm (per-user, no root required)**
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+node --version && npm --version
+```
+
+> If Jenkins runs as a service user, add `source ~/.bashrc` (or the nvm init lines) to the Jenkins user's shell profile so `node` is on `PATH` in non-interactive shells.
+
+**Option C: Jenkins NodeJS Plugin (managed by Jenkins)**
+
+1. Install the [NodeJS plugin](https://plugins.jenkins.io/nodejs/)
+2. Manage Jenkins → Tools → NodeJS installations → Add NodeJS → name it (e.g. `NodeJS-20`)
+3. Add this block to the Jenkinsfile `tools {}` section:
+
+```groovy
+tools {
+    nodejs 'NodeJS-20'
+}
+```
+
+#### Windows Server agent — Node.js setup
+
+**Option A: MSI installer (recommended)**
+
+1. Download the LTS installer from https://nodejs.org/en/download
+2. Run the `.msi` installer as Administrator — it adds `node` and `npm` to the system `PATH`
+3. Verify in a new PowerShell session:
+
+```powershell
+node --version
+npm --version
+```
+
+**Option B: winget**
+
+```powershell
+# Run in an elevated PowerShell session
+winget install OpenJS.NodeJS.LTS
+# Restart PowerShell / log out-in for PATH to take effect
+node --version && npm --version
+```
+
+**Option C: Chocolatey**
+
+```powershell
+choco install nodejs-lts -y
+node --version && npm --version
+```
+
+> After installation, restart the Jenkins Windows service so the agent picks up the updated `PATH`:
+> ```powershell
+> Restart-Service -Name Jenkins
+> ```
+
+---
+
+### Linux agent — additional requirements
 
 | Requirement | Notes |
 |---|---|
-| Docker Engine 20.10+ | `docker` CLI must be on `PATH` |
-| Jenkins user in the `docker` group | `sudo usermod -aG docker jenkins && systemctl restart jenkins` |
-| `curl` | For binary downloads and SARIF upload |
-| `gzip`, `base64` (GNU coreutils) | For SARIF compression before GitHub upload |
-| Agent label | Must match `linux && docker` (or update the `agent { label ... }` line) |
+| `curl` | Binary downloads |
+| `unzip` | Extracting static analyzer zip |
+| `gzip`, `base64` (GNU coreutils) | SARIF compression for GitHub upload |
+| Agent label | Must match `linux` (or update `agent { label ... }` in the Jenkinsfile) |
 
-### Windows Server agent
+### Windows Server agent — additional requirements
 
 | Requirement | Notes |
 |---|---|
-| Docker Desktop 4.x+ in **Linux containers** mode | The static analyzer is a Linux container |
 | PowerShell 5.1+ | Ships with Windows Server 2016+; PowerShell 7 also works |
-| Python 3 on `PATH` as `python` | Or change `python` to `py -3` in the Jenkinsfile |
-| Agent label | Must match `windows && docker` (or update the `agent { label ... }` line) |
-
-> **Docker Desktop Linux containers mode**: Open Docker Desktop → Settings → General → "Use the WSL 2 based engine" OR Settings → "Switch to Linux containers". The static analyzer image (`ghcr.io/datadog/datadog-static-analyzer`) is Linux-only.
+| Python 3.9+ on PATH as `python` | Or change to `py -3` in Stage 2 |
+| Agent label | Must match `windows` (or update `agent { label ... }` in the Jenkinsfile) |
 
 ---
 
@@ -66,32 +154,30 @@ Create three **Secret Text** credentials in **Manage Jenkins → Credentials →
 | Credential ID | Value | Required for |
 |---|---|---|
 | `dd-api-key` | Datadog API key | SAST + SCA upload to Datadog |
-| `dd-app-key` | Datadog Application key | SAST + SCA upload to Datadog |
+| `dd-app-key` | Datadog Application key (`code_analysis_read` scope) | SAST + SCA upload to Datadog |
 | `github-token` | GitHub personal access token | SARIF upload to GitHub Code Scanning |
 
 ### Datadog API Key / App Key
 
-1. Go to **Datadog → Organization Settings → API Keys** → Create key
-2. Go to **Datadog → Organization Settings → Application Keys** → Create key (scope: `code_analysis`)
+1. **Datadog → Organization Settings → API Keys** → Create key
+2. **Datadog → Organization Settings → Application Keys** → Create key, grant `code_analysis_read` scope
 
 ### GitHub Token
 
 Required scopes: `security_events` (write), `repo` (read)
 
 1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens
-2. Select your repository, grant **Code scanning alerts** write access
+2. Select your repository → Code scanning alerts: **Write**
 
 ---
 
 ## Pipeline Parameters
 
-Each build exposes these parameters (configurable at build time via **Build with Parameters**):
-
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `DETECT_ONLY` | Boolean | `true` | `true` = virtual-fail mode (warnings, CI never fails); `false` = block mode (fails build on violations) |
+| `DETECT_ONLY` | Boolean | `true` | `true` = virtual-fail mode (warnings only, CI passes); `false` = block mode (fails build on violations) |
 | `GATE_SEVERITY_THRESHOLD` | Choice | `CRITICAL` | Lowest severity that triggers the gate: `CRITICAL`, `HIGH`, `MEDIUM`, or `LOW` |
-| `UPLOAD_TO_DATADOG` | Boolean | `true` | Upload SARIF + SBOM to Datadog dashboard |
+| `UPLOAD_TO_DATADOG` | Boolean | `true` | Upload SARIF + SBOM to Datadog |
 | `UPLOAD_SARIF_TO_GITHUB` | Boolean | `true` | Upload SARIF to GitHub Code Scanning |
 
 ### Equivalent to GitHub Actions repo variables
@@ -101,7 +187,24 @@ Each build exposes these parameters (configurable at build time via **Build with
 | `vars.DETECT_ONLY` | `DETECT_ONLY` |
 | `vars.GATE_SEVERITY_THRESHOLD` | `GATE_SEVERITY_THRESHOLD` |
 
-In Jenkins, these defaults live in the Jenkinsfile itself. To persist them across all builds without editing the file, use [Jenkins Configuration as Code](https://www.jenkins.io/projects/jcasc/) or a shared library with defaults.
+---
+
+## Tool Versions (pinned in `environment {}`)
+
+| Tool | Version | Env var |
+|---|---|---|
+| `datadog-static-analyzer` | `0.8.6` | `STATIC_ANALYZER_VERSION` |
+| `@datadog/datadog-ci` (npm) | `2.45.1` | `DATADOG_CI_VERSION` |
+| `datadog-sbom-generator` | `1.14.0` | `SBOM_GENERATOR_VERSION` |
+
+Static analyzer binary selected per platform:
+
+| Platform | Binary |
+|---|---|
+| Linux x86_64 | `datadog-static-analyzer-x86_64-unknown-linux-gnu.zip` |
+| Windows x86_64 | `datadog-static-analyzer-x86_64-pc-windows-msvc.zip` |
+
+All binaries are downloaded from the [datadog-static-analyzer GitHub Releases](https://github.com/DataDog/datadog-static-analyzer/releases) pinned to the exact version tag.
 
 ---
 
@@ -117,19 +220,7 @@ In Jenkins, these defaults live in the Jenkinsfile itself. To persist them acros
    - Script Path:
      - Linux: `jenkins/linux/Jenkinsfile`
      - Windows: `jenkins/windows/Jenkinsfile`
-3. **Save** → **Build with Parameters** on the first run (Jenkins auto-discovers parameters on first execution)
-
----
-
-## Tool Versions (pinned)
-
-| Tool | Version | Env var |
-|---|---|---|
-| `datadog-static-analyzer` container | `0.8.6` | `STATIC_ANALYZER_VERSION` |
-| `datadog-ci` CLI | `2.45.1` | `DATADOG_CI_VERSION` |
-| `datadog-sbom-generator` | `1.14.0` | `SBOM_GENERATOR_VERSION` |
-
-To update a version, change the corresponding `environment {}` variable in the Jenkinsfile.
+3. **Save** → **Build with Parameters** on the first run (Jenkins discovers parameters on first execution)
 
 ---
 
@@ -149,36 +240,56 @@ The gate is implemented in `.github/scripts/quality_gate.py` (shared between Git
 
 ### Modes
 
-**BLOCK mode** (`DETECT_ONLY=false`): exits non-zero when violations at or above the threshold exist. The Jenkins build is marked **FAILED**.
+**BLOCK mode** (`DETECT_ONLY=false`): exits non-zero on violations at or above threshold. Jenkins build is **FAILED**.
 
-**DETECT_ONLY mode** (`DETECT_ONLY=true`): always exits 0. Violations are printed to the build log with a summary report. The Jenkins build is marked **SUCCESS** even if violations are found. Use this to raise visibility before enforcing hard gates.
+**DETECT_ONLY mode** (`DETECT_ONLY=true`): always exits 0. Violations are printed to the build log. Build is **SUCCESS** even with findings. Use this to raise visibility before enforcing hard gates.
+
+---
+
+## Supported CI Triggers
+
+Per the [Datadog docs](https://docs.datadoghq.com/security/code_security/static_analysis/setup/generic_ci_providers/):
+
+> Running a Datadog Static Code Analysis job as part of your CI/CD pipeline only supports workflows triggered by **direct code commits** (for example, a `push` event). Other types of triggers, such as pull, merge, or review request events are not supported.
+
+The upload stages (SAST → Datadog, SCA → Datadog) are therefore gated to `main`/`master` branch builds and manual triggers (`UserIdCause`) via the `when {}` condition.
 
 ---
 
 ## Troubleshooting
 
-### `docker: command not found`
+### `npm: command not found` / `'npm' is not recognized`
 
-- Linux: Add the Jenkins user to the `docker` group and restart the service.
-- Windows: Ensure Docker Desktop is running and `docker` is on the system `PATH`.
+Node.js is not installed or not on `PATH`. See the **Node.js Installation Guide** section above.
 
-### `cannot exec in a stopped state: unknown`
+### `node` found but `datadog-ci` not found after `npm install -g`
 
-Docker Desktop is not running or is in Windows containers mode. Switch to Linux containers mode.
+The global npm bin directory is not on `PATH`. On Linux:
+
+```bash
+npm config get prefix
+# e.g. /usr/local → binaries land in /usr/local/bin
+# ensure /usr/local/bin is in PATH for the jenkins user
+```
+
+On Windows, the global bin directory is usually `%APPDATA%\npm`. Add it to `PATH` system-wide and restart the Jenkins service.
 
 ### `SARIF not produced`
 
-The static analyzer failed (e.g., OOM, missing `static-analysis.datadog.yml`). Check the Stage 1 console output. Ensure `static-analysis.datadog.yml` exists at the repository root.
+The static analyzer failed. Possible causes:
+- Missing `static-analysis.datadog.yml` at the repository root
+- Analyzer binary not executable (Linux) — the pipeline runs `chmod +x` automatically
+- OOM on the agent — reduce concurrent stages or increase agent memory
 
 ### `403 Forbidden` on Datadog upload
 
-- Verify `dd-api-key` and `dd-app-key` credential IDs match exactly.
-- Ensure the API key has the `code_analysis` scope in Datadog.
+- Verify the `dd-api-key` and `dd-app-key` credential IDs match exactly.
+- Ensure the Application key has the `code_analysis_read` scope in Datadog.
 
 ### `403 Forbidden` on GitHub SARIF upload
 
-- Verify `github-token` credential ID matches exactly.
-- The token must have `security_events: write` scope on the target repository.
+- Verify the `github-token` credential ID matches exactly.
+- Token must have `security_events: write` scope.
 - GitHub Code Scanning must be enabled on the repository (Settings → Security → Code security → Code scanning).
 
 ### `python: command not found` (Windows)
@@ -189,16 +300,18 @@ Change `python` to `py -3` in `jenkins/windows/Jenkinsfile` Stage 2:
 powershell "py -3 .github/scripts/quality_gate.py ${flag}"
 ```
 
-### Parallel upload stages skipped
+### Parallel upload stages always skipped
 
-The SAST/SCA upload stages only run on `main`/`master` branches or manual triggers (`UserIdCause`). Branch builds skip them intentionally — Datadog's platform tracks the default branch for dashboard accuracy.
+The SAST/SCA upload stages only run on `main`/`master` or manual triggers. Feature branch builds skip them by design — Datadog's platform tracks the default branch for dashboard accuracy.
 
 ### PowerShell execution policy (Windows)
 
-If PowerShell scripts are blocked by execution policy, either:
+If PowerShell scripts are blocked:
 
-1. Set policy on the agent: `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine`
-2. Or replace `powershell "..."` with `bat "..."` and rewrite commands as `cmd` equivalents.
+```powershell
+# Run in an elevated PowerShell session on the agent
+Set-ExecutionPolicy RemoteSigned -Scope LocalMachine
+```
 
 ---
 
@@ -207,18 +320,14 @@ If PowerShell scripts are blocked by execution policy, either:
 ```
 jenkins/
 ├── linux/
-│   └── Jenkinsfile       # Linux agent pipeline (Docker Engine + sh)
+│   └── Jenkinsfile       # Linux agent pipeline (native binary + npm)
 ├── windows/
-│   └── Jenkinsfile       # Windows agent pipeline (Docker Desktop + PowerShell)
+│   └── Jenkinsfile       # Windows agent pipeline (native binary + npm + PowerShell)
 └── README.md             # This file
-```
 
-The quality gate script lives alongside the GitHub Actions workflow so both pipelines share the same implementation:
-
-```
 .github/
 ├── workflows/
 │   └── datadog-code-security.yml
 └── scripts/
-    └── quality_gate.py   # Used by both GitHub Actions and Jenkins
+    └── quality_gate.py   # Shared quality gate — used by GitHub Actions and Jenkins
 ```
