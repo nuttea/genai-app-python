@@ -145,11 +145,12 @@ jobs:
           DD_SITE: datadoghq.com
         run: |
           curl -fsSL \
-            "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-linux-amd64" \
-            -o /tmp/datadog-sbom-generator
-          chmod +x /tmp/datadog-sbom-generator
+            "https://github.com/DataDog/datadog-sbom-generator/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator_linux_amd64.zip" \
+            -o /tmp/datadog-sbom-generator.zip
+          unzip /tmp/datadog-sbom-generator.zip -d /tmp/datadog-sbom-generator-dir
+          chmod +x /tmp/datadog-sbom-generator-dir/datadog-sbom-generator
 
-          /tmp/datadog-sbom-generator -p "$GITHUB_WORKSPACE" -o /tmp/sbom.json
+          /tmp/datadog-sbom-generator-dir/datadog-sbom-generator -p "$GITHUB_WORKSPACE" -o /tmp/sbom.json
 
           datadog-ci sbom upload /tmp/sbom.json \
             --service "${{ github.event.repository.name }}" \

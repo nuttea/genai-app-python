@@ -276,10 +276,14 @@ false → block mode: exits non-zero when violations at or above threshold exist
                                 npm install -g "@datadog/datadog-ci@${DATADOG_CI_VERSION}" --silent
                                 if (\$LASTEXITCODE -ne 0) { Write-Error "npm install failed"; exit \$LASTEXITCODE }
 
-                                # Download SBOM generator native Windows binary
-                                \$sbomExe = "\$env:TEMP\\datadog-sbom-generator-\${env:BUILD_NUMBER}.exe"
-                                \$sbomUrl = "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-windows-amd64.exe"
-                                Invoke-WebRequest -Uri \$sbomUrl -OutFile \$sbomExe -UseBasicParsing
+                                # Download SBOM generator (DataDog/datadog-sbom-generator)
+                                \$sbomZip = "\$env:TEMP\\datadog-sbom-generator-\${env:BUILD_NUMBER}.zip"
+                                \$sbomDir = "\$env:TEMP\\datadog-sbom-generator-dir-\${env:BUILD_NUMBER}"
+                                \$sbomUrl = "https://github.com/DataDog/datadog-sbom-generator/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator_windows_amd64.zip"
+                                Invoke-WebRequest -Uri \$sbomUrl -OutFile \$sbomZip -UseBasicParsing
+                                if (Test-Path \$sbomDir) { Remove-Item -Recurse -Force \$sbomDir }
+                                Expand-Archive -Path \$sbomZip -DestinationPath \$sbomDir -Force
+                                \$sbomExe = Join-Path \$sbomDir "datadog-sbom-generator.exe"
 
                                 # Generate SBOM from all lock files
                                 & \$sbomExe -p "\${env:WORKSPACE}" -o sbom.json
@@ -322,7 +326,8 @@ false → block mode: exits non-zero when violations at or above threshold exist
                 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue `
                     "\$env:TEMP\\ddog-analyzer-\${env:BUILD_NUMBER}", `
                     "\$env:TEMP\\ddog-static-analyzer-\${env:BUILD_NUMBER}.zip", `
-                    "\$env:TEMP\\datadog-sbom-generator-\${env:BUILD_NUMBER}.exe"
+                    "\$env:TEMP\\datadog-sbom-generator-\${env:BUILD_NUMBER}.zip", `
+                    "\$env:TEMP\\datadog-sbom-generator-dir-\${env:BUILD_NUMBER}"
             """
         }
         success {

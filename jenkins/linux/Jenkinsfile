@@ -221,14 +221,16 @@ false → block mode: exits non-zero when violations at or above threshold exist
                                 # Install datadog-ci via npm
                                 npm install -g @datadog/datadog-ci@${DATADOG_CI_VERSION} --silent
 
-                                # Download SBOM generator native binary
+                                # Download SBOM generator (DataDog/datadog-sbom-generator)
                                 curl -fsSL \\
-                                    "https://github.com/DataDog/datadog-sca-github-action/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator-linux-amd64" \\
-                                    -o /tmp/datadog-sbom-generator-\${BUILD_NUMBER}
-                                chmod +x /tmp/datadog-sbom-generator-\${BUILD_NUMBER}
+                                    "https://github.com/DataDog/datadog-sbom-generator/releases/download/v${SBOM_GENERATOR_VERSION}/datadog-sbom-generator_linux_amd64.zip" \\
+                                    -o /tmp/datadog-sbom-generator-\${BUILD_NUMBER}.zip
+                                unzip -o /tmp/datadog-sbom-generator-\${BUILD_NUMBER}.zip \\
+                                    -d /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}
+                                chmod +x /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}/datadog-sbom-generator
 
                                 # Generate SBOM from all lock files
-                                /tmp/datadog-sbom-generator-\${BUILD_NUMBER} \\
+                                /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER}/datadog-sbom-generator \\
                                     -p "\${WORKSPACE}" \\
                                     -o sbom.json
 
@@ -261,7 +263,8 @@ false → block mode: exits non-zero when violations at or above threshold exist
             sh """
                 rm -f sbom.json || true
                 rm -rf /tmp/ddog-analyzer-\${BUILD_NUMBER} /tmp/ddog-static-analyzer-\${BUILD_NUMBER}.zip \\
-                       /tmp/datadog-sbom-generator-\${BUILD_NUMBER} || true
+                       /tmp/datadog-sbom-generator-\${BUILD_NUMBER}.zip \\
+                       /tmp/datadog-sbom-generator-dir-\${BUILD_NUMBER} || true
             """
         }
         success {
