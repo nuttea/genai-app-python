@@ -79,19 +79,19 @@ jobs:
 
       - name: Evaluate Quality Gate  [BLOCK — CRITICAL+]
         env:
-          GATE_SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || 'CRITICAL' }}
+          # Priority: workflow_dispatch input → repo variable → hardcoded default.
+          GATE_SEVERITY_THRESHOLD: ${{ inputs.severity_threshold || vars.GATE_SEVERITY_THRESHOLD || 'CRITICAL' }}
           SARIF_PATH: static-analysis-results.sarif
         run: python3 .github/scripts/quality_gate.py
 
       - name: Detect-Only Gate  [DETECT — HIGH+]
-        # Controlled by the repository variable DETECT_ONLY (Settings → Variables).
-        # Set to true  → runs after the blocking gate (even on failure), surfaces
-        #                 HIGH+ findings as warnings without failing CI.
-        # Set to false → step is skipped entirely.
+        # Controlled by repository variables (Settings → Secrets and variables → Actions → Variables):
+        #   DETECT_ONLY=true            enables this step (skipped when false/absent)
+        #   GATE_SEVERITY_THRESHOLD     threshold for the detect-only scan (default HIGH)
         if: always() && vars.DETECT_ONLY == 'true'
         env:
           DETECT_ONLY: ${{ vars.DETECT_ONLY }}
-          GATE_SEVERITY_THRESHOLD: HIGH
+          GATE_SEVERITY_THRESHOLD: ${{ vars.GATE_SEVERITY_THRESHOLD || 'HIGH' }}
           SARIF_PATH: static-analysis-results.sarif
         run: python3 .github/scripts/quality_gate.py --detect-only
 
